@@ -117,3 +117,30 @@ Proof.
       * left. rewrite H. assumption.
       * right. rewrite H, I. assumption.
 Qed.
+
+Definition Fst (xy x: set) : Prop :=
+  exists (u v : set), OrdPair u v xy /\ u = x.
+
+Definition Snd (xy y: set) : Prop :=
+  exists (u v : set), OrdPair u v xy /\ v = y.
+
+Theorem Fst_Exists : forall x y xy, OrdPair x y xy -> exists u, Fst xy u.
+Proof.
+  intros x y xy Hxy. exists x. exists x, y.
+  split; try assumption; try trivial.
+Qed.
+
+Theorem Snd_Exists : forall x y xy, OrdPair x y xy -> exists v, Snd xy v.
+Proof.
+  intros x y xy Hxy. exists y, x, y. split; try assumption; try trivial.
+Qed.
+
+Theorem Fst_Unique : forall xy x u, Fst xy x -> Fst xy u -> x = u.
+Admitted.
+
+Theorem Snd_Unique : forall xy y v, Snd xy y -> Snd xy v -> y = v.
+Admitted.
+
+Ltac fst xy OPxy := destruct (Fst_Exists xy).
+
+Ltac snd xy OPxy := destruct (Snd_Exists xy).
