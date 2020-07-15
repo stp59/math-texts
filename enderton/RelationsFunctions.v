@@ -119,27 +119,32 @@ Proof.
 Qed.
 
 Definition Fst (xy x: set) : Prop :=
-  exists (u v : set), OrdPair u v xy /\ u = x.
+  exists (y : set), OrdPair x y xy.
 
 Definition Snd (xy y: set) : Prop :=
-  exists (u v : set), OrdPair u v xy /\ v = y.
+  exists (x : set), OrdPair x y xy.
 
 Theorem Fst_Exists : forall x y xy, OrdPair x y xy -> exists u, Fst xy u.
 Proof.
-  intros x y xy Hxy. exists x. exists x, y.
-  split; try assumption; try trivial.
+  intros x y xy Hxy. exists x. exists y. assumption.
 Qed.
 
 Theorem Snd_Exists : forall x y xy, OrdPair x y xy -> exists v, Snd xy v.
 Proof.
-  intros x y xy Hxy. exists y, x, y. split; try assumption; try trivial.
+  intros x y xy Hxy. exists y, x. assumption.
 Qed.
 
 Theorem Fst_Unique : forall xy x u, Fst xy x -> Fst xy u -> x = u.
-Admitted.
+Proof.
+  intros xy x u [y Hxy] [v Huv].
+  apply (Enderton3A x y u v xy xy Hxy Huv). trivial.
+Qed.
 
 Theorem Snd_Unique : forall xy y v, Snd xy y -> Snd xy v -> y = v.
-Admitted.
+Proof.
+  intros xy y v [x Hxy] [u Huv].
+  apply (Enderton3A x y u v xy xy Hxy Huv). trivial.
+Qed. 
 
 Ltac fst xy OPxy := destruct (Fst_Exists xy).
 
