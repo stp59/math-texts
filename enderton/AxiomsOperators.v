@@ -9,7 +9,8 @@ Axiom Extensionality_Axiom : forall (A B : set), (forall (x : set),
 (* In general, when a new definition is given in mathematics, we must show that 
   the defined object is well-defined. This means proving the existence and 
   uniqueness of the defined object. However, for certain sets, an axiom must be 
-  introduced in order to show their existence. *)
+  introduced in order to show their existence. This is the case for the empty
+  set below.*)
 
 Definition Empty (A : set) : Prop := 
   forall (x : set), ~ (In x A).
@@ -24,8 +25,10 @@ Proof.
   - intros H. apply HB in H. inversion H.
 Qed.
 
-(* The proof of this theorem requires the Rule of Excluded Middle*)
-Theorem Member_Exists_If_NonEmpty : forall (A : set),
+(** A useful property of emptiness that is used in later proofs. TODO: currently
+    makes use of an unproved axiom from (classical?) logic. *)
+
+Lemma Member_Exists_If_NonEmpty : forall (A : set),
   ~Empty A -> exists (x : set), In x A.
 Proof.
   intros A H. unfold Empty in H.
@@ -34,6 +37,10 @@ Proof.
 Qed.
 
 Ltac empty := destruct (Empty_Set_Axiom).
+
+(** Pair sets are another fundamental feature of set theory which requires an
+    additional axiom. This will allow us to build elementary sets using ones 
+    already shown to exist. *)
 
 Definition Pair (u: set) (v : set) (B : set) : Prop :=
   forall (x : set), In x B <-> x = u \/ x = v.
@@ -55,13 +62,22 @@ Qed.
 
 Ltac pair a b := destruct (Pairing_Axiom a b).
 
+(** Next, we define the notion of a subset, in preparation for the introduction
+    of the power set axiom. *)
+
 Definition Subset (A : set) (B : set) : Prop :=
   forall (x : set), In x A -> In x B.
 
-Theorem Subset_Reflexive : forall (A : set), Subset A A.
+(** We also prove a useful property of subsets. *)
+
+Lemma Subset_Reflexive : forall (A : set), Subset A A.
 Proof.
   intros A x H. apply H.
 Qed.
+
+(** Now we are ready to introduce power sets, using a new axiom to show their
+    existence. Like pair sets, this will allow us to construct many new sets
+    from existing ones, only in a much more powerful way. *)
 
 Definition PowerSet (A : set) (B : set) : Prop :=
   forall (x : set), In x B <-> Subset x A.
@@ -78,10 +94,12 @@ Qed.
 
 Ltac powerset A := destruct (Power_Set_Axiom A).
 
+(** The existence of singleton sets is a useful consequence of the pairing axiom. *)
+
 Definition Singleton (a : set) (A : set) : Prop := 
   forall (x : set), In x A <-> x = a.
 
-Theorem Singleton_Equals_Pair : forall (x A : set),
+Lemma Singleton_Equals_Pair : forall (x A : set),
   Singleton x A <-> Pair x x A.
 Proof.
   intros x A. split.
@@ -111,11 +129,21 @@ Qed.
 
 Ltac singleton a := destruct (Singleton_Exists a).
 
+(** Now for the most interesting axiom up to this point. Underneath all of the
+    intricate logical language, the intuition behind the family of subset axioms
+    is that, given a set we know to exist, subsets exist whose members satisfy
+    all kinds of different properties. This captures an important notion from
+    naive set theory without introducing any paradoxes or contradictions into
+    the system. *)
+
 Axiom Subset_Axiom : forall (T : Type), forall (Phi : T -> set -> set -> Prop),
   forall (t : T), forall (c : set), exists (B : set), forall (x : set),
   In x B <-> In x c /\ Phi t c x.
 
 Ltac build_set T Phi t c := destruct (Subset_Axiom T Phi t c).
+
+(** The theorem that follows is meant to show that Russel's Paradox has been
+    successfully avoided in the current axiomatic approach. *)
 
 Theorem Enderton2A : forall (A : set), exists (B : set), ~In B A.
 Proof.
@@ -129,6 +157,10 @@ Proof.
   apply Q. apply Q. intros D. apply Q in D as R. apply R in D. apply D.
   apply Q. intros D. apply Q in D as R. apply R in D. apply D.
 Qed.
+
+(** Set unions are another important feature of set theory which require the
+    addition of a new axiom. Note that this is a unary operator on set, and that
+    the familiar binary union is actually a special case of this definition. *)
 
 Definition Union (A B : set) : Prop := 
   forall (x : set), In x B <-> exists (a : set), In x a /\ In a A.
@@ -144,10 +176,16 @@ Qed.
 
 Ltac union A := destruct (Union_Axiom A).
 
+(** That binary unions are well-defined follows from the pairing axiom and the
+    union axiom. We take the pair of two sets via the pairing axiom, then
+    the unary union of the pair to get the binary union. We start with a
+    lemma to show this equality, then use it to show that binary unions are
+    well-defined. *)
+
 Definition BinaryUnion (a b C : set) : Prop :=
   forall (x : set), In x C <-> In x a \/ In x b.
 
-Theorem BinaryUnion_Equals_Union : forall (a b A B : set),
+Lemma BinaryUnion_Equals_Union : forall (a b A B : set),
   Pair a b A -> BinaryUnion a b B <-> Union A B.
 Proof.
   intros a b A B H. split.
@@ -190,11 +228,19 @@ Qed.
 
 Ltac binary_union A B := destruct (BinaryUnion_Exists A B).
 
+(** Set intersections are more difficult to treat, due to the fact that the
+    unary intersect of the empty set does not exist. Thus all definitions
+    must assert that a given set is not empty. *)
+
 Definition PreIntersect (A B : set) : Prop :=
   forall (x : set), In x B <-> forall (y : set), In y A -> In x y.
 
 Definition Intersect (A B : set) : Prop := ~ Empty A ->
   PreIntersect A B.
+
+(** The existence of the unary intersect of a non-empty set is a non-trivial
+    consequence of the axioms we already have. We use a subset axiom on the
+    unary union to produce the unary intersect. *)
 
 Theorem Enderton2B : forall (A : set),
   ~Empty A -> exists (B : set), Intersect A B.
@@ -218,6 +264,8 @@ Qed.
 
 Ltac intersect H A := destruct (Enderton2B H A).
 
+(** This theorem shows why the unary intersect of the empty set is not a set. *)
+
 Theorem Intersect_Empty : forall (A : set),
   Empty A -> ~exists (B : set), PreIntersect A B.
 Proof.
@@ -228,10 +276,16 @@ Proof.
     assumption. 
 Qed.
 
+(** Similar to binary union, binary intersect is a special case of unary 
+    intersect. Binary intersects are much convenient than unary intersects
+    due to the fact that they need not check that the operand sets are
+    empty; the pair will always have at least one member. Like binary union,
+    we start with a lemma which is used to prove well-definedness. *)
+
 Definition BinaryIntersect (a b C : set) : Prop :=
   forall (x : set), In x C <-> In x a /\ In x b.
 
-Theorem BinaryIntersect_Equals_Intersect : forall (a b A B : set),
+Lemma BinaryIntersect_Equals_Intersect : forall (a b A B : set),
   Pair a b A -> BinaryIntersect a b B <-> Intersect A B.
 Proof.
   intros a b A B P. split.
@@ -279,6 +333,8 @@ Proof.
 Qed.
 
 Ltac binary_intersect A B := destruct (BinaryIntersect_Exists A B).
+
+(** This is a useful lemma for proving some of the exercises below. *)
 
 Lemma Pair_Extensionality : forall (a b c d A : set),
   Pair a b A -> Pair c d A -> (a = c /\ b = d) \/ (a = d /\ b = c).
@@ -384,7 +440,7 @@ Qed.
 
 (** Follow-up question to 6b, under what conditions does equality hold? *)
 
-(** It's kinda tricky to do it in a way that doesn't just assert that A is 
+(** TODO: It's kinda tricky to do it in a way that doesn't just assert that A is 
     the powerset of UA... *)
 
 Theorem Exercise2_7a : forall (A B PA PB AnB PAnPB PAnB: set),
@@ -415,7 +471,7 @@ Qed.
 
 (** Follow-up question to 7b, under what conditions does equality hold? *)
 
-(** Again tricky for the same reason. *)
+(** TODO : Again tricky for the same reason. *)
 
 Theorem Exercise2_8 : ~ exists (A : set), forall (x : set), exists (X : set),
   In X A /\ Singleton x X.
@@ -454,6 +510,9 @@ Proof.
   - apply H.
 Qed.
 
+(** Next, we define set difference or relative complement. We show that A \ B is
+    well-defined by using a subset axiom on A. *)
+
 Definition SetMinus (A B C : set) : Prop :=
   forall (x : set), In x C <-> In x A /\ ~ In x B.
 
@@ -476,6 +535,9 @@ Qed.
 
 Ltac minus A B := destruct (SetMinus_Exists A B).
 
+(** While relative complements are well-defined, absolute complements are not.
+    This is a consequence of the fact that there is no universal set. *)
+
 Theorem No_Absolute_Complement : forall (A : set), ~ exists (B : set),
   forall (x : set), In x B <-> ~ In x A.
 Proof.
@@ -486,6 +548,10 @@ Proof.
   - left. assumption.
   - right. apply HB. apply H0.
 Qed.
+
+(** We now turn our attention to some elementary properties of the algebra of
+    sets. That is, we treat union, intersect, and complement as algebraic
+    operators and prove some important algebraic properites. *)
 
 Theorem Union_Commutative : forall (A B AuB BuA : set),
   BinaryUnion A B AuB -> BinaryUnion B A BuA -> AuB = BuA.
@@ -649,6 +715,9 @@ Proof.
   - apply Hn. split; try apply Hs; assumption.
 Qed.
 
+(** Having finished with elementary algebraic properties, we mention some
+    ordering properties, treating subset as a partial ordering relation on sets. *)
+
 Theorem BinaryUnion_Monotonic : forall (A B C AuC BuC : set),
   BinaryUnion A C AuC -> BinaryUnion B C BuC -> Subset A B -> Subset AuC BuC.
 Proof.
@@ -692,6 +761,12 @@ Proof.
   apply Hx. apply J. apply Hsub in H. assumption.
 Qed.
 
+(** This done, we want to generalize some of the algebraic properties to
+    unary union and unary intersection. Doing so requires some rather elaborate
+    definitions. *)
+
+
+(** This is the set { A u X | X in B }, which we prove to be well-defined below. *)
 Definition Elementwise_Union (A B D : set) : Prop :=
   forall (x : set), In x D <-> exists (X : set), In X B /\ BinaryUnion A X x.
 
@@ -721,26 +796,8 @@ Proof.
   - apply HC. apply HD. assumption.
 Qed.
 
-Lemma Logic_Lemma : forall (A B C : Prop), (C <-> B) -> (A \/ B) -> A \/ C.
-Proof.
-  intros A B C H1 H2.
-  destruct H2.
-  - left. assumption.
-  - right. apply H1. assumption.
-Qed.
-
-Lemma Logic_Lemma2 : forall (T : Type), forall (A : Prop), forall (P : T -> Prop),
-  (forall t, A \/ P t) -> (A \/ forall t, P t).
-Proof.
-  intros T A P H.
-  assert (Q : A \/ ~ A).
-  apply REM.
-  destruct Q.
-  - left. assumption.
-  - right. intros t. destruct (H t).
-    + apply H0 in H1. inversion H1.
-    + assumption.
-Qed.
+(** We are now ready to prove (at length) a generalized version of the fact
+    that union distributes over intersection. *)
 
 Theorem Generalized_Union_Distributivity : forall (A B nB AunB euAB neuAB : set),
   ~ Empty B -> Intersect B nB -> BinaryUnion A nB AunB ->
@@ -783,7 +840,10 @@ Proof.
         { apply R'. }
 Qed.
 
+(** Again, some elaborate definitions are required for the generalized form of
+    these theorems. *)
 
+(** This is the set { A n X | X in B }. *)
 Definition Elementwise_Intersect (A B D : set) : Prop :=
   forall (x : set), In x D <-> exists (X : set), In X B /\ BinaryIntersect A X x.
 
@@ -810,6 +870,9 @@ Proof.
   - apply HC, HD; assumption.
 Qed.
 
+(** We can now state and prove the general form of the fact that intersection
+    distributes over union. *)
+
 Theorem Generalized_Intersect_Distributivity : forall (A B uB AnuB enAB uenAB : set),
   Union B uB -> BinaryIntersect A uB AnuB -> Elementwise_Intersect A B enAB ->
   Union enAB uenAB -> AnuB = uenAB.
@@ -827,6 +890,10 @@ Proof.
     split. assumption. apply HuB. exists X. split; assumption.
 Qed.
 
+(** We also wish to give a generalize account of the DeMorgan equalities for
+    relative complements. This requires yet another elborate definition. *)
+
+(** This is the set { C \ X | X in A }. *)
 Definition Elementwise_Complement (C A D : set) : Prop :=
   forall (x : set), In x D <-> exists (X : set), In X A /\ SetMinus C X x.
 
@@ -1365,7 +1432,7 @@ Proof.
     + right. apply HUB. exists b. split; assumption.
 Qed.
 
-(** equality holds if both A and B or neither A nor B is empty. *)
+(** Equality holds if both A and B or neither A nor B is empty. *)
 
 (** Exercise 26 : Consider the following sets:
     A = {3, 4}.

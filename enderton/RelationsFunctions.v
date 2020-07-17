@@ -2,7 +2,9 @@ From Enderton Require Export AxiomsOperators.
 
 (** Chapter 3 : Relations and Functions*)
 
-(** The chapter *)
+(** The first section of the chapter treats ordered pairs and Cartesian products. *)
+
+(** The Kuratowski definition of ordered pairs: *)
 
 Definition OrdPair (x y xy : set) : Prop :=
   forall z, In z xy <-> Singleton x z \/ Pair x y z.
@@ -42,6 +44,8 @@ Proof.
   - assert (P : In z A). { apply Hp. right. trivial. }
     apply Hs in P. rewrite P. trivial.
 Qed.
+
+(** The fundmental propery of ordered pairs, which motivated the above definition: *)
 
 Theorem Enderton3A : forall x y u v xy uv, OrdPair x y xy -> OrdPair u v uv ->
   xy = uv <-> x = u /\ y = v.
@@ -122,6 +126,8 @@ Proof.
       * right. rewrite H, I. assumption.
 Qed.
 
+(** This theorem allows for the following definitions: *)
+
 Definition Fst (xy x: set) : Prop :=
   exists (y : set), OrdPair x y xy.
 
@@ -138,6 +144,10 @@ Proof.
   intros x y xy Hxy. exists y, x. assumption.
 Qed.
 
+(** The following two theorems require the fundamental property of ordered
+    pairs, which is why the definitions of [Fst] and [Snd] are justified by
+    the theorem above. *)
+
 Theorem Fst_Unique : forall xy x u, Fst xy x -> Fst xy u -> x = u.
 Proof.
   intros xy x u [y Hxy] [v Huv].
@@ -153,6 +163,8 @@ Qed.
 Ltac fst xy OPxy := destruct (Fst_Exists xy).
 
 Ltac snd xy OPxy := destruct (Snd_Exists xy).
+
+(* Ordered pairs being well defined, cartesian products follow naturally. **)
 
 Definition Prod (A B AxB: set) : Prop :=
   forall ab, In ab AxB <-> exists a b, In a A /\ In b B /\ OrdPair a b ab.
@@ -198,3 +210,57 @@ Proof.
   - apply HAxB'. apply HAxB. assumption.
   - apply HAxB. apply HAxB'. assumption.
 Qed.
+
+Ltac prod A B := destruct (Enderton3C A B).
+
+(** Exercise 3-1 : Suppose we attempted to extend to Kuratowski definitions
+    of ordered pairs to ordered triples by defining 
+    
+            <x, y, z>* = {{x}, {x,y}, {x,y,z}}
+  
+    Show that this definition is unsuccessful by giving examples of objects
+    u, v, w, x, y, z with <u,v,w>* = <x,y,z>* but with either y <> v or
+    z <> w (or both). *)
+
+Theorem Exercise3_2a : forall A B C BuC AxBuC AxB AxC AxBuAxC,
+  BinaryUnion B C BuC -> Prod A BuC AxBuC -> Prod A B AxB -> Prod A C AxC ->
+  BinaryUnion AxB AxC AxBuAxC -> AxBuC = AxBuAxC.
+Admitted.
+
+Theorem Exercise3_2b : forall A B C AxB AxC, Prod A B AxB -> Prod A C AxC ->
+  ~Empty A -> B = C.
+Admitted.
+
+Definition Elementwise_Prod (A B exAB : set) : Prop :=
+  forall x, In x exAB <-> exists X, In X B /\ Prod A X x.
+
+Theorem Elementwise_Prod_Exists : forall A B, exists exAB,
+  Elementwise_Prod A B exAB.
+Admitted.
+
+Theorem Elementwise_Prod_Unique : forall A B exAB exAB',
+  Elementwise_Prod A B exAB -> Elementwise_Prod A B exAB' -> exAB = exAB'.
+Admitted.
+
+Theorem Exercise3_3 : forall A B UB AxUB exAB UexAB,
+  Union B UB -> Prod A UB AxUB -> Elementwise_Prod A B exAB ->
+  Union exAB UexAB -> AxUB = UexAB.
+Admitted.
+
+Theorem Exercise3_4 : ~exists XU, forall x y xy, OrdPair x y xy -> In xy XU.
+Admitted.
+
+Definition Singletonwise_Prod (A B C : set) : Prop :=
+  forall y, In y C <-> exists x Sx SxB, In x A /\ Singleton x Sx /\
+  Prod Sx B SxB /\ y = SxB.
+
+Theorem Exercise3_5a : forall A B, exists C, Singletonwise_Prod A B C.
+Admitted.
+
+Theorem Singletonwise_Prod_Unique : forall A B C D,
+  Singletonwise_Prod A B C -> Singletonwise_Prod A B D -> C = D.
+Admitted.
+
+Theorem Exercise3_5b : forall A B C AxB UC, Singletonwise_Prod A B C ->
+  Prod A B AxB -> Union C UC -> AxB = UC.
+Admitted.
