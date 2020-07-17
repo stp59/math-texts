@@ -1,5 +1,9 @@
 From Enderton Require Export AxiomsOperators.
 
+(** Chapter 3 : Relations and Functions*)
+
+(** The chapter *)
+
 Definition OrdPair (x y xy : set) : Prop :=
   forall z, In z xy <-> Singleton x z \/ Pair x y z.
 
@@ -149,3 +153,48 @@ Qed.
 Ltac fst xy OPxy := destruct (Fst_Exists xy).
 
 Ltac snd xy OPxy := destruct (Snd_Exists xy).
+
+Definition Prod (A B AxB: set) : Prop :=
+  forall ab, In ab AxB <-> exists a b, In a A /\ In b B /\ OrdPair a b ab.
+
+Lemma Enderton3B : forall x y xy C PC PPC, OrdPair x y xy -> PowerSet C PC ->
+  PowerSet PC PPC -> In x C -> In y C -> In xy PPC.
+Proof.
+  intros x y xy C PC PPC Hxy HPC HPPC Hx Hy.
+  apply HPPC. intros a Ha. apply HPC. intros b Hb.
+  apply Hxy in Ha. destruct Ha as [Ha | Ha].
+  - apply Ha in Hb. rewrite Hb. assumption.
+  - apply Ha in Hb. destruct Hb as [Hb | Hb].
+    + rewrite Hb. assumption.
+    + rewrite Hb. assumption.
+Qed.
+
+Corollary Enderton3C : forall A B, exists AxB, Prod A B AxB.
+Proof.
+  intros A B. binary_union A B. rename x into AuB. rename H into HAuB.
+  powerset AuB. rename x into PAuB. rename H into HPAuB.
+  powerset PAuB. rename x into PPAuB. rename H into HPPAuB.
+  build_set
+    (prod set set)
+    (fun (t : set * set) (c : set) (x : set) =>
+      exists a b, In a (fst t) /\ In b (snd t) /\ OrdPair a b x)
+    (A,B)
+    PPAuB.
+  rename x into AxB. rename H into HAxB. exists AxB.
+  intros x. split; intros H.
+  - apply HAxB. assumption.
+  - apply HAxB. split; try apply H.
+    destruct H as [a [b [Ha [Hb Hab]]]].
+    apply (Enderton3B a b x AuB PAuB PPAuB); try assumption.
+    + apply HAuB. left. assumption.
+    + apply HAuB. right. assumption.
+Qed.
+
+Theorem Prod_Unique : forall A B AxB AxB',
+  Prod A B AxB -> Prod A B AxB' -> AxB = AxB'.
+Proof.
+  intros A B AxB AxB' HAxB HAxB'.
+  apply Extensionality_Axiom. intros x; split; intros H.
+  - apply HAxB'. apply HAxB. assumption.
+  - apply HAxB. apply HAxB'. assumption.
+Qed.
