@@ -2,7 +2,10 @@ From Enderton Require Export AxiomsOperators.
 
 (** Chapter 3 : Relations and Functions*)
 
-(** The first section of the chapter treats ordered pairs and Cartesian products. *)
+(** The first section of the chapter treats ordered pairs and cartesian
+    products using the Kuratowski definition of ordered pairs (below).
+    We show that ordered pair are well-defined under this definition. Next
+    we show that it satisfies the desired fundame*)
 
 (** The Kuratowski definition of ordered pairs: *)
 
@@ -431,3 +434,86 @@ Proof.
     exists a, b. split; try assumption. split; try assumption.
     apply HSa in Ha'. rewrite <- Ha'. apply Hab.
 Qed.
+
+Definition Relation (R : set) : Prop :=
+  forall xy, In xy R -> exists x y, OrdPair x y xy.
+
+Definition Domain (R domR : set) : Prop :=
+  forall x, In x domR <-> exists y xy, OrdPair x y xy /\
+  In xy R.
+
+Definition Range (R ranR : set) : Prop :=
+  Relation R -> forall y, In y ranR <-> exists x xy, OrdPair x y xy /\
+  In xy R.
+
+Definition Field (R fldR : set) : Prop :=
+  Relation R -> forall y, In y fldR <-> exists domR ranR domRuranR,
+  Domain R domR /\ Range R ranR /\ BinaryUnion domR ranR domRuranR /\
+  In y domRuranR.
+
+Lemma Enderton3D : forall x y A xy UA UUA, OrdPair x y xy -> Union A UA ->
+  Union UA UUA -> In x UUA /\ In y UUA.
+Admitted.
+
+Theorem Domain_Exists : forall R, exists domR, Domain R domR.
+Admitted.
+
+Theorem Demain_Unique : forall R domR domR', Relation R ->
+  Domain R domR -> Domain R domR' -> domR = domR'.
+Admitted.
+
+Theorem Range_Exists : forall R, Relation R -> exists ranR, Range R ranR.
+Admitted.
+
+Theorem Range_Unique : forall R ranR ranR', Relation R ->
+  Range R ranR -> Range R ranR' -> ranR = ranR'.
+Admitted.
+
+Theorem Field_Exists : forall R, Relation R -> exists fldR, Field R fldR.
+Admitted.
+
+Theorem Field_Unique : forall R fldR fldR', Relation R ->
+  Field R fldR -> Field R fldR' -> fldR = fldR'.
+Admitted.
+
+Theorem Exercise3_6 : forall A domA ranA domAxranA,
+  Domain A domA -> Range A ranA -> Prod domA ranA domAxranA ->
+  Relation A <-> Subset A domAxranA.
+Admitted.
+
+Theorem Exercise3_7 : forall R fldR UR UUR,
+  Field R fldR -> Union R UR -> Union UR UUR -> Relation R -> fldR = UUR.
+Admitted.
+
+Definition AllDomains (A adA : set) : Prop :=
+  forall x, In x adA <-> exists R, In R A /\ Domain R x.
+
+Theorem AllDomains_Exists : forall A, exists adA, AllDomains A adA.
+Admitted.
+
+Theorem AllDomains_Unique : forall A adA adA', AllDomains A adA ->
+  AllDomains A adA' -> adA = adA'.
+Admitted.
+
+Theorem Exercise3_8a : forall A UA domUA adA UadA,
+  Union A UA -> Domain UA domUA -> AllDomains A adA -> Union adA UadA ->
+  domUA = UadA.
+Admitted.
+
+Definition AllRanges (A arA : set) : Prop :=
+  forall x, In x arA <-> exists R, In R A /\ Range R x.
+
+Theorem AllRanges_Exists : forall A, exists arA, AllRanges A arA.
+Admitted.
+
+Theorem AllRanges_Unique : forall A arA arA', AllRanges A arA ->
+  AllRanges A arA' -> arA = arA'.
+Admitted.
+
+Theorem Exercise3_8b : forall A UA ranUA arA UarA,
+  Union A UA -> Range UA ranUA -> AllRanges A arA -> Union arA UarA ->
+  ranUA = UarA.
+Admitted.
+
+(** Exercise 3-9 : Discuss the result of replacing the union operation by the
+    intersection operation in the preceding problem. (TODO) *)
