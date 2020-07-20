@@ -225,42 +225,209 @@ Ltac prod A B := destruct (Enderton3C A B).
 Theorem Exercise3_2a : forall A B C BuC AxBuC AxB AxC AxBuAxC,
   BinaryUnion B C BuC -> Prod A BuC AxBuC -> Prod A B AxB -> Prod A C AxC ->
   BinaryUnion AxB AxC AxBuAxC -> AxBuC = AxBuAxC.
-Admitted.
+Proof.
+  intros A B C BuC AxBuC AxB AxC AxBuAxC HBuC HAxBuC HAxB HAxC HAxBuAxC.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HAxBuAxC. apply HAxBuC in H. destruct H as [a [b [Ha [Hb Hab]]]].
+    apply HBuC in Hb. destruct Hb as [Hb | Hb].
+    + left. apply HAxB. exists a, b. repeat (split; try assumption).
+    + right. apply HAxC. exists a, b. repeat (split; try assumption).
+  - apply HAxBuC. apply HAxBuAxC in H. destruct H as [H | H].
+    + apply HAxB in H. destruct H as [a [b [Ha [Hb Hab]]]].
+      exists a, b. repeat (split; try assumption).
+      apply HBuC. left. assumption.
+    + apply HAxC in H. destruct H as [a [b [Ha [Hb Hab]]]].
+      exists a, b. repeat (split; try assumption). apply HBuC.
+      right. assumption.
+Qed.
 
 Theorem Exercise3_2b : forall A B C AxB AxC, Prod A B AxB -> Prod A C AxC ->
-  ~Empty A -> B = C.
-Admitted.
+  ~Empty A -> AxB = AxC -> B = C.
+Proof.
+  intros A B C AxB AxC HAxB HAxC HA Hx.
+  apply Extensionality_Axiom. intros x; split; intros H.
+  - apply Member_Exists_If_NonEmpty in HA as [a HA].
+    ordpair a x. rename x0 into ax. rename H0 into Hax.
+    assert (P : In ax AxB).
+    { apply HAxB. exists a, x. repeat (split; try assumption). }
+    rewrite Hx in P. apply HAxC in P as [a' [x' [Ha' [Hx' Hax']]]].
+    assert (Q : a = a' /\ x = x').
+    { apply (Enderton3A a x a' x' ax ax); try assumption. trivial. }
+    destruct Q as [_ Q]. rewrite Q. assumption.
+  - apply Member_Exists_If_NonEmpty in HA as [a HA].
+    ordpair a x. rename x0 into ax. rename H0 into Hax.
+    assert (P : In ax AxC).
+    { apply HAxC. exists a, x. repeat (split; try assumption). }
+    rewrite <- Hx in P. apply HAxB in P.
+    destruct P as [a' [x' [Ha' [Hx' Hax']]]].
+    assert (Q : a = a' /\ x = x').
+    { apply (Enderton3A a x a' x' ax ax); try assumption; try trivial. }
+    destruct Q as [_ Q]. rewrite Q. assumption.
+Qed.
 
 Definition Elementwise_Prod (A B exAB : set) : Prop :=
   forall x, In x exAB <-> exists X, In X B /\ Prod A X x.
 
 Theorem Elementwise_Prod_Exists : forall A B, exists exAB,
   Elementwise_Prod A B exAB.
-Admitted.
+Proof.
+  intros A B.
+  union B. rename x into UB. rename H into HUB.
+  binary_union A UB. rename x into AuUB. rename H into HAuUB.
+  powerset AuUB. rename x into PAuUB. rename H into HPAuUB.
+  powerset PAuUB. rename x into PPAuUB. rename H into HPPAuUB.
+  powerset PPAuUB. rename x into PPPAuUB. rename H into HPPPAuUB.
+  build_set
+    (prod set set)
+    (fun AB (PPAuUB x : set) => exists X, In X (snd AB) /\ Prod (fst AB) X x)
+    (A, B)
+    PPPAuUB.
+  rename x into exAB. rename H into HexAB.
+  exists exAB. intros x. split; intros H.
+  - apply HexAB. assumption.
+  - apply HexAB. split.
+    + apply HPPPAuUB. intros y Hy. apply HPPAuUB. intros z Hz.
+      apply HPAuUB. intros w Hw. destruct H as [X [HX HAxX]].
+      apply HAuUB. apply HAxX in Hy. destruct Hy as [a [b [Ha [Hb Hab]]]].
+      apply Hab in Hz. destruct Hz as [Hz | Hz].
+      * left. apply Hz in Hw. rewrite Hw. assumption.
+      * apply Hz in Hw. destruct Hw as [Hw | Hw].
+        { left. rewrite Hw. assumption. }
+        { right. apply HUB. exists X. split.
+          - rewrite Hw. assumption.
+          - assumption. }
+    + assumption.
+Qed.
 
 Theorem Elementwise_Prod_Unique : forall A B exAB exAB',
   Elementwise_Prod A B exAB -> Elementwise_Prod A B exAB' -> exAB = exAB'.
-Admitted.
+Proof.
+  intros A B exAB exAB' HexAB HexAB'.
+  apply Extensionality_Axiom. intros x; split; intros H.
+  - apply HexAB'. apply HexAB. assumption.
+  - apply HexAB. apply HexAB'. assumption.
+Qed.
 
 Theorem Exercise3_3 : forall A B UB AxUB exAB UexAB,
   Union B UB -> Prod A UB AxUB -> Elementwise_Prod A B exAB ->
   Union exAB UexAB -> AxUB = UexAB.
-Admitted.
+Proof.
+  intros A B UB AxUB exAB UexAB HUB HAxUB HexAB HUexAB.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HUexAB. apply HAxUB in H. destruct H as [a [b [Ha [Hb H]]]].
+    apply HUB in Hb. destruct Hb as [X [Hb HX]].
+    prod A X. rename x0 into AxX. rename H0 into HAxX.
+    exists AxX. split.
+    + apply HAxX. exists a, b. repeat (split; try assumption).
+    + apply HexAB. exists X. split; assumption.
+  - apply HAxUB. apply HUexAB in H. destruct H as [AxX [H HAxX]].
+    apply HexAB in HAxX. destruct HAxX as [X [HX HAxX]].
+    apply HAxX in H. destruct H as [a [b [Ha [Hb H]]]].
+    exists a, b. repeat (split; try assumption).
+    apply HUB. exists X. split; assumption.
+Qed.    
 
 Theorem Exercise3_4 : ~exists XU, forall x y xy, OrdPair x y xy -> In xy XU.
-Admitted.
+Proof.
+  intros Con. destruct Con as [XU Con].
+  union XU. rename x into UXU. rename H into HUXU.
+  union UXU. rename x into UUXU. rename H into HUUXU.
+  assert (P : forall x, In x UUXU).
+  { intros x. apply HUUXU. singleton x.
+    exists x0. split. apply H. trivial.
+    apply HUXU. ordpair x x. exists x1. split.
+    apply H0. left. assumption.
+    apply (Con x x). assumption. }
+  assert (Q : exists a, ~ In a UUXU).
+  { apply Enderton2A. }
+  destruct Q as [a Q]. apply Q. apply P.
+Qed.
+
+Definition AllSingletons (A B : set) : Prop :=
+  forall Sx, In Sx B <-> exists x, In x A /\ Singleton x Sx.
+
+Theorem AllSingletons_Exists : forall A, exists B, AllSingletons A B.
+Proof.
+  intros A. powerset A. rename x into PA. rename H into HPA.
+  build_set
+    set
+    (fun (t c Sx : set) => exists x, In x t /\ Singleton x Sx)
+    A
+    PA.
+  rename x into asA. rename H into HasA.
+  exists asA. intros Sx. split; intros H.
+  - apply HasA. assumption.
+  - apply HasA. split.
+    + apply HPA. destruct H as [x [Hx H]].
+      intros y Hy. apply H in Hy. rewrite Hy. assumption.
+    + assumption.
+Qed.
+
+Theorem AllSingletons_Unique : forall A B B',
+  AllSingletons A B -> AllSingletons A B' -> B = B'.
+Proof.
+  intros A B B' HB HB'. apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HB', HB. assumption.
+  - apply HB, HB'. assumption.
+Qed.
 
 Definition Singletonwise_Prod (A B C : set) : Prop :=
-  forall y, In y C <-> exists x Sx SxB, In x A /\ Singleton x Sx /\
-  Prod Sx B SxB /\ y = SxB.
+  forall y, In y C <-> exists x Sx, In x A /\ Singleton x Sx /\
+  Prod Sx B y.
 
 Theorem Exercise3_5a : forall A B, exists C, Singletonwise_Prod A B C.
-Admitted.
+Proof.
+  intros A B. binary_union A B. rename x into AuB. rename H into HAuB.
+  powerset AuB. rename x into PAuB. rename H into HPAuB.
+  powerset PAuB. rename x into PPAuB. rename H into HPPAuB.
+  powerset PPAuB. rename x into PPPAuB. rename H into HPPPAuB.
+  build_set
+    (prod set set)
+    (fun AB (PPAuB SxxB : set) => exists x Sx, In x (fst AB) /\
+      Singleton x Sx /\ Prod Sx (snd AB) SxxB)
+    (A,B)
+    PPPAuB.
+  rename x into sxAB. rename H into HsxAB.
+  exists sxAB. intros x. split; intros H.
+  - apply HsxAB. assumption.
+  - apply HsxAB. split.
+    + apply HPPPAuB. intros y Hy.
+      apply HPPAuB. intros z Hz.
+      apply HPAuB. intros w Hw. apply HAuB.
+      destruct H as [x' [Sx' [Hx' [HSx' H]]]].
+      apply H in Hy. destruct Hy as [a [b [Ha [Hb Hy]]]].
+      apply Hy in Hz. destruct Hz as [Hz | Hz].
+      * left. apply Hz in Hw. rewrite Hw.
+        apply HSx' in Ha. rewrite Ha. assumption.
+      * apply Hz in Hw. destruct Hw as [Hw | Hw].
+        { left. rewrite Hw. apply HSx' in Ha. rewrite Ha. assumption. }
+        { right. rewrite Hw. assumption. }
+    + assumption.
+Qed.
 
 Theorem Singletonwise_Prod_Unique : forall A B C D,
   Singletonwise_Prod A B C -> Singletonwise_Prod A B D -> C = D.
-Admitted.
+Proof.
+  intros A B C D HC HD. apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HD, HC. assumption.
+  - apply HC, HD. assumption.
+Qed.
 
 Theorem Exercise3_5b : forall A B C AxB UC, Singletonwise_Prod A B C ->
   Prod A B AxB -> Union C UC -> AxB = UC.
-Admitted.
+Proof.
+  intros A B C AxB UC HC HAxB HUC.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HUC. apply HAxB in H. destruct H as [a [b [Ha [Hb Hab]]]].
+    singleton a. rename x0 into Sa. rename H into HSa.
+    prod Sa B. rename x0 into SaxB. rename H into HSaxB.
+    exists SaxB. split.
+    + apply HSaxB. exists a, b. repeat (split; try assumption).
+      apply HSa. trivial.
+    + apply HC. exists a, Sa. repeat (split; try assumption).
+  - apply HAxB. apply HUC in H. destruct H as [SaxB [H HSaxB]].
+    apply HC in HSaxB. destruct HSaxB as [a [Sa [Ha [HSa HSaxB]]]].
+    apply HSaxB in H. destruct H as [a' [b [Ha' [Hb Hab]]]].
+    exists a, b. split; try assumption. split; try assumption.
+    apply HSa in Ha'. rewrite <- Ha'. apply Hab.
+Qed.
