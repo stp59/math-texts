@@ -730,3 +730,29 @@ Qed.
 
 (** Exercise 3-9 : Discuss the result of replacing the union operation by the
     intersection operation in the preceding problem. (TODO) *)
+
+(** We treat the brief section on N-ary relations with the following inductive
+    definition and successive results.*)
+
+Inductive NTuple : nat -> set -> Prop :=
+  | BTuple : forall x, NTuple 1 x
+  | STuple : forall (n : nat) (xy : set),
+    (exists x y, OrdPair x y xy /\ NTuple n x) -> NTuple (S n) xy.
+
+Definition N_ary_Relation (n : nat) (R : set) : Prop :=
+  forall x, In x R <-> NTuple n x.
+
+Theorem Exercise3_10 : forall x, NTuple 4 x -> NTuple 3 x /\ NTuple 2 x /\
+  NTuple 1 x.
+Proof.
+  intros xy Hfour. inversion Hfour. destruct H0 as [x [y [Hxy H0]]].
+  inversion H0. destruct H3 as [x' [y' [Hx'y' H3]]].
+  inversion H3. destruct H6 as [x'' [y'' [Hx''y'' H6]]].
+  repeat (try split).
+  - apply STuple. exists x, y. split; try assumption.
+    apply STuple. exists x', y'. split; try assumption.
+    apply BTuple.
+  - apply STuple. exists x, y. split; try assumption.
+    apply BTuple.
+  - apply BTuple.
+Qed.
