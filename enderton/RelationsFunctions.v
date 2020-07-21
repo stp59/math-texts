@@ -443,77 +443,290 @@ Definition Domain (R domR : set) : Prop :=
   In xy R.
 
 Definition Range (R ranR : set) : Prop :=
-  Relation R -> forall y, In y ranR <-> exists x xy, OrdPair x y xy /\
+  forall y, In y ranR <-> exists x xy, OrdPair x y xy /\
   In xy R.
 
 Definition Field (R fldR : set) : Prop :=
-  Relation R -> forall y, In y fldR <-> exists domR ranR domRuranR,
+  forall y, In y fldR <-> exists domR ranR domRuranR,
   Domain R domR /\ Range R ranR /\ BinaryUnion domR ranR domRuranR /\
   In y domRuranR.
 
 Lemma Enderton3D : forall x y A xy UA UUA, OrdPair x y xy -> Union A UA ->
-  Union UA UUA -> In x UUA /\ In y UUA.
-Admitted.
+  Union UA UUA -> In xy A -> In x UUA /\ In y UUA.
+Proof.
+  intros x y A xy UA UUA Hxy HUA HUUA H. split; apply HUUA.
+  - singleton x. rename x0 into Sx. rename H0 into HSx.
+    exists Sx. split.
+    + apply HSx. trivial.
+    + apply HUA. exists xy. split.
+      * apply Hxy. left. assumption.
+      * assumption.
+  - pair x y. rename x0 into Pxy. rename H0 into HPxy.
+    exists Pxy. split.
+    + apply HPxy. right. trivial.
+    + apply HUA. exists xy. split.
+      * apply Hxy. right. assumption.
+      * assumption.
+Qed.
 
 Theorem Domain_Exists : forall R, exists domR, Domain R domR.
-Admitted.
+Proof.
+  intros R. union R. rename x into UR. rename H into HUR.
+  union UR. rename x into UUR. rename H into HUUR.
+  build_set
+    set
+    (fun (t c x : set) => exists y xy, OrdPair x y xy /\ In xy t)
+    R
+    UUR.
+  rename x into domR. rename H into HdomR.
+  exists domR. intros x. split; intros H.
+  - apply HdomR. assumption.
+  - apply HdomR. split.
+    + destruct H as [y [xy [Hxy H]]].
+      apply (Enderton3D x y R xy UR UUR) in H; try assumption.
+      apply H.
+    + assumption.
+Qed.
 
-Theorem Demain_Unique : forall R domR domR', Relation R ->
-  Domain R domR -> Domain R domR' -> domR = domR'.
-Admitted.
+Theorem Domain_Unique : forall R domR domR', Domain R domR -> Domain R domR' ->
+  domR = domR'.
+Proof.
+  intros R domR domR' HdomR HdomR'. apply Extensionality_Axiom.
+  intros x; split; intros H.
+  - apply HdomR', HdomR. assumption.
+  - apply HdomR, HdomR'. assumption.
+Qed.
 
-Theorem Range_Exists : forall R, Relation R -> exists ranR, Range R ranR.
-Admitted.
+Ltac domain R := destruct (Domain_Exists R).
 
-Theorem Range_Unique : forall R ranR ranR', Relation R ->
+Theorem Range_Exists : forall R, exists ranR, Range R ranR.
+Proof.
+  intros R. union R. rename x into UR. rename H into HUR.
+  union UR. rename x into UUR. rename H into HUUR.
+  build_set
+    set
+    (fun (t c y : set) => exists x xy, OrdPair x y xy /\ In xy t)
+    R
+    UUR.
+  rename x into ranR. rename H into HranR. exists ranR.
+  intros y; split; intros H.
+  - apply HranR. assumption.
+  - apply HranR. split.
+    + destruct H as [x [xy [Hxy H]]].
+      apply (Enderton3D x y R xy UR UUR) in H; try assumption.
+      apply H.
+    + assumption.
+Qed.
+
+Theorem Range_Unique : forall R ranR ranR',
   Range R ranR -> Range R ranR' -> ranR = ranR'.
-Admitted.
+Proof.
+  intros R ranR ranR' HR HR'. apply Extensionality_Axiom.
+  intros x; split; intros H.
+  - apply HR', HR. assumption.
+  - apply HR, HR'. assumption.
+Qed.
 
-Theorem Field_Exists : forall R, Relation R -> exists fldR, Field R fldR.
-Admitted.
+Ltac range R := destruct (Range_Exists R).
 
-Theorem Field_Unique : forall R fldR fldR', Relation R ->
+Theorem Field_Exists : forall R, exists fldR, Field R fldR.
+Proof.
+  intros R. domain R. rename x into domR. rename H into HdomR.
+  range R. rename x into ranR. rename H into HranR.
+  binary_union domR ranR. rename x into domRuranR. rename H into HdomRuranR.
+  exists domRuranR. intros x; split; intros H.
+  - exists domR, ranR, domRuranR. repeat (split; try assumption).
+  - destruct H as [domR' [ranR' [domRuranR' H]]].
+    assert (P : domR = domR').
+    { apply (Domain_Unique R); try apply H; try assumption. }
+    assert (Q : ranR = ranR').
+    { apply (Range_Unique R); try apply H; try assumption. }
+    assert (S : domRuranR = domRuranR').
+    { apply (BinaryUnion_Unique domR ranR). assumption. rewrite P, Q. apply H. }
+    rewrite S. apply H.
+Qed.
+
+Theorem Field_Unique : forall R fldR fldR',
   Field R fldR -> Field R fldR' -> fldR = fldR'.
-Admitted.
+Proof.
+  intros R fldR fldR' HR HR'.
+  apply Extensionality_Axiom. intros x; split; intros H.
+  - apply HR', HR. assumption.
+  - apply HR, HR'. assumption.
+Qed.
+
+Ltac field R := destruct (Field_Exists R).
 
 Theorem Exercise3_6 : forall A domA ranA domAxranA,
   Domain A domA -> Range A ranA -> Prod domA ranA domAxranA ->
   Relation A <-> Subset A domAxranA.
-Admitted.
+Proof.
+  intros A domA ranA domAxranA HdomA HranA HdomAxranA.
+  split; intros  H.
+  - intros x HA. apply HdomAxranA. apply H in HA as Hx.
+    destruct Hx as [a [b Hab]].
+    exists a, b. split.
+    + apply HdomA. exists b, x. split; try assumption.
+    + split.
+      * apply HranA. exists a, x. split; try assumption.
+      * assumption.
+  - intros ab Hab. apply H in Hab.
+    apply HdomAxranA in Hab. destruct Hab as [a [b [Ha [Hb Hab]]]].
+    exists a, b. assumption.
+Qed.
 
 Theorem Exercise3_7 : forall R fldR UR UUR,
   Field R fldR -> Union R UR -> Union UR UUR -> Relation R -> fldR = UUR.
-Admitted.
+Proof.
+  intros R fldR UR UUR HfldR HUR HUUR HR.
+  apply Extensionality_Axiom. intros x; split; intros H.
+  - apply HUUR. apply HfldR in H.
+    destruct H as [domR [ranR [domRuranR [HdomR [HranR [HdomRuranR H]]]]]].
+    apply HdomRuranR in H. destruct H as [H | H].
+    + apply HdomR in H. destruct H as [y [xy [Hxy H]]].
+      singleton x. rename x0 into Sx. rename H0 into HSx.
+      exists Sx. split.
+      * apply HSx; trivial.
+      * apply HUR. exists xy. split; try assumption.
+        apply Hxy. left. assumption.
+    + apply HranR in H. rename x into y.
+      destruct H as [x [xy [Hxy H]]].
+      pair x y. rename x0 into  Pxy. rename H0 into HPxy.
+      exists Pxy. split.
+      * apply HPxy. right. trivial.
+      * apply HUR. exists xy. split; try assumption.
+        apply Hxy. right. assumption.
+  - apply HfldR. domain R. rename x0 into domR. rename H0 into HdomR.
+    range R. rename x0 into ranR. rename H0 into HranR.
+    binary_union domR ranR. rename x0 into domRuranR. rename H0 into HdomRuranR.
+    exists domR, ranR, domRuranR; repeat (split; try assumption).
+    apply HdomRuranR.
+    apply HUUR in H. destruct H as [SP [Ha H]].
+    apply HUR in H. destruct H as [OP [Hb H]].
+    apply HR in H as H'. destruct H' as [a [b Hab]].
+    apply Hab in Hb. destruct Hb as [Hb | Hb].
+    + left. apply HdomR. exists b, OP. split.
+      * apply Hb in Ha. rewrite Ha. assumption.
+      * assumption.
+    + apply Hb in Ha. destruct Ha as [Ha | Ha].
+      * left. apply HdomR. exists b, OP. split; try assumption.
+        rewrite Ha. apply Hab.
+      * right. apply HranR. exists a, OP. split; try assumption.
+        rewrite Ha. assumption.
+Qed.
 
 Definition AllDomains (A adA : set) : Prop :=
   forall x, In x adA <-> exists R, In R A /\ Domain R x.
 
 Theorem AllDomains_Exists : forall A, exists adA, AllDomains A adA.
-Admitted.
+Proof.
+  intros A. union A. rename x into UA. rename H into HUA.
+  union UA. rename x into UUA. rename H into HUUA.
+  union UUA. rename x into UUUA. rename H into HUUUA.
+  powerset UUUA. rename x into PUUUA. rename H into HPUUUA.
+  build_set
+    set
+    (fun (t c x : set) => exists R, In R t /\ Domain R x)
+    A
+    PUUUA.
+  rename x into adA. rename H into HadA. exists adA.
+  intros x. split; intros H.
+  - apply HadA. assumption.
+  - apply HadA. split; try assumption.
+    apply HPUUUA. intros y Hy. apply HUUUA. destruct H as [R [HR H]].
+    apply H in Hy. destruct Hy as [z [yz [Hyz Hy]]].
+    singleton y. rename x0 into Sy. rename H0 into HSy.
+    exists Sy. split. apply HSy. trivial.
+    apply HUUA. exists yz. split.
+    + apply Hyz. left. assumption.
+    + apply HUA. exists R. split; assumption.
+Qed.
 
 Theorem AllDomains_Unique : forall A adA adA', AllDomains A adA ->
   AllDomains A adA' -> adA = adA'.
-Admitted.
+Proof.
+  intros A adA adA' HA HA'.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HA', HA. assumption.
+  - apply HA, HA'. assumption.
+Qed.
 
 Theorem Exercise3_8a : forall A UA domUA adA UadA,
   Union A UA -> Domain UA domUA -> AllDomains A adA -> Union adA UadA ->
   domUA = UadA.
-Admitted.
+Proof.
+  intros A UA domUA adA UadA HUA HdomUA HadA HUadA.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HdomUA in H. destruct H as [y [xy [Hxy H]]].
+    apply HUA in H. destruct H as [R [HR H]].
+    apply HUadA. domain R. rename x0 into domR. rename H0 into HdomR.
+    exists domR. split.
+    + apply HdomR. exists y, xy. split; try assumption.
+    + apply HadA. exists R. split; try assumption.
+  - apply HdomUA. apply HUadA in H. destruct H as [domR [Hx H]].
+    apply HadA in H. destruct H as [R [HR HdomR]].
+    apply HdomR in Hx. destruct Hx as [y [xy [Hxy Hx]]].
+    exists y, xy. split; try assumption. apply HUA.
+    exists R. split; try assumption.
+Qed.
 
 Definition AllRanges (A arA : set) : Prop :=
   forall x, In x arA <-> exists R, In R A /\ Range R x.
 
 Theorem AllRanges_Exists : forall A, exists arA, AllRanges A arA.
-Admitted.
+Proof.
+  intros A. union A. rename x into UA. rename H into HUA.
+  union UA. rename x into UUA. rename H into HUUA.
+  union UUA. rename x into UUUA. rename H into HUUUA.
+  powerset UUUA. rename x into PUUUA. rename H into HPUUUA.
+  build_set
+    set
+    (fun (t c x : set) => exists R, In R t /\ Range R x)
+    A
+    PUUUA.
+  rename x into arA. rename H into HarA.
+  exists arA. intros x. split; intros H.
+  - apply HarA. assumption.
+  - apply HarA; split; try assumption.
+    apply HPUUUA. intros y Hy. apply HUUUA.
+    destruct H as [R [HR H]]. apply H in Hy.
+    rename x into ranR. rename H into HranR.
+    destruct Hy as [x [xy [Hxy Hy]]].
+    pair x y. rename x0 into Pxy. rename H into HPxy.
+    exists Pxy. split.
+    + apply HPxy. right. trivial.
+    + apply HUUA. exists xy. split.
+      * apply Hxy. right. assumption.
+      * apply HUA. exists R. split; try assumption.
+Qed.
 
 Theorem AllRanges_Unique : forall A arA arA', AllRanges A arA ->
   AllRanges A arA' -> arA = arA'.
-Admitted.
+Proof.
+  intros A arA arA' HA HA'.
+  apply Extensionality_Axiom. intros x; split; intros H.
+  - apply HA', HA. assumption.
+  - apply HA, HA'. assumption.
+Qed.
 
 Theorem Exercise3_8b : forall A UA ranUA arA UarA,
   Union A UA -> Range UA ranUA -> AllRanges A arA -> Union arA UarA ->
   ranUA = UarA.
-Admitted.
+Proof.
+  intros A UA ranUA arA UarA HUA HranUA HarA HUarA.
+  apply Extensionality_Axiom. intros y; split; intros H.
+  - apply HUarA. apply HranUA in H. destruct H as [x [xy [Hxy H]]].
+    apply HUA in H. destruct H as [R [HR H]].
+    range R. rename x0 into ranR. rename H0 into HranR.
+    exists ranR. split.
+    + apply HranR. exists x, xy. split; try assumption.
+    + apply HarA. exists R. split; try assumption.
+  - apply HranUA. apply HUarA in H. destruct H as [ranR [H HranR]].
+    apply HarA in HranR. destruct HranR as [R [HR HranR]].
+    apply HranR in H. destruct H as [x [xy [Hxy H]]].
+    exists x, xy. split; try assumption.
+    apply HUA. exists R. split; try assumption.
+Qed.
 
 (** Exercise 3-9 : Discuss the result of replacing the union operation by the
     intersection operation in the preceding problem. (TODO) *)
