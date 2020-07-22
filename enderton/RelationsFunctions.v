@@ -756,3 +756,312 @@ Proof.
     apply BTuple.
   - apply BTuple.
 Qed.
+
+(** The first speical kind of relation examined is functions. The distinctive
+    property of functions is that they are single-valued, that is, for every x
+    in the domain and every y and z in the range, if xFy and xFz then y = z.
+    We encode this property in the following definition. *)
+
+Definition SingleValued (R : set) : Prop :=
+  forall x y z xy xz, OrdPair x y xy -> OrdPair x z xz ->
+  (In xy R /\ In xz R) -> y = z.
+
+Definition Func (F : set) : Prop := Relation F /\ SingleValued F.
+
+(** The notation F(x) describes the unique y such that <x, y> is in F. This
+    notation is well-defined under the assumptions that F is a function and 
+    x is in the domain of F. We encode this definition below and show that the
+    assumptions are sufficient for it to be well-defined. *)
+
+Definition FunVal (F x y : set) : Prop :=
+  Func F -> (exists domF, Domain F domF /\ In x domF) -> exists xy,
+  OrdPair x y xy /\ In xy F.
+
+(** Such a y exists as a consequence of x being in the domain of F. *)
+
+Theorem FunVal_Exists : forall F x, Func F ->
+  (exists domF, Domain F domF /\ In x domF) -> exists y, FunVal F x y.
+Proof.
+  intros F x HF HdomF.
+  destruct HdomF as [domF [HdomF H]].
+  apply HdomF in H. destruct H as [y [xy [Hxy H]]].
+  exists y. intros _ _. exists xy. split; assumption.
+Qed.
+
+(** That y is unique follows from the fact that F is a function. *)
+
+Theorem FunVal_Unique : forall F x y z, Func F ->
+  (exists domF, Domain F domF /\ In x domF) -> FunVal F x y ->
+  FunVal F x z -> y = z.
+Proof.
+  intros F x y z HF HdomF Hy Hz.
+  apply Hy in HF as Hy'. apply Hy' in HdomF as Hy''.
+  apply Hz in HF as Hz'. apply Hz' in HdomF as Hz''.
+  clear Hz Hz' Hy Hy'. rename Hz'' into Hz. rename Hy'' into Hy.
+  destruct Hy as [xy [Hxy Hy]]. destruct Hz as [xz [Hxz Hz]].
+  destruct HF as [HRF HSVF].
+  unfold SingleValued in HSVF. apply (HSVF x y z xy xz Hxy Hxz).
+  split; assumption.
+Qed.
+
+(** Next, we define the notion of a function being 'into'. The follows
+    Enderton's definition, though there are other uses of the same terminology
+    throughout the rest of mathematics. *)
+
+Definition FuncFromInto (F A B : set) : Prop :=
+  Domain F A /\ exists ranF, Range F ranF /\ Subset B ranF.
+
+(** A function is 'onto' if a slightly strong property holds (below). Note again
+    that this terminology is not consistent through all of mathematics. *)
+
+Definition FuncFromOnto (F A B : set) : Prop :=
+  Domain F A /\ Range F B.
+
+(** The definition of being single-rooted-ness is tied to the previous defintion
+    of being single-valued in that both properties, as we defined them, may
+    apply to any set. For that set to be a function [or one-to-one], it must 
+    also be a relation [and a function] in addition to being single-valued
+    [or single-rooted]. This somewhat unintuitive fact is due to the fact that
+    domains and ranges are defined on any set, not only on relations. In
+    computing the domains and ranges of sets that are not relations, the
+    the elements which are not ordered pairs are simply ignored. Consequently,
+    the domain and range of a set that does not include any ordered pairs as
+    members are empty. *)
+
+Definition SingleRooted (R : set) : Prop :=
+  exists ranR, Range R ranR /\ (forall y, In y ranR -> exists x xy,
+  OrdPair x y xy /\ In xy R).
+
+Definition OneToOne (F : set) : Prop :=
+  Func F /\ SingleRooted F.
+
+(** We now define some standard operations on functions. Note that many of
+    these are commonly applies to relations as well. Surprisingly,
+    all of the following definitions may be given on arbitrary sets, not
+    necessarily on functions or even on relations. Of course, it is typically
+    the case that such operations on sets that are not relations are usually not
+    useful or interesting, so there are no examples other than on functions and
+    relations. *)
+
+Definition Inverse (F F' : set) : Prop :=
+  forall yx, In yx F' <-> exists x y xy, OrdPair y x yx /\ OrdPair x y xy /\
+  In xy F.
+
+Definition Composition (F G FoG : set) : Prop :=
+  forall xz, In xz FoG <-> exists x z y xy yz, OrdPair x z xz /\
+  OrdPair x y xy /\ OrdPair y z yz /\ In xy G /\ In yz F.
+
+Definition Restriction (F A FlA : set) : Prop :=
+  forall xy, In xy FlA <-> exists x y, OrdPair x y xy /\ In xy F /\ In x A.
+
+Definition Image (A F F_A_ : set) : Prop :=
+  forall y, In y F_A_ <-> exists x xy, OrdPair x y xy /\ In x A /\ In xy F.
+
+(** These are all well-defined even without the assumption that F is a function
+    or even a relation. This is shown below. *)
+
+Theorem Inverse_Exists : forall F, exists F', Inverse F F'.
+Proof.
+  intros F.
+  domain F. rename x into domF. rename H into HdomF.
+  range F. rename x into ranF. rename H into HranF.
+  prod ranF domF. rename x into ranFxdomF. rename H into HranFxdomF.
+  build_set
+    set
+    (fun (t c yx : set) =>
+      exists x y xy, OrdPair y x yx /\ OrdPair x y xy /\ In xy t)
+    F
+    ranFxdomF.
+  rename x into F'. rename H into HF'.
+  exists F'. intros yx. split; intros  H.
+  - apply HF'. assumption.
+  - apply HF'. split; try assumption.
+    destruct H as [x [y [xy [Hyx [Hxy H]]]]].
+    apply HranFxdomF. exists y, x. split.
+    + apply HranF. exists x, xy. split; try assumption.
+    + split; try assumption. apply HdomF.
+      exists y, xy. split; assumption.
+Qed.
+
+Theorem Inverse_Unique : forall F F' F'', Inverse F F' -> Inverse F F'' ->
+  F' = F''.
+Proof.
+  intros F F' F'' HF' HF''. apply Extensionality_Axiom. intros x; split; intros H.
+  - apply HF'', HF'. assumption.
+  - apply HF', HF''. assumption.
+Qed.
+
+Ltac inverse F := destruct (Inverse_Exists F).
+
+Theorem Composition_Exists : forall F G, exists FoG, Composition F G FoG.
+Proof.
+  intros F G.
+  domain F. rename x into domF. rename H into HdomF.
+  domain G. rename x into domG. rename H into HdomG.
+  range F. rename x into ranF. rename H into HranF.
+  range G. rename x into ranG. rename H into HranG.
+  prod domG ranF. rename x into domGxranF. rename H into HdomGxranF.
+  build_set
+    (prod set set)
+    (fun FG (c xz : set) => exists x z y xy yz, OrdPair x z xz /\
+      OrdPair x y xy /\ OrdPair y z yz /\ In xy (snd FG) /\ In yz (fst FG))
+    (F, G)
+    domGxranF.
+  rename x into FoG. rename H into HFoG. exists FoG.
+  intros xz. split; intros H.
+  - apply HFoG. assumption.
+  - apply HFoG; split; try assumption. apply HdomGxranF.
+    destruct H as [x [z [y [xy [yz [Hxz [Hxy [Hyz [HG HF]]]]]]]]].
+    exists x, z. repeat (split; try assumption).
+    + apply HdomG. exists y, xy. split; assumption.
+    + apply HranF. exists y, yz. split; assumption.
+Qed.
+
+Theorem Composition_Unique : forall F G FoG FoG',
+  Composition F G FoG -> Composition F G FoG' -> FoG = FoG'.
+Proof.
+  intros F G FoG FoG' HFoG HFoG'.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HFoG', HFoG. assumption.
+  - apply HFoG, HFoG'. assumption.
+Qed.
+
+Ltac compose f g := destruct (Composition_Exists f g).
+
+Theorem Restriction_Exists : forall F A, exists FlA, Restriction F A FlA.
+Proof.
+  intros F A.
+  build_set
+    set
+    (fun (t c xy : set) => exists x y, OrdPair x y xy /\ In xy c /\ In x t)
+    A
+    F.
+  rename x into FlA. rename H into HFlA. exists FlA.
+  intros xy; split; intros H.
+  - apply HFlA. assumption.
+  - apply HFlA. split; try assumption.
+    destruct H as [x [y [Hxy [HF HA]]]].
+    assumption.
+Qed.
+
+Theorem Restriction_Unique : forall F A FlA FlA',
+  Restriction F A FlA -> Restriction F A FlA' -> FlA = FlA'.
+Proof.
+  intros F A FlA FlA' H H'.
+  apply Extensionality_Axiom. intros x; split; intros P.
+  - apply H', H, P.
+  - apply H, H', P.
+Qed.
+
+Theorem Image_Exists : forall A F, exists F_A_, Image A F F_A_.
+Proof.
+  intros A F.
+  union F. rename x into UF. rename H into HUF.
+  union UF. rename x into UUF. rename H into HUUF.
+  build_set
+    set
+    (fun (t c y : set) => exists x xy, OrdPair x y xy /\ In x t /\ In xy F)
+    A
+    UUF.
+  rename x into F_A_. rename H into HF_A_. exists F_A_.
+  intros y. split; intros H.
+  - apply HF_A_. assumption.
+  - apply HF_A_. split; try assumption.
+    apply HUUF. destruct H as [x [xy [Hxy [HA H]]]].
+    pair x y. rename x0 into Pxy. rename H0 into HPxy.
+    exists Pxy. split.
+    + apply HPxy. right. trivial.
+    + apply HUF. exists xy. split; try assumption.
+      apply Hxy. right. assumption.
+Qed.
+
+Theorem Image_Unique : forall A F F_A_ F_A_',
+  Image A F F_A_ -> Image A F F_A_' -> F_A_ = F_A_'.
+Proof.
+  intros A F F_A_ F_A_' H H'.
+  apply Extensionality_Axiom. intros x; split; intros P.
+  - apply H', H, P.
+  - apply H, H', P.
+Qed.
+
+Corollary Image_Equals_RestrictionRange : forall A F FlA ranFlA F_A_,
+  Restriction F A FlA -> Range FlA ranFlA -> Image A F F_A_ -> ranFlA = F_A_.
+Proof.
+  intros A F FlA ranFlA F_A_ HFlA HranFlA HF_A_.
+  apply Extensionality_Axiom. intros y. split; intros H.
+  - apply HF_A_. apply HranFlA in H. destruct H as [x [xy [Hxy H]]].
+    apply HFlA in H. destruct H as [a [b [Hab [HF HA]]]].
+    exists x, xy. repeat (split; try assumption).
+    assert (P : x = a /\ y = b).
+    { apply (Enderton3A x y a b xy xy); try assumption; trivial. }
+    destruct  P as [P _]. rewrite P. assumption.
+  - apply HranFlA. apply HF_A_ in H.
+    destruct H as [x [xy [Hxy [HA HF]]]].
+    exists x, xy. split; try assumption.
+    apply HFlA. exists x, y. repeat (split; try assumption).
+Qed.
+
+(** We can now turn our attention to some of the properties of these operations.
+    We start with inverses: *)
+
+Theorem Enderton3E : forall F F' F'' domF ranF domF' ranF',
+  Inverse F F' -> Inverse F' F'' -> Domain F domF -> Range F ranF ->
+  Domain F' domF' -> Range F' ranF' -> domF' = ranF /\ ranF' = domF /\
+  (Relation F -> F'' = F).
+Proof.
+  intros F F' F'' domF ranF domF' ranF' HF' HF'' HdomF HranF HdomF' HranF'.
+  repeat split.
+  - apply Extensionality_Axiom. intros y; split; intros H.
+    + apply HranF. apply HdomF' in H.
+      destruct H as [x [yx [Hyx H]]].
+      ordpair x y. rename x0 into xy. rename H0 into Hxy.
+      exists x, xy. split; try assumption.
+      apply HF' in H. destruct H as [a [b [ab [Hba [Hab H]]]]].
+      assert (P : y = b /\ x = a).
+      { apply (Enderton3A y x b a yx yx Hyx Hba). trivial. }
+      destruct P as [P Q]. rewrite <- Q in Hab. rewrite <- P in Hab.
+      assert (R : xy = ab). { apply (OrdPair_Unique x y); assumption. }
+      rewrite R. assumption.
+    + apply HdomF'. apply HranF in H. destruct H as [x [xy [Hxy H]]].
+      ordpair y x. rename x0 into yx. rename H0 into Hyx.
+      exists x, yx. split; try assumption.
+      apply HF'. exists x, y, xy. repeat (split; try assumption).
+  - apply Extensionality_Axiom. intros x; split; intros H.
+    + apply HdomF. apply HranF' in H.
+      destruct H as [y [yx [Hyx H]]].
+      ordpair x y. rename x0 into xy. rename H0 into Hxy.
+      exists y, xy. split; try assumption.
+      apply HF' in H. destruct H as [a [b [ab [Hba [Hab H]]]]].
+      assert (P : y = b /\ x = a).
+      { apply (Enderton3A y x b a yx yx Hyx Hba). trivial. }
+      destruct P as [P Q]. rewrite <- P in Hab. rewrite <- Q in Hab.
+      assert (R : ab = xy). { apply (OrdPair_Unique x y); assumption. }
+      rewrite <- R. assumption.
+    + apply HdomF in H. destruct H as [y [xy [Hxy H]]].
+      apply HranF'. ordpair y x. rename x0 into yx. rename H0 into Hyx.
+      exists y, yx. split; try assumption.
+      apply HF'. exists x, y, xy. repeat (split; try assumption).
+  - intros HF. apply Extensionality_Axiom. intros xy. split; intros H.
+    + apply HF'' in H. destruct H as [y [x [yx [Hxy [Hyx H]]]]].
+      apply HF' in H. destruct H as [a [b [ab [Hba [Hab H]]]]].
+      assert (P : y = b /\ x = a).
+      { apply (Enderton3A y x b a yx yx Hyx Hba). trivial. }
+      destruct P as [P Q]. rewrite <- P in Hab. rewrite <- Q in Hab.
+      assert (R : xy = ab). { apply (OrdPair_Unique x y); assumption. }
+      rewrite R. assumption.
+    + apply HF in H as H'. destruct H' as [x [y Hxy]].
+      apply HF''. ordpair y x. rename x0 into yx. rename H0 into Hyx.
+      exists y, x, yx. repeat (split; try assumption).
+      apply HF'. exists x, y, xy. repeat (split; try assumption).
+Qed.
+
+
+Theorem Enderton3F : forall F F', Inverse F F' ->
+  (Func F' <-> SingleRooted F) /\ Relation F -> (Func F <-> SingleRooted F').
+Admitted.
+
+Theorem Enderton3G : forall x y F F' domF ranF Fx F'Fx F'y FF'y,
+  Inverse F F' -> Domain F domF -> Range F ranF -> FunVal F x Fx ->
+  FunVal F' Fx F'Fx -> FunVal F' y F'y -> FunVal F F'y FF'y -> OneToOne F ->
+  (In x domF -> F'Fx = x) /\ (In y ranF -> FF'y = y).
+Admitted.
