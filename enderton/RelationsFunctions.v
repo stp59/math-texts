@@ -803,6 +803,8 @@ Proof.
   unfold SingleValued in HSVF. apply (HSVF x y z xy xz Hxy Hxz); assumption.
 Qed.
 
+Ltac funval H F x := destruct (FunVal_Exists F x H).
+
 (** Next, we define the notion of a function being 'into'. The follows
     Enderton's definition, though there are other uses of the same terminology
     throughout the rest of mathematics. *)
@@ -1157,4 +1159,131 @@ Proof.
     apply HFF'y in P as HFF'y'. clear HFF'y P. rename HFF'y' into HFF'y.
     destruct HFF'y as [xy' [Hxy' HFF'y]].
     destruct H as [_ H]. apply (H F'y FF'y y xy' xy Hxy' Hxy HFF'y HF'y).
+Qed.
+
+Definition DomComp (F G X : set) : Prop :=
+  Func G -> forall x, In x X <-> exists domG Gx domF,
+  Domain G domG /\ FunVal G x Gx /\ Domain F domF /\
+  In x domG /\ In Gx domF.
+
+(** We will need the following auxiliary definition in order to state
+    the next theorem. As always, we prove that it is well-defined.*)
+
+Theorem DomComp_Exists : forall F G, Func G -> exists X, DomComp F G X.
+Proof.
+  intros F G H. domain G. rename x into domG. rename H0 into HdomG.
+  build_set
+    (prod set set)
+    (fun (t : set * set) (c x : set) => exists domG Gx domF,
+      Domain (snd t) domG /\ FunVal (snd t) x Gx /\ Domain (fst t) domF /\
+      In x domG /\ In Gx domF)
+    (F, G)
+    domG.
+  rename x into X. rename H0 into HX.
+  exists X. intros _ x. split; intros I.
+  - apply HX. assumption.
+  - apply HX. split; try assumption.
+    destruct I as [domG' [Gx [DomF [HdomG' [HGx [HdomF [I J]]]]]]].
+    rewrite (Domain_Unique G domG domG' HdomG HdomG'). assumption.
+Qed.
+
+Theorem DomComp_Unique : forall F G, Func G -> forall X Y, DomComp F G X ->
+  DomComp F G Y -> X = Y.
+Proof.
+  intros F G H X Y HX HY. apply Extensionality_Axiom. intros x; split; intros I.
+  - apply (HY H), (HX H). assumption.
+  - apply (HX H), (HY H). assumption.
+Qed.
+
+Theorem Enderton3H : forall F G FoG domFoG,
+  Composition F G FoG -> DomComp F G domFoG -> Func F -> Func G ->
+  (Func FoG) /\ (Domain FoG domFoG) /\ (forall x FoGx Gx FGx,
+  FunVal FoG x FoGx -> FunVal G x Gx -> FunVal F Gx FGx -> In x domFoG ->
+  FoGx = FGx).
+Proof.
+  intros F G FoG domFoG HFoG HdomFoG HF HG.
+  assert (P : Func FoG).
+  { split.
+    - intros xz H. apply HFoG in H.
+      destruct H as [x [z [y [xy [yz [Hxz [Hxy [Hyz [H I]]]]]]]]].
+      exists x, z. assumption.
+    - intros x z z' xz xz' Hxz Hxz' H H'.
+      apply HFoG in H. apply HFoG in H'.
+      destruct H as [a [c [b [ab [bc [Hac [Hab [Hbc [H1 H2]]]]]]]]].
+      destruct H' as [a' [c' [b' [ab' [bc' [Hac' [Hab' [Hbc' [H1' H2']]]]]]]]].
+      assert (P : a = x /\ c = z).
+      { apply (Enderton3A a c x z xz xz Hac Hxz). trivial. }
+      destruct P as [P1 P2].
+      assert (P' : a' = x /\ c' = z').
+      { apply (Enderton3A a' c' x z' xz' xz' Hac' Hxz'). trivial. }
+      destruct P' as [P1' P2'].
+      rewrite P1 in Hab. rewrite P2 in Hbc.
+      rewrite P1' in Hab'. rewrite P2' in Hbc'.
+      assert (Q : b = b').
+      { destruct HG as [_ HG]. apply (HG x b b' ab ab' Hab Hab' H1 H1'). }
+      rewrite <- Q in Hbc'. destruct HF as [_ HF].
+      apply (HF b z z' bc bc' Hbc Hbc' H2 H2'). }
+  split; try assumption.
+  assert (Q : Domain FoG domFoG).
+  { intros x. split; intros H.
+    - apply HdomFoG in H; try assumption.
+      destruct H as [domG [Gx [domF [HdomG [HGx [HdomF [H I]]]]]]].
+      apply HdomF in I. destruct I as [FGx [yz [Hyz I]]].
+      ordpair x FGx. rename x0 into xz. rename H0 into Hxz.
+      exists FGx, xz. split; try assumption. apply HFoG.
+      ordpair x Gx. rename x0 into xy. rename H0 into Hxy.
+      exists x, FGx, Gx, xy, yz. repeat (split; try assumption).
+      assert (Q : exists domG, Domain G domG /\ In x domG).
+      { exists domG; split; try assumption. }
+      destruct (HGx HG Q) as [xy' [Hxy' HGx']].
+      assert (R : xy = xy'). { apply (OrdPair_Unique x Gx xy xy' Hxy Hxy'). }
+      rewrite R. assumption.
+    - destruct H as [z [xz [Hxz H]]]. apply (HdomFoG); try assumption.
+      domain G. rename x0 into domG. rename H0 into HdomG.
+      domain F. rename x0 into domF. rename H0 into HdomF.
+      apply HFoG in H. destruct H as [a [c [b [ab [bc [Hac [Hab [Hbc [H I]]]]]]]]].
+      assert (T : x = a /\ z = c).
+      { apply (Enderton3A x z a c xz xz Hxz Hac). trivial. }
+      exists domG, b, domF. repeat (split; try assumption).
+      + intros _ [domG' [HdomG' J]]. exists ab.
+        split; try assumption.
+        destruct T as [T _]. rewrite T. assumption.
+      + apply HdomG. exists b, ab. split; try assumption.
+        destruct T as [T _]. rewrite T. assumption.
+      + apply HdomF. exists c, bc. split; try assumption. }
+  split; try assumption.
+  intros x FoGx Gx FGx HFoGx HGx HFGx H.
+  apply Q in H. destruct H as [z [xz [Hxz H]]].
+  apply HFoG in H. destruct H as [a [c [b [ab [bc [Hac [Hab [Hbc [H I]]]]]]]]].
+  assert (R : a = x /\ c = z). { apply (Enderton3A a c x z xz xz Hac Hxz). trivial. }
+  destruct R as [R1 R2]. rewrite R1 in Hab. rewrite R2 in Hbc.
+  apply HGx in HG as HGx'. clear HGx. rename HGx' into HGx.
+  assert (S : exists domG, Domain G domG /\ In x domG).
+  { domain G. exists x0. split; try assumption. apply H0.
+    exists b, ab. split; try assumption.  }
+  apply HGx in S. clear HGx. rename S into HGx. destruct HGx as [xy [Hxy HGx]].
+  assert (S : Gx = b).
+  { destruct HG as [_ HG]. apply (HG x Gx b xy ab Hxy Hab HGx H). }
+  rewrite <- S in Hab. rewrite <- S in Hbc.
+  apply HFGx in HF as HFGx'. clear HFGx. rename HFGx' into HGFx.
+  assert (T : exists domF, Domain F domF /\ In Gx domF).
+  { domain F. exists x0. split; try assumption.
+    apply H0. exists z, bc. split; assumption. }
+  apply HGFx in T. clear HGFx. rename T into HFGx.
+  destruct HFGx as [yz [Hyz HFGx]].
+  apply HFoGx in P as HFoGx'. clear HFoGx. rename HFoGx' into HFoGx.
+  assert (T : exists domFoG, Domain FoG domFoG /\ In x domFoG).
+  { exists domFoG. split; try assumption.
+    apply Q. exists z, xz. split; try assumption. apply HFoG.
+    exists x, z, Gx, ab, bc. repeat (split; try assumption). }
+  apply HFoGx in T. clear HFoGx. rename T into HFoGx.
+  destruct HFoGx as [xz' [Hxz' HFoGx]].
+  assert (J : In xz FoG).
+  { apply HFoG. exists x, z, Gx, ab, bc. repeat (split; try assumption). }
+  assert (T : z = FoGx).
+  { destruct P as [_ P]. apply (P x z FoGx xz xz'); try assumption. }
+  assert (U : FGx = z).
+  { destruct P as [_ P]. ordpair x FGx. apply (P x FGx z x0 xz); try assumption.
+    apply HFoG. exists x, FGx, Gx, xy, yz. repeat (split; try assumption). }
+  rewrite U. symmetry. assumption.
 Qed.
