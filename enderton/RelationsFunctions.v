@@ -810,13 +810,13 @@ Ltac funval H F x := destruct (FunVal_Exists F x H).
     throughout the rest of mathematics. *)
 
 Definition FuncFromInto (F A B : set) : Prop :=
-  Domain F A /\ exists ranF, Range F ranF /\ Subset B ranF.
+  Func F /\ Domain F A /\ exists ranF, Range F ranF /\ Subset B ranF.
 
 (** A function is 'onto' if a slightly strong property holds (below). Note again
     that this terminology is not consistent through all of mathematics. *)
 
 Definition FuncFromOnto (F A B : set) : Prop :=
-  Domain F A /\ Range F B.
+  Func F /\ Domain F A /\ Range F B.
 
 (** The definition of being single-rooted-ness is tied to the previous defintion
     of being single-valued in that both properties, as we defined them, may
@@ -1287,3 +1287,224 @@ Proof.
     apply HFoG. exists x, FGx, Gx, xy, yz. repeat (split; try assumption). }
   rewrite U. symmetry. assumption.
 Qed.
+
+Theorem Enderton3I : forall F G FoG FoG' F' G' G'oF',
+  Composition F G FoG -> Inverse FoG FoG' -> Inverse F F' -> Inverse G G' ->
+  Composition G' F' G'oF' -> FoG' = G'oF'.
+Proof.
+  intros F G FoG FoG' F' G' G'oF' HFoG HFoG' HF' HG' HG'oF'.
+  apply Extensionality_Axiom. intros zx; split; intros H.
+  - apply HG'oF'. apply HFoG' in H.
+    destruct H as [x [z [xz [Hzx [Hxz H]]]]].
+    apply HFoG in H. destruct H as [a [c [b [ab [bc [Hac [Hab [Hbc [H I]]]]]]]]].
+    assert (P : a = x /\ c = z).
+    { apply (Enderton3A a c x z xz xz Hac Hxz). trivial. }
+    destruct P as [P1 P2]. rewrite P1 in Hab. rewrite P2 in Hbc.
+    rename b into y. rename ab into xy. rename bc into yz.
+    rename Hab into Hxy. rename Hbc into Hyz.
+    ordpair y x. rename x0 into yx. rename H0 into Hyx.
+    ordpair z y. rename x0 into zy. rename H0 into Hzy.
+    exists z, x, y, zy, yx. repeat (split; try assumption).
+    + apply HF'. exists y, z, yz. repeat (split; try assumption).
+    + apply HG'. exists x, y, xy. repeat (split; try assumption).
+  - apply HG'oF' in H. destruct H as [z [x [y [zy [yx [Hzx [Hzy [Hyx [H I]]]]]]]]].
+    apply HF' in H. destruct H as [b [c [bc [Hcb [Hbc H]]]]].
+    apply HG' in I. destruct I as [a [b' [ab [Hba [Hab I]]]]].
+    assert (P : c = z /\ b = y).
+    { apply (Enderton3A c b z y zy zy Hcb Hzy). trivial. }
+    destruct P as [P1 P2].
+    assert (Q : b' = y /\ a = x).
+    { apply (Enderton3A b' a y x yx yx Hba Hyx). trivial. }
+    destruct Q as [Q1 Q2].
+    rewrite P1, P2 in Hbc. rewrite Q1, Q2 in Hab.
+    rename bc into yz. rename ab into xy.
+    ordpair x z. rename x0 into xz. rename H0 into Hxz.
+    apply HFoG'. exists x, z, xz. repeat (split; try assumption).
+    apply HFoG. exists x, z, y, xy, yz. repeat (split; try assumption).
+Qed.
+
+(** Arguably the most interesting result in this chapter, Theorem 3J is next.
+    It involves left and right inverses of functions as well as more advanced
+    properties of functions, for which we now given definitions. *)
+
+Definition Identity (A IA : set) : Prop :=
+  forall xx, In xx IA <-> exists x, In x A /\ OrdPair x x xx.
+
+Theorem Identity_Exists : forall A, exists IA, Identity A IA.
+Proof.
+  intros A. prod A A. rename x into AxA. rename H into HAxA.
+  build_set
+    set
+    (fun (t c xx : set) => exists x, In x t /\ OrdPair x x xx )
+    A
+    AxA.
+  rename x into IA. rename H into HIA. exists IA.
+  intros xx. split; intros H.
+  - apply HIA. assumption.
+  - apply HIA. split; try assumption.
+    destruct H as [x [H Hxx]]. apply HAxA. exists x, x.
+    repeat (split; try assumption).
+Qed.
+
+Theorem Identity_Unique : forall A IA IA', Identity A IA -> Identity A IA' ->
+  IA = IA'.
+Proof.
+  intros A IA IA' H H'. apply Extensionality_Axiom. intros x; split; intros I.
+  - apply H', H, I.
+  - apply H, H', I.
+Qed.
+
+Corollary Identity_Function : forall A IA, Identity A IA -> Func IA.
+Proof.
+  intros A IA HIA. split.
+  - intros xx Hxx. apply HIA in Hxx as [x [Hx Hxx]].
+    exists x, x. assumption.
+  - intros x y z xy xz Hxy Hxz H I. apply HIA in H. apply HIA in I.
+    destruct H as [x0 [H0 H]]. destruct I as [x1 [H1 I]].
+    assert (P : x = x0 /\ y = x0).
+    { apply (Enderton3A x y x0 x0 xy xy Hxy H). trivial. }
+    assert (Q : x = x1 /\ z = x1).
+    { apply (Enderton3A x z x1 x1 xz xz Hxz I). trivial. }
+    destruct P as [P1 P2]. destruct Q as [Q1 Q2].
+    rewrite Q1 in P1. rewrite P1 in Q2. rewrite <- P2 in Q2.
+    symmetry. assumption.
+Qed.
+
+Definition LeftInverse (F G : set) : Prop :=
+  exists A B GoF, FuncFromInto F A B -> ~ Empty A -> Composition G F GoF ->
+  OneToOne F -> FuncFromInto G B A /\ Identity A GoF.
+
+Definition RightInverse (F H : set) : Prop :=
+  exists A B FoH, FuncFromInto F A B -> ~ Empty A -> Composition F H FoH ->
+  FuncFromOnto F A B -> FuncFromInto H B A /\ Identity A FoH.
+
+(** The proof that the above two definitions are well-defined is absorbed by
+    Theorem 3J, which makes the stronger iff. claim about existence under the
+    given conditions. We also show uniqueness immediately after the theorem
+    (TODO). Interestingly, the Axiom of Choice is required to show the second
+    half of the theorem treating right-inverses, placing it beyond the domain of
+    ZF set theory and only in the domain of ZFC. *)
+
+Theorem Enderton3Ja : forall F A B, FuncFromInto F A B -> ~ Empty A ->
+  (exists G, LeftInverse F G) <-> OneToOne F.
+Admitted.
+
+(** We now state the first form of the Axiom of Choice. *)
+
+Definition Axiom_of_Choice1 := forall R domR, Domain R domR -> Relation R ->
+  exists F domF, Func F /\ Subset F R /\ Domain F domF /\ domF = domR.
+
+Axiom Axiom_of_Choice : Axiom_of_Choice1.
+
+(** This allows us to state and prove the second half of Theorem 3J. *)
+
+Theorem Enderton3Jb : forall F A B, FuncFromInto F A B -> ~ Empty A ->
+  (exists H, RightInverse F H) <-> FuncFromOnto F A B.
+Admitted.
+
+(** The next to theorems wrap up the proof that left- and right- inverses are
+    well-defined. *)
+
+Theorem LeftInverse_Unique : forall F G G', LeftInverse F G ->
+  LeftInverse F G' -> G = G'.
+Admitted.
+
+Theorem RightInverse_Unique : forall F H H', RightInverse F H ->
+  RightInverse F H' -> H = H'.
+Admitted.
+
+Definition Elementwise_Image F A B : Prop :=
+  forall x, In x B <-> exists X, In X A /\ Image X F x.
+
+Theorem Elementwise_Image_Exists : forall F A, exists B, Elementwise_Prod F A B.
+Admitted.
+
+Theorem Elementwise_Image_Unique : forall F A B C, Elementwise_Image F A B ->
+  Elementwise_Image F A C -> B = C.
+Admitted.
+
+Theorem Enderton3Ka : forall F A B AuB F_AuB_ F_A_ F_B_ F_A_uF_B_,
+ BinaryUnion A B AuB -> Image AuB F F_AuB_ -> Image A F F_A_ ->
+ Image B F F_B_ -> BinaryUnion F_A_ F_B_ F_A_uF_B_.
+Admitted.
+
+Theorem Enderton3Ka' : forall F A UA F_UA_ eiA UeiA,
+  Union A UA -> Image UA F F_UA_ -> Elementwise_Image F A eiA ->
+  Union eiA UeiA -> F_UA_ = UeiA.
+Admitted.
+
+Theorem Enderton3Kb : forall F A B AnB F_AnB_ F_A_ F_B_ F_A_nF_B_,
+  BinaryIntersect A B AnB -> Image AnB F F_AnB_ -> Image A F F_A_ ->
+  Image B F F_B_ -> BinaryIntersect F_A_ F_B_ F_A_nF_B_ -> Subset F_AnB_ F_A_nF_B_.
+Admitted.
+
+Theorem Enderton3Kb' : forall F A NA F_NA_ eiA NeiA,
+  ~ Empty A -> Intersect A NA -> Image NA F F_NA_ -> Elementwise_Image F A eiA ->
+  Intersect eiA NeiA -> Subset F_NA_ NeiA.
+Admitted.
+
+(** Note that in the above theorems, equality holds if F is single-rooted. *)
+
+Theorem Enderton3Kc : forall F A B F_A_ F_B_ F_A_mF_B_ AmB F_AmB_,
+  Image A F F_A_ -> Image B F F_B_ -> SetMinus F_A_ F_B_ F_A_mF_B_ ->
+  SetMinus A B AmB -> Image AmB F F_AmB_ -> Subset F_A_mF_B_ F_AmB_.
+Admitted.
+
+(** Again equality holds if F is single-rooted. *)
+
+Lemma Inverse_SingleRooted : forall F', (exists F, Inverse F F') ->
+  SingleRooted F'.
+Admitted.
+
+Corollary Enderton3La : forall G A G' UA G'_UA_ eiA UeiA,
+  Inverse G G' -> Union A UA -> Image UA G' G'_UA_ ->
+  Elementwise_Image G' A eiA -> Union eiA UeiA -> G'_UA_ = UeiA.
+Admitted.
+
+Corollary Enderton3Lb : forall G A G' NA G'_NA_ eiA NeiA,
+  ~Empty A -> Inverse G G' -> Intersect A NA -> Image NA G' G'_NA_ ->
+  Elementwise_Image G' A eiA -> Intersect eiA NeiA -> G'_NA_ = NeiA.
+Admitted.
+
+Corollary Enderton3Lc : forall G A B G' AmB G'_AmB_ G'_A_ G'_B_ G'_A_mG'_B_,
+  Inverse G G' -> SetMinus A B AmB -> Image AmB G' G'_AmB_ -> Image A G' G'_A_ ->
+  Image B G' G'_B_ -> SetMinus G'_A_ G'_B_ G'_A_mG'_B_.
+Admitted.
+
+Definition IndexedUnion (I F UIF : set) : Prop :=
+  Func F -> (exists domF, Domain F domF /\ Subset I domF) ->
+  forall x, In x UIF <-> exists i Fi, In i I /\ FunVal F i Fi /\ In x Fi.
+
+Theorem IndexedUnion_Exists : forall I F, Func F ->
+  (exists domF, Domain F domF /\ Subset I domF) ->
+  exists UIF, IndexedUnion I F UIF.
+Admitted.
+
+Theorem IndexedUnion_Unique : forall I F UIF UIF', Func F ->
+  (exists domF, Domain F domF /\ Subset I domF) ->
+  IndexedUnion I F UIF -> IndexedUnion I F UIF' -> UIF = UIF'.
+Admitted.
+
+Definition IndexedIntersect (I F NIF : set) : Prop :=
+  ~ Empty I -> Func F -> (exists domF, Domain F domF /\ Subset I domF) ->
+  forall x, In x NIF <-> forall i, In i I -> exists Fi, FunVal F i Fi /\ In x Fi.
+
+Theorem IndexedIntersect_Exists : forall I F, ~ Empty I -> Func F ->
+  (exists domF, Domain F domF /\ Subset I domF) ->
+  exists NIF, IndexedIntersect I F NIF.
+Admitted.
+
+Theorem IndexedIntersect_Unique : forall I F NIF NIF', Func F ->
+  (exists domF, Domain F domF /\ Subset I domF) ->
+  IndexedUnion I F NIF -> IndexedUnion I F NIF' -> NIF = NIF'.
+Admitted.
+
+Definition AllFunctions (A B BpreA : set) : Prop :=
+  forall x, In x BpreA <-> FuncFromInto x A B.
+
+Theorem AllFunctions_Exists : forall A B, exists BpreA, AllFunctions A B BpreA.
+Admitted.
+
+Theorem AllFunctions_Unique : forall A B BpreA BpreA', AllFunctions A B BpreA ->
+  AllFunctions A B BpreA' -> BpreA = BpreA'.
+Admitted.
