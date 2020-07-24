@@ -764,7 +764,7 @@ Qed.
 
 Definition SingleValued (R : set) : Prop :=
   forall x y z xy xz, OrdPair x y xy -> OrdPair x z xz ->
-  (In xy R /\ In xz R) -> y = z.
+  In xy R -> In xz R -> y = z.
 
 Definition Func (F : set) : Prop := Relation F /\ SingleValued F.
 
@@ -800,8 +800,7 @@ Proof.
   clear Hz Hz' Hy Hy'. rename Hz'' into Hz. rename Hy'' into Hy.
   destruct Hy as [xy [Hxy Hy]]. destruct Hz as [xz [Hxz Hz]].
   destruct HF as [HRF HSVF].
-  unfold SingleValued in HSVF. apply (HSVF x y z xy xz Hxy Hxz).
-  split; assumption.
+  unfold SingleValued in HSVF. apply (HSVF x y z xy xz Hxy Hxz); assumption.
 Qed.
 
 (** Next, we define the notion of a function being 'into'. The follows
@@ -829,8 +828,8 @@ Definition FuncFromOnto (F A B : set) : Prop :=
     members are empty. *)
 
 Definition SingleRooted (R : set) : Prop :=
-  exists ranR, Range R ranR /\ (forall y, In y ranR -> exists x xy,
-  OrdPair x y xy /\ In xy R).
+  forall w x y wy xy, OrdPair w y wy -> OrdPair x y xy ->
+  In wy R -> In xy R -> w = x.
 
 Definition OneToOne (F : set) : Prop :=
   Func F /\ SingleRooted F.
@@ -1006,62 +1005,156 @@ Qed.
 
 Theorem Enderton3E : forall F F' F'' domF ranF domF' ranF',
   Inverse F F' -> Inverse F' F'' -> Domain F domF -> Range F ranF ->
-  Domain F' domF' -> Range F' ranF' -> domF' = ranF /\ ranF' = domF /\
+  Domain F' domF' -> Range F' ranF' -> Domain F' ranF /\ Range F' domF /\
   (Relation F -> F'' = F).
 Proof.
   intros F F' F'' domF ranF domF' ranF' HF' HF'' HdomF HranF HdomF' HranF'.
-  repeat split.
-  - apply Extensionality_Axiom. intros y; split; intros H.
-    + apply HranF. apply HdomF' in H.
-      destruct H as [x [yx [Hyx H]]].
+  split.
+  - intros y; split; intros H.
+    + apply HranF in H.
+      destruct H as [x [xy [Hxy H]]].
+      ordpair y x. rename x0 into yx. rename H0 into Hyx.
+      exists x, yx. split; try assumption.
+      apply HF'. exists x, y, xy. repeat (split; try assumption).
+    + apply HranF. destruct H as [x [yx [Hyx H]]].
       ordpair x y. rename x0 into xy. rename H0 into Hxy.
       exists x, xy. split; try assumption.
       apply HF' in H. destruct H as [a [b [ab [Hba [Hab H]]]]].
       assert (P : y = b /\ x = a).
       { apply (Enderton3A y x b a yx yx Hyx Hba). trivial. }
-      destruct P as [P Q]. rewrite <- Q in Hab. rewrite <- P in Hab.
-      assert (R : xy = ab). { apply (OrdPair_Unique x y); assumption. }
-      rewrite R. assumption.
-    + apply HdomF'. apply HranF in H. destruct H as [x [xy [Hxy H]]].
-      ordpair y x. rename x0 into yx. rename H0 into Hyx.
-      exists x, yx. split; try assumption.
-      apply HF'. exists x, y, xy. repeat (split; try assumption).
-  - apply Extensionality_Axiom. intros x; split; intros H.
-    + apply HdomF. apply HranF' in H.
-      destruct H as [y [yx [Hyx H]]].
-      ordpair x y. rename x0 into xy. rename H0 into Hxy.
-      exists y, xy. split; try assumption.
-      apply HF' in H. destruct H as [a [b [ab [Hba [Hab H]]]]].
-      assert (P : y = b /\ x = a).
-      { apply (Enderton3A y x b a yx yx Hyx Hba). trivial. }
-      destruct P as [P Q]. rewrite <- P in Hab. rewrite <- Q in Hab.
-      assert (R : ab = xy). { apply (OrdPair_Unique x y); assumption. }
-      rewrite <- R. assumption.
-    + apply HdomF in H. destruct H as [y [xy [Hxy H]]].
-      apply HranF'. ordpair y x. rename x0 into yx. rename H0 into Hyx.
-      exists y, yx. split; try assumption.
-      apply HF'. exists x, y, xy. repeat (split; try assumption).
-  - intros HF. apply Extensionality_Axiom. intros xy. split; intros H.
-    + apply HF'' in H. destruct H as [y [x [yx [Hxy [Hyx H]]]]].
-      apply HF' in H. destruct H as [a [b [ab [Hba [Hab H]]]]].
-      assert (P : y = b /\ x = a).
-      { apply (Enderton3A y x b a yx yx Hyx Hba). trivial. }
-      destruct P as [P Q]. rewrite <- P in Hab. rewrite <- Q in Hab.
-      assert (R : xy = ab). { apply (OrdPair_Unique x y); assumption. }
-      rewrite R. assumption.
-    + apply HF in H as H'. destruct H' as [x [y Hxy]].
-      apply HF''. ordpair y x. rename x0 into yx. rename H0 into Hyx.
-      exists y, x, yx. repeat (split; try assumption).
-      apply HF'. exists x, y, xy. repeat (split; try assumption).
+      destruct P as [P1 P2]. rewrite <- P1, <- P2 in Hab.
+      assert (Q : ab = xy). { apply (OrdPair_Unique x y ab xy Hab Hxy). }
+      rewrite <- Q. assumption.
+  - split.
+    + intros x; split; intros H.
+      * apply HdomF in H. destruct H as [y [xy [Hxy H]]].
+        ordpair y x. rename x0 into yx. rename H0 into Hyx.
+        exists y, yx. split; try assumption.
+        apply HF'. exists x, y, xy. repeat (split; try assumption).
+      * apply HdomF. destruct H as [y [yx [Hyx H]]].
+        ordpair x y. rename x0 into xy. rename H0 into Hxy.
+        exists y, xy. split; try assumption.
+        apply HF' in H. destruct H as [a [b [ab [Hba [Hab H]]]]].
+        assert (P : y = b /\ x = a).
+        { apply (Enderton3A y x b a yx yx Hyx Hba). trivial. }
+        destruct P as [P Q]. rewrite <- P in Hab. rewrite <- Q in Hab.
+        assert (R : ab = xy). { apply (OrdPair_Unique x y); assumption. }
+        rewrite <- R. assumption.
+    + intros HF. apply Extensionality_Axiom. intros xy. split; intros H.
+      * apply HF'' in H. destruct H as [y [x [yx [Hxy [Hyx H]]]]].
+        apply HF' in H. destruct H as [a [b [ab [Hba [Hab H]]]]].
+        assert (P : y = b /\ x = a).
+        { apply (Enderton3A y x b a yx yx Hyx Hba). trivial. }
+        destruct P as [P Q]. rewrite <- P in Hab. rewrite <- Q in Hab.
+        assert (R : xy = ab). { apply (OrdPair_Unique x y); assumption. }
+        rewrite R. assumption.
+      * apply HF in H as H'. destruct H' as [x [y Hxy]].
+        apply HF''. ordpair y x. rename x0 into yx. rename H0 into Hyx.
+        exists y, x, yx. repeat (split; try assumption).
+        apply HF'. exists x, y, xy. repeat (split; try assumption).
 Qed.
 
-
 Theorem Enderton3F : forall F F', Inverse F F' ->
-  (Func F' <-> SingleRooted F) /\ Relation F -> (Func F <-> SingleRooted F').
-Admitted.
+  (Func F' <-> SingleRooted F) /\ (Relation F -> (Func F <-> SingleRooted F')).
+Proof.
+  intros F F' HF'. split.
+  - split; intros H; try split.
+    + intros w x y wy xy Hwy Hxy Hwy' Hxy'.
+      destruct H as [H I].
+      ordpair y x. rename x0 into yx. rename H0 into Hyx.
+      ordpair y w. rename x0 into yw. rename H0 into Hyw.
+      apply (I y w x yw yx); try assumption.
+      * apply HF'. exists w, y, wy. repeat (split; try assumption).
+      * apply HF'. exists x, y, xy. repeat (split; try assumption).
+    + intros yx Hyx. apply HF' in Hyx.
+      destruct Hyx as [x [y [xy [Hyx [Hxy HF]]]]].
+      exists y, x. assumption.
+    + intros y. intros w x yw yx Hyw Hyx Hyw' Hyx'.
+      apply HF' in Hyw'. apply HF' in Hyx'.
+      destruct Hyw' as [a [b [ab [Hba [Hab I]]]]].
+      destruct Hyx' as [c [d [cd [Hdc [Hcd J]]]]].
+      assert (P : y = b /\ w = a).
+      { apply (Enderton3A y w b a yw yw Hyw Hba). trivial. }
+      assert (Q : y = d /\ x = c).
+      { apply (Enderton3A y x d c yx yx Hyx Hdc). trivial. }
+      destruct P as [P1 P2]. destruct Q as [Q1 Q2].
+      rewrite <- P1, <- P2 in Hab. rewrite <- Q1, <- Q2 in Hcd.
+      apply (H w x y ab cd); assumption.
+  - intros HR. split; intros H; try split.
+    + unfold SingleRooted. intros y z x yx zx Hyx Hzx Hyx' Hzx'.
+      apply HF' in Hyx'. apply HF' in Hzx'.
+      destruct H as [_ I].
+      destruct Hyx' as [a [b [ab [Hba [Hab J]]]]].
+      destruct Hzx' as [c [d [cd [Hdc [Hcd K]]]]].
+      assert (P : y = b /\ x = a).
+      { apply (Enderton3A y x b a yx yx Hyx Hba). trivial. }
+      assert (Q : z = d /\ x = c).
+      { apply (Enderton3A z x d c zx zx Hzx Hdc). trivial. }
+      destruct P as [P1 P2]. destruct Q as [Q1 Q2].
+      rewrite <- P1, <- P2 in Hab.
+      rewrite <- Q1, <- Q2 in Hcd.
+      unfold SingleValued in I. apply (I x y z ab cd Hab Hcd J K).
+    + assumption.
+    + intros x y z xy xz Hxy Hxz Hxy' Hxz'.
+      ordpair y x. rename x0 into yx. rename H0 into Hyx.
+      ordpair z x. rename x0 into zx. rename H0 into Hzx.
+      apply (H y z x yx zx Hyx Hzx).
+      * apply HF'. exists x, y, xy. repeat (split; try assumption).
+      * apply HF'. exists x, z, xz. repeat (split; try assumption).
+Qed.
 
 Theorem Enderton3G : forall x y F F' domF ranF Fx F'Fx F'y FF'y,
   Inverse F F' -> Domain F domF -> Range F ranF -> FunVal F x Fx ->
   FunVal F' Fx F'Fx -> FunVal F' y F'y -> FunVal F F'y FF'y -> OneToOne F ->
   (In x domF -> F'Fx = x) /\ (In y ranF -> FF'y = y).
-Admitted.
+Proof.
+  intros x y F F' domF ranF Fx F'Fx F'y FF'y HF' HdomF HranF HFx HF'Fx HF'y HFF'y H.
+  split; intros I.
+  - destruct H as [H J]. apply (Enderton3F F F' HF') in J.
+    apply HFx in H as HFx'. clear HFx. rename HFx' into HFx.
+    assert (P : exists domF, Domain F domF /\ In x domF).
+    { exists domF. split; assumption. }
+    apply HFx in P as HFx'. clear HFx P. rename HFx' into HFx.
+    destruct HFx as [xy [Hxy HFx]].
+    apply HF'Fx in J as HF'Fx'. clear HF'Fx. rename HF'Fx' into HF'Fx.
+    assert (P : exists domF', Domain F' domF' /\ In Fx domF').
+    { exists ranF. split.
+      - inverse F'. rename x0 into F''.
+        domain F'. rename x0 into domF'.
+        range F'. rename x0 into ranF'.
+        apply (Enderton3E F F' F'' domF ranF domF' ranF'); try assumption.
+      - apply HranF. exists x, xy. split; assumption. }
+    apply HF'Fx in P as HF'Fx'. clear HF'Fx P. rename HF'Fx' into HF'Fx.
+    destruct HF'Fx as [yx [Hyx HF'Fx]].
+    ordpair Fx x. rename x0 into yx'. rename H0 into Hyx'.
+    assert (P : In yx' F').
+    { apply HF'. exists x, Fx, xy.  repeat (split; try assumption). }
+    destruct J as [_ J]. unfold SingleValued in J.
+    apply (J Fx F'Fx x yx yx'); try assumption.
+  - destruct H as [H J]. apply (Enderton3F F F' HF') in J.
+    apply HF'y in J as HF'y'. clear HF'y. rename HF'y' into HF'y.
+    assert (P : exists domF', Domain F' domF' /\ In y domF').
+    { exists ranF. split.
+      - inverse F'. rename x0 into F''.
+        domain F'. rename x0 into domF'.
+        range F'. rename x0 into ranF'.
+        apply (Enderton3E F F' F'' domF ranF domF' ranF'); try assumption.
+      - assumption. }
+    apply HF'y in P as HF'y'. clear HF'y P. rename HF'y' into HF'y.
+    destruct HF'y as [yx [Hyx HF'y]].
+    apply HFF'y in H as HFF'y'. clear HFF'y. rename HFF'y' into HFF'y.
+    ordpair F'y y. rename x0 into xy. rename H0 into Hxy.
+    apply HF' in HF'y. destruct HF'y as [a [b [ab [Hba [Hab HF'y]]]]].
+    assert (P : y = b /\ F'y = a).
+    { apply (Enderton3A y F'y b a yx yx Hyx Hba). trivial. }
+    destruct P as [P1 P2]. rewrite <- P1, <- P2 in Hab.
+    assert (Q : xy = ab).
+    { apply (OrdPair_Unique F'y y xy ab Hxy Hab). }
+    rewrite <- Q in HF'y.
+    assert (P : exists domF, Domain F domF /\ In F'y domF).
+    { exists domF. split; try assumption.
+      apply HdomF. exists y, xy. split; try assumption. }
+    apply HFF'y in P as HFF'y'. clear HFF'y P. rename HFF'y' into HFF'y.
+    destruct HFF'y as [xy' [Hxy' HFF'y]].
+    destruct H as [_ H]. apply (H F'y FF'y y xy' xy Hxy' Hxy HFF'y HF'y).
+Qed.
