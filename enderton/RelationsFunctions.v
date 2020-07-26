@@ -987,7 +987,7 @@ Proof.
   - apply H, H', P.
 Qed.
 
-Ltac Image A F := destruct (Image_Exists A F).
+Ltac image A F := destruct (Image_Exists A F).
 
 Corollary Image_Equals_RestrictionRange : forall A F FlA ranFlA F_A_,
   Restriction F A FlA -> Range FlA ranFlA -> Image A F F_A_ -> ranFlA = F_A_.
@@ -1676,7 +1676,7 @@ Proof.
   destruct (HG HFAB HA) as [GoF [HGoF [HGBA IA]]].
   apply Extensionality_Axiom. intros yx. split; intros I.
   -
-Abort. 
+Abort.
 
 Theorem RightInverse_Unique : forall F A B H H', RightInverse F A B H ->
   RightInverse F A B H' -> H = H'.
@@ -1685,60 +1685,238 @@ Abort.
 Definition Elementwise_Image F A B : Prop :=
   forall x, In x B <-> exists X, In X A /\ Image X F x.
 
-Theorem Elementwise_Image_Exists : forall F A, exists B, Elementwise_Prod F A B.
-Admitted.
+Theorem Elementwise_Image_Exists : forall F A, exists B, Elementwise_Image F A B.
+Proof.
+  intros F A. union F. rename x into UF. rename H into HUF.
+  union UF. rename x into UUF. rename H into HUUF.
+  powerset UUF. rename x into PUUF. rename H into HPUUF.
+  build_set
+    set
+    (fun (t c x : set) => exists A', In A' t /\ Image A' F x)
+    A
+    PUUF.
+  rename x into eiA. rename H into HeiA.
+  exists eiA. intros X. split; intros H.
+  - apply HeiA. assumption.
+  - apply HeiA. split; try assumption.
+    apply HPUUF. intros y Hy. apply HUUF.
+    destruct H as [Y [HY H]]. apply H in Hy.
+    destruct Hy as [x [xy [Hxy [I J]]]].
+    pair x y. rename x0 into Pxy. rename H0 into HPxy.
+    exists Pxy. split.
+    + apply HPxy. right. trivial.
+    + apply HUF. exists xy. split; try assumption. apply Hxy.
+      right. assumption.
+Qed.
 
 Theorem Elementwise_Image_Unique : forall F A B C, Elementwise_Image F A B ->
   Elementwise_Image F A C -> B = C.
-Admitted.
+Proof.
+  intros F A B C HB HC. apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HC, HB, H.
+  - apply HB, HC, H.
+Qed.
 
 Theorem Enderton3Ka : forall F A B AuB F_AuB_ F_A_ F_B_ F_A_uF_B_,
  BinaryUnion A B AuB -> Image AuB F F_AuB_ -> Image A F F_A_ ->
- Image B F F_B_ -> BinaryUnion F_A_ F_B_ F_A_uF_B_.
-Admitted.
+ Image B F F_B_ -> BinaryUnion F_A_ F_B_ F_A_uF_B_ -> F_AuB_ = F_A_uF_B_.
+Proof.
+  intros F A B AuB F_AuB_ F_A_ F_B_ F_A_uF_B_ HAuB HF_AuB_ HF_A_ HF_B_ HF_A_uF_B_.
+  apply Extensionality_Axiom. intros y. split; intros H.
+  - apply HF_A_uF_B_. apply HF_AuB_ in H.
+    destruct H as [x [xy [Hxy [H I]]]]. apply HAuB in H.
+    destruct H as [H | H].
+    + left. apply HF_A_. exists x, xy. repeat (split; try assumption).
+    + right. apply HF_B_. exists x, xy. repeat (split; try assumption).
+  - apply HF_AuB_. apply HF_A_uF_B_ in H. destruct H as [H | H].
+    + apply HF_A_ in H. destruct H as [x [xy [Hxy [H I]]]].
+      exists x, xy. repeat (split; try assumption).
+      apply HAuB. left. assumption.
+    + apply HF_B_ in H. destruct H as [x [xy [Hxy [H I]]]].
+      exists x, xy. repeat (split; try assumption).
+      apply HAuB. right. assumption.
+Qed.
 
 Theorem Enderton3Ka' : forall F A UA F_UA_ eiA UeiA,
   Union A UA -> Image UA F F_UA_ -> Elementwise_Image F A eiA ->
   Union eiA UeiA -> F_UA_ = UeiA.
-Admitted.
+Proof.
+  intros F A UA F_UA_ eiA UeiA HUA HF_UA_ HeiA HUeiA.
+  apply Extensionality_Axiom. intros y. split; intros H.
+  - apply HUeiA. apply HF_UA_ in H. destruct H as [x [xy [Hxy [H I]]]].
+    apply HUA in H. destruct H as [X [H HX]].
+    image X F. rename x0 into F_X_. rename H0 into HF_X_.
+    exists F_X_. split.
+    + apply HF_X_. exists x, xy. repeat (split; try assumption).
+    + apply HeiA. exists X. split; try assumption.
+  - apply HF_UA_. apply HUeiA in H. destruct H as [F_X_ [H I]].
+    apply HeiA in I. destruct I as [X [I HF_X_]].
+    apply HF_X_ in H. destruct H as [x [xy [Hxy [H J]]]].
+    exists x, xy. repeat (split; try assumption).
+    apply HUA. exists X. split; assumption.
+Qed.
 
 Theorem Enderton3Kb : forall F A B AnB F_AnB_ F_A_ F_B_ F_A_nF_B_,
   BinaryIntersect A B AnB -> Image AnB F F_AnB_ -> Image A F F_A_ ->
   Image B F F_B_ -> BinaryIntersect F_A_ F_B_ F_A_nF_B_ -> Subset F_AnB_ F_A_nF_B_.
-Admitted.
+Proof.
+  intros F A B AnB F_AnB_ F_A_ F_B_ F_A_nF_B_ HAnB HF_AnB_ HF_A_ HF_B_ HF_A_nF_B_.
+  intros y H. apply HF_AnB_ in H. destruct H as [x [xy [Hxy [H I]]]].
+  apply HAnB in H. destruct H as [H J].
+  apply HF_A_nF_B_. split.
+  - apply HF_A_. exists x, xy. repeat (split; try assumption).
+  - apply HF_B_. exists x, xy. repeat (split; try assumption).
+Qed.
 
 Theorem Enderton3Kb' : forall F A NA F_NA_ eiA NeiA,
   ~ Empty A -> Intersect A NA -> Image NA F F_NA_ -> Elementwise_Image F A eiA ->
   Intersect eiA NeiA -> Subset F_NA_ NeiA.
-Admitted.
+Proof.
+  intros F A NA F_NA_ eiA NeiA HA HNA HF_NA_ HeiA HNeiA.
+  intros y H. apply HNeiA.
+  - intros Con. apply Member_Exists_If_NonEmpty in HA.
+    destruct HA as [X HA]. image X F. assert (P : In x eiA).
+    { apply HeiA. exists X. split; try assumption. }
+    apply Con in P. assumption.
+  - intros Y HY. apply HF_NA_ in H. destruct H as [x [xy [Hxy [H I]]]].
+    assert (P : forall X, In X A -> In x X).
+    { apply HNA; assumption. }
+    clear H. rename P into H. apply (HeiA) in HY.
+    destruct HY as [X [HX HY]]. apply HY.
+    exists x, xy. repeat (split; try assumption).
+    apply H. assumption.
+Qed.
 
-(** Note that in the above theorems, equality holds if F is single-rooted. *)
+(** Note that in the above theorems, equality holds if F is single-rooted.
+    We encode this in the below corollaries. *)
+
+Corollary Enderton3Kbeq : forall F A B AnB F_AnB_ F_A_ F_B_ F_A_nF_B_,
+  BinaryIntersect A B AnB -> Image AnB F F_AnB_ -> Image A F F_A_ ->
+  Image B F F_B_ -> BinaryIntersect F_A_ F_B_ F_A_nF_B_ ->
+  SingleRooted F -> F_AnB_ = F_A_nF_B_.
+Proof.
+  intros F A B AnB F_AnB_ F_A_ F_B_ F_A_nF_B_ HAnB HF_AnB_ HF_A_ HF_B_ HF_A_nF_B_ P.
+  apply Extensionality_Axiom. intros y. split; intros H.
+  - apply (Enderton3Kb F A B AnB F_AnB_ F_A_ F_B_ F_A_nF_B_); assumption.
+  - apply HF_AnB_. apply HF_A_nF_B_ in H. destruct H as [H I].
+    apply HF_A_ in H. apply HF_B_ in I.
+    destruct H as [x [xy [Hxy [Hx H]]]].
+    destruct I as [x' [xy' [Hxy' [Hx' I]]]].
+    exists x, xy. repeat (split; try assumption).
+    apply HAnB. split; try assumption. replace x with x'; try assumption.
+    apply (P x' x y xy' xy Hxy' Hxy I H).
+Qed.
+
+Corollary Enderton3Kbeq' : forall F A NA F_NA_ eiA NeiA,
+  ~ Empty A -> Intersect A NA -> Image NA F F_NA_ ->
+  Elementwise_Image F A eiA -> Intersect eiA NeiA -> SingleRooted F ->
+  F_NA_ = NeiA.
+Proof.
+  intros F A NA F_NA_ eiA NeiA HA HNA HF_NA_ HeiA HNeiA HF.
+  assert (P : ~ Empty eiA).
+  { intros C. apply Member_Exists_If_NonEmpty in HA. destruct HA as [X HA].
+    image X F. rename x into F_X_. rename H into HF_X_.
+    assert (P : In F_X_ eiA).
+    { apply HeiA. exists X. split; try assumption. }
+    apply C in P. assumption. }
+  apply Extensionality_Axiom. intros y. split; intros H.
+  - apply HNeiA. apply P. intros F_X_ I. apply HeiA in I.
+    destruct I as [X [I HF_X_]]. apply HF_NA_ in H.
+    destruct H as [x [xy [Hxy [H J]]]]. apply HF_X_.
+    exists x, xy. repeat (split; try assumption).
+    assert (Q : forall X, In X A -> In x X).
+    { apply HNA; assumption. }
+    apply Q. assumption.
+  - apply HF_NA_. assert (Q : forall F_X_, In F_X_ eiA -> In y F_X_).
+    { apply HNeiA. apply P. apply H. }
+    apply Member_Exists_If_NonEmpty in P. destruct P as [F_X_ P].
+    apply HeiA in P as I. destruct I as [X [I HF_X_]].
+    apply Q in P. apply HF_X_ in P. destruct P as [x [xy [Hxy [P R]]]].
+    exists x, xy. repeat (split; try assumption). apply HNA. assumption.
+    intros X' J. image X' F. rename x0 into F_X_'. rename H0 into HF_X_'.
+    assert (S : In F_X_' eiA).
+    { apply HeiA. exists X'. split; try assumption. }
+    apply Q in S. apply HF_X_' in S. destruct S as [x' [xy' [Hxy' [S T]]]].
+    replace x with x'. assumption.
+    apply (HF x' x y xy' xy Hxy' Hxy T R).
+Qed.
 
 Theorem Enderton3Kc : forall F A B F_A_ F_B_ F_A_mF_B_ AmB F_AmB_,
   Image A F F_A_ -> Image B F F_B_ -> SetMinus F_A_ F_B_ F_A_mF_B_ ->
   SetMinus A B AmB -> Image AmB F F_AmB_ -> Subset F_A_mF_B_ F_AmB_.
-Admitted.
+Proof.
+  intros F A B F_A_ F_B_ F_A_mF_B_ AmB F_AmB_ HF_A_ HF_B_ HF_A_mF_B_ HAmB HF_AmB_.
+  intros y H. apply HF_AmB_. apply HF_A_mF_B_ in H.
+  destruct H as [H I]. apply HF_A_ in H.
+  destruct H as [x [xy [Hxy [H J]]]]. exists x, xy.
+  repeat (split; try assumption).
+  apply HAmB. split; try assumption. intros Con. apply I.
+  apply HF_B_. exists x, xy. repeat (split; try assumption).
+Qed.
 
-(** Again equality holds if F is single-rooted. *)
+(** Again equality holds if F is single-rooted. See the corollary below. *)
 
-Lemma Inverse_SingleRooted : forall F', (exists F, Inverse F F') ->
+Corollary Enderton3Kceq : forall F A B F_A_ F_B_ F_A_mF_B_ AmB F_AmB_,
+  Image A F F_A_ -> Image B F F_B_ -> SetMinus F_A_ F_B_ F_A_mF_B_ ->
+  SetMinus A B AmB -> Image AmB F F_AmB_ -> SingleRooted F -> F_A_mF_B_ = F_AmB_.
+Proof.
+  intros F A B F_A_ F_B_ F_A_mF_B_ AmB F_AmB_ HF_A_ HF_B_ HF_A_mF_B_ HAmB HF_AmB_ HF.
+  apply Extensionality_Axiom. intros y. split; intros H.
+  - apply (Enderton3Kc F A B F_A_ F_B_ F_A_mF_B_ AmB F_AmB_); assumption.
+  - apply HF_A_mF_B_. apply HF_AmB_ in H.
+    destruct H as [x [xy [Hxy [H I]]]].
+    apply HAmB in H. destruct H as [H1 H2]. split.
+    + apply HF_A_. exists x, xy. repeat (split; try assumption).
+    + intros Con. apply H2. apply HF_B_ in Con.
+      destruct Con as [x' [xy' [Hxy' [Con1 Con2]]]].
+      replace x with x'. assumption.
+      apply (HF x' x y xy' xy Hxy' Hxy Con2 I).
+Qed.
+
+Lemma Inverse_SingleRooted : forall F', (exists F, Func F /\ Inverse F F') ->
   SingleRooted F'.
-Admitted.
+Proof.
+  intros F' HF'. destruct HF' as [F HF'].
+  intros x x' y xy xy' Hxy Hxy' H I.
+  apply HF' in H. apply HF' in I.
+  destruct H as [b [a [ba [Hab [Hba H]]]]].
+  destruct I as [d [c [dc [Hcd [Hdc I]]]]].
+  assert (P : a = x /\ b = y).
+  { apply (Enderton3A a b x y xy xy Hab Hxy). trivial. }
+  assert (Q : c = x' /\ d = y).
+  { apply (Enderton3A c d x' y xy' xy' Hcd Hxy'). trivial. }
+  destruct P as [P1 P2]. replace a with x in *. replace b with y in *.
+  destruct Q as [Q1 Q2]. replace c with x' in *. replace d with y in *.
+  destruct HF' as [[_ HF] _]. apply (HF y x x' ba dc Hba Hdc H I).
+Qed.
 
 Corollary Enderton3La : forall G A G' UA G'_UA_ eiA UeiA,
-  Inverse G G' -> Union A UA -> Image UA G' G'_UA_ ->
+  Func G -> Inverse G G' -> Union A UA -> Image UA G' G'_UA_ ->
   Elementwise_Image G' A eiA -> Union eiA UeiA -> G'_UA_ = UeiA.
-Admitted.
+Proof.
+  intros H A G' UA G'_UA_ eiA UeiA HG HG'.
+  apply (Enderton3Ka' G' A UA G'_UA_ eiA UeiA).
+Qed.
 
 Corollary Enderton3Lb : forall G A G' NA G'_NA_ eiA NeiA,
-  ~Empty A -> Inverse G G' -> Intersect A NA -> Image NA G' G'_NA_ ->
+  ~Empty A -> Func G -> Inverse G G' -> Intersect A NA -> Image NA G' G'_NA_ ->
   Elementwise_Image G' A eiA -> Intersect eiA NeiA -> G'_NA_ = NeiA.
-Admitted.
+Proof.
+  intros G A G' NA G'_NA_ eiA NeiA HA HG HG' HNA HG'_NA_ HeiA HNeiA.
+  apply (Enderton3Kbeq' G' A NA _ eiA); try assumption.
+  apply Inverse_SingleRooted. exists G. split; try assumption.
+Qed.
 
 Corollary Enderton3Lc : forall G A B G' AmB G'_AmB_ G'_A_ G'_B_ G'_A_mG'_B_,
-  Inverse G G' -> SetMinus A B AmB -> Image AmB G' G'_AmB_ -> Image A G' G'_A_ ->
-  Image B G' G'_B_ -> SetMinus G'_A_ G'_B_ G'_A_mG'_B_.
-Admitted.
+  Func G -> Inverse G G' -> SetMinus A B AmB -> Image AmB G' G'_AmB_ ->
+  Image A G' G'_A_ -> Image B G' G'_B_ -> SetMinus G'_A_ G'_B_ G'_A_mG'_B_ ->
+  G'_AmB_ = G'_A_mG'_B_.
+Proof.
+  intros G A B G' AmB G'_AmB_ G'_A_ G'_B_ G'_A_mG'_B_ HG HG' HAmB HG'_AmB HG'_A_.
+  intros HG'_B_ HG'_A_mG'_B_. symmetry.
+  apply (Enderton3Kceq G' A B G'_A_ G'_B_ G'_A_mG'_B_ AmB); try assumption.
+  apply Inverse_SingleRooted. exists G. split; assumption.
+Qed.
 
 Definition IndexedUnion (I F UIF : set) : Prop :=
   Func F -> (exists domF, Domain F domF /\ Subset I domF) ->
@@ -1747,12 +1925,40 @@ Definition IndexedUnion (I F UIF : set) : Prop :=
 Theorem IndexedUnion_Exists : forall I F, Func F ->
   (exists domF, Domain F domF /\ Subset I domF) ->
   exists UIF, IndexedUnion I F UIF.
-Admitted.
+Proof.
+  intros I F HF HdomF. destruct HdomF as [domF [HdomF HI]].
+  range F. rename x into ranF. rename H into HranF.
+  union ranF. rename x into UranF. rename H into HUranF.
+  build_set
+    (prod set set)
+    (fun (t : set * set) (c x : set) =>
+      exists i Fi, In i (fst t) /\ FunVal (snd t) i Fi /\ In x Fi)
+    (I, F)
+    UranF.
+  rename x into UIF. rename H into HUIF. exists UIF.
+  intros _ _ y. split; intros H.
+  - apply HUIF. assumption.
+  - apply HUIF. split; try assumption. apply HUranF.
+    destruct H as [i [Fi [Hi [HFi H]]]]. exists Fi. split; try assumption.
+    apply HranF. ordpair i Fi. rename x into xy. rename H0 into Hxy.
+    exists i, xy. split; try assumption.
+    apply HFi in HF. destruct HF as [xy' [Hxy' HF]].
+    exists domF. split; try assumption. apply HI. assumption.
+    replace xy with xy'. assumption.
+    apply (OrdPair_Unique i Fi xy' xy Hxy' Hxy).
+Qed.
 
 Theorem IndexedUnion_Unique : forall I F UIF UIF', Func F ->
   (exists domF, Domain F domF /\ Subset I domF) ->
   IndexedUnion I F UIF -> IndexedUnion I F UIF' -> UIF = UIF'.
-Admitted.
+Proof.
+  intros I F UIF UIF' HF [domF [HdomF HI]] H H'.
+  apply Extensionality_Axiom. intros y. split; intros P.
+  - apply H'; try assumption. exists domF. split; try assumption.
+    apply H; try assumption. exists domF. split; assumption.
+  - apply H. try assumption. exists domF. split; assumption.
+    apply H'; try assumption. exists domF. split; assumption.
+Qed.
 
 Definition IndexedIntersect (I F NIF : set) : Prop :=
   ~ Empty I -> Func F -> (exists domF, Domain F domF /\ Subset I domF) ->
@@ -1761,19 +1967,75 @@ Definition IndexedIntersect (I F NIF : set) : Prop :=
 Theorem IndexedIntersect_Exists : forall I F, ~ Empty I -> Func F ->
   (exists domF, Domain F domF /\ Subset I domF) ->
   exists NIF, IndexedIntersect I F NIF.
-Admitted.
+Proof.
+  intros I F HI HF HdomF. image I F. rename x into F_I_. rename H into HF_I_.
+  assert (P : ~Empty F_I_).
+  { intros Con. apply Member_Exists_If_NonEmpty in HI.
+    destruct HI as [i HI]. destruct HdomF as [domF [HdomF Hsub]].
+    apply Hsub in HI as HI'. apply HdomF in HI'. destruct HI' as [Fi [xy [Hxy HI']]].
+    assert (T : In Fi F_I_).
+    { apply HF_I_. exists i, xy. repeat (split; try assumption). }
+    apply Con in T. assumption. }
+  intersect F_I_ P. rename x into NF_I_. rename H into HNF_I_.
+  build_set
+    (prod set set)
+    (fun (t : set * set) (c x : set) =>
+      forall i, In i (fst t) -> exists Fi, FunVal (snd t) i Fi /\ In x Fi)
+    (I, F)
+    NF_I_.
+  rename x into NIF. rename H into HNIF. exists NIF.
+  intros _ _ _ y. split; intros J.
+  - apply HNIF. assumption.
+  - apply HNIF. split; try assumption.
+    apply HNF_I_. assumption. intros Fi HFi. apply HF_I_ in HFi.
+    destruct HFi as [i [xy [Hxy [Hi HFi]]]]. apply J in Hi as Hi'.
+    destruct Hi' as [Fi' [Hfi' Hi']]. apply Hfi' in HF as HF'.
+    destruct HF' as [xy' [Hxy' HF']].
+    { destruct HdomF as [domF [HdomF Hsub]]. exists domF.
+      split; try assumption. apply Hsub. assumption. }
+    replace Fi with Fi'. assumption.
+    destruct HF as [_ HF]. apply (HF i Fi' Fi xy' xy Hxy' Hxy HF' HFi).
+Qed.
 
 Theorem IndexedIntersect_Unique : forall I F NIF NIF', Func F ->
   (exists domF, Domain F domF /\ Subset I domF) ->
   IndexedUnion I F NIF -> IndexedUnion I F NIF' -> NIF = NIF'.
-Admitted.
+Proof.
+  intros I F NIF NIF' HF HdomF HNIF HNIF'.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HNIF'; try assumption. apply HNIF; try assumption.
+  - apply HNIF; try assumption. apply HNIF'; try assumption.
+Qed.
 
 Definition AllFunctions (A B BpreA : set) : Prop :=
   forall x, In x BpreA <-> FuncFromInto x A B.
 
 Theorem AllFunctions_Exists : forall A B, exists BpreA, AllFunctions A B BpreA.
-Admitted.
+Proof.
+  intros A B. prod A B. rename x into AxB. rename H into HAxB.
+  powerset AxB. rename x into PAxB. rename H into HPAxB.
+  build_set
+    (prod set set)
+    (fun (t : set * set) (c x : set) => FuncFromInto x (fst t) (snd t))
+    (A, B)
+    PAxB.
+  rename x into BpreA. rename H into HBpreA.
+  exists BpreA. intros F. split; intros H.
+  - apply HBpreA. assumption.
+  - apply HBpreA. split; try assumption.
+    apply HPAxB. intros xy HFxy. apply HAxB.
+    destruct H as [[HR HSV] [HdomF [ranF [HranF Hsub]]]].
+    apply HR in HFxy as Hxy. destruct Hxy as [x [y Hxy]].
+    exists x, y. repeat (split; try assumption).
+    + apply HdomF. exists y, xy. split; try assumption.
+    + apply Hsub. apply HranF. exists x, xy. split; assumption.
+Qed.
 
 Theorem AllFunctions_Unique : forall A B BpreA BpreA', AllFunctions A B BpreA ->
   AllFunctions A B BpreA' -> BpreA = BpreA'.
-Admitted.
+Proof.
+  intros A B BpreA BpreA' HBpreA HBpreA'.
+  apply Extensionality_Axiom. intros F. split; intros H.
+  - apply HBpreA'. apply HBpreA. assumption.
+  - apply HBpreA, HBpreA'. assumption.
+Qed.
