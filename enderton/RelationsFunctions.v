@@ -803,14 +803,14 @@ Proof.
   unfold SingleValued in HSVF. apply (HSVF x y z xy xz Hxy Hxz); assumption.
 Qed.
 
-Ltac funval H F x := destruct (FunVal_Exists F x H).
+Ltac funval H1 H2 F x := destruct (FunVal_Exists F x H1 H2).
 
 (** Next, we define the notion of a function being 'into'. The follows
     Enderton's definition, though there are other uses of the same terminology
     throughout the rest of mathematics. *)
 
 Definition FuncFromInto (F A B : set) : Prop :=
-  Func F /\ Domain F A /\ exists ranF, Range F ranF /\ Subset B ranF.
+  Func F /\ Domain F A /\ exists ranF, Range F ranF /\ Subset ranF B.
 
 (** A function is 'onto' if a slightly strong property holds (below). Note again
     that this terminology is not consistent through all of mathematics. *)
@@ -954,6 +954,8 @@ Proof.
   - apply H, H', P.
 Qed.
 
+Ltac restrict F A := destruct (Restriction_Exists F A).
+
 Theorem Image_Exists : forall A F, exists F_A_, Image A F F_A_.
 Proof.
   intros A F.
@@ -985,6 +987,8 @@ Proof.
   - apply H, H', P.
 Qed.
 
+Ltac Image A F := destruct (Image_Exists A F).
+
 Corollary Image_Equals_RestrictionRange : forall A F FlA ranFlA F_A_,
   Restriction F A FlA -> Range FlA ranFlA -> Image A F F_A_ -> ranFlA = F_A_.
 Proof.
@@ -1005,12 +1009,11 @@ Qed.
 (** We can now turn our attention to some of the properties of these operations.
     We start with inverses: *)
 
-Theorem Enderton3E : forall F F' F'' domF ranF domF' ranF',
+Theorem Enderton3E : forall F F' F'' domF ranF,
   Inverse F F' -> Inverse F' F'' -> Domain F domF -> Range F ranF ->
-  Domain F' domF' -> Range F' ranF' -> Domain F' ranF /\ Range F' domF /\
-  (Relation F -> F'' = F).
+  Domain F' ranF /\ Range F' domF /\ (Relation F -> F'' = F).
 Proof.
-  intros F F' F'' domF ranF domF' ranF' HF' HF'' HdomF HranF HdomF' HranF'.
+  intros F F' F'' domF ranF HF' HF'' HdomF HranF.
   split.
   - intros y; split; intros H.
     + apply HranF in H.
@@ -1124,7 +1127,7 @@ Proof.
       - inverse F'. rename x0 into F''.
         domain F'. rename x0 into domF'.
         range F'. rename x0 into ranF'.
-        apply (Enderton3E F F' F'' domF ranF domF' ranF'); try assumption.
+        apply (Enderton3E F F' F'' domF ranF); try assumption.
       - apply HranF. exists x, xy. split; assumption. }
     apply HF'Fx in P as HF'Fx'. clear HF'Fx P. rename HF'Fx' into HF'Fx.
     destruct HF'Fx as [yx [Hyx HF'Fx]].
@@ -1140,7 +1143,7 @@ Proof.
       - inverse F'. rename x0 into F''.
         domain F'. rename x0 into domF'.
         range F'. rename x0 into ranF'.
-        apply (Enderton3E F F' F'' domF ranF domF' ranF'); try assumption.
+        apply (Enderton3E F F' F'' domF ranF); try assumption.
       - assumption. }
     apply HF'y in P as HF'y'. clear HF'y P. rename HF'y' into HF'y.
     destruct HF'y as [yx [Hyx HF'y]].
@@ -1370,13 +1373,13 @@ Proof.
     symmetry. assumption.
 Qed.
 
-Definition LeftInverse (F G : set) : Prop :=
-  exists A B GoF, FuncFromInto F A B -> ~ Empty A -> Composition G F GoF ->
-  OneToOne F -> FuncFromInto G B A /\ Identity A GoF.
+Definition LeftInverse (F A B G : set) : Prop :=
+  FuncFromInto F A B -> ~Empty A -> exists GoF, Composition G F GoF /\
+  FuncFromInto G B A /\ Identity A GoF.
 
-Definition RightInverse (F H : set) : Prop :=
-  exists A B FoH, FuncFromInto F A B -> ~ Empty A -> Composition F H FoH ->
-  FuncFromOnto F A B -> FuncFromInto H B A /\ Identity A FoH.
+Definition RightInverse (F A B H : set) : Prop :=
+  FuncFromInto F A B -> ~ Empty A -> exists FoH, Composition F H FoH /\
+  FuncFromInto H B A /\ Identity B FoH.
 
 (** The proof that the above two definitions are well-defined is absorbed by
     Theorem 3J, which makes the stronger iff. claim about existence under the
@@ -1386,32 +1389,298 @@ Definition RightInverse (F H : set) : Prop :=
     ZF set theory and only in the domain of ZFC. *)
 
 Theorem Enderton3Ja : forall F A B, FuncFromInto F A B -> ~ Empty A ->
-  (exists G, LeftInverse F G) <-> OneToOne F.
-Admitted.
+  (exists G, LeftInverse F A B G) <-> OneToOne F.
+Proof.
+  intros F A B HFAB HA. split; intros H.
+  - destruct H as [G H]. unfold LeftInverse in H.
+    destruct (H HFAB HA) as [GoF [HGoF [HGBA H']]].
+    clear H; rename H' into H.
+    destruct HFAB as [HF [HdomF [ranF [HranF HFAB]]]]. split; try assumption.
+    intros w x y wy xy Hwy Hxy I J.
+    destruct HGBA as [HG [HdomG [ranG [HranG HGBA]]]].
+    assert (P : Func GoF).
+    { apply (Identity_Function A). assumption. }
+    assert (Q : FunVal GoF w w).
+    { intros _ _. ordpair w w. rename x0 into ww. rename H0 into Hww.
+      exists ww. split; try assumption.
+      apply H. exists w. split; try assumption.
+      apply HdomF. exists y, wy. split; try assumption. }
+    assert (R : FunVal GoF x x).
+    { intros _ _. ordpair x x. rename x0 into xx. rename H0 into Hxx.
+      exists xx. split; try assumption.
+      apply H. exists x. split; try assumption.
+      apply HdomF. exists y, xy. split; try assumption. }
+    apply R in P as R'. clear R. rename R' into R.
+    apply Q in P as Q'. clear Q. rename Q' into Q.
+    assert (T : exists domGoF, Domain GoF domGoF /\ In w domGoF).
+    { domain GoF. exists x0. split; try assumption. apply H0.
+      ordpair w w. exists w, x1. split; try assumption.
+      apply H. exists w. split; try assumption. apply HdomF.
+      exists y, wy. split; assumption. }
+    apply Q in T as Q'. clear Q. rename Q' into Q. clear T.
+    assert (T : exists domGoF, Domain GoF domGoF /\ In x domGoF).
+    { domain GoF. exists x0. split; try assumption. apply H0.
+      ordpair x x. exists x, x1. split; try assumption.
+      apply H. exists x. split; try assumption.
+      apply HdomF. exists y, xy. split; assumption. }
+    apply R in T as R'. clear R. rename R' into R. clear T.
+    destruct Q as [ww [Hww Q]]. destruct R as [xx [Hxx R]].
+    apply HGoF in Q. apply HGoF in R.
+    destruct Q as [w' [w'' [y' [wy' [yw' [Hww' [Hwy' [Hyw' [Q1 Q2]]]]]]]]].
+    assert (T : w' = w /\ w'' = w).
+    { apply (Enderton3A w' w'' w w ww ww Hww' Hww). trivial. }
+    destruct T as [T1 T2]. replace w' with w in *. clear w' T1.
+    replace w'' with w in *. clear w'' T2.
+    assert (T : y = y').
+    { destruct HF as [_ HF]. apply (HF w y y' wy wy' Hwy Hwy' I Q1). }
+    replace y' with y in *. clear y' T.
+    destruct R as [x' [x'' [y' [xy' [yx' [Hxx' [Hxy' [Hyx' [R1 R2]]]]]]]]].
+    assert (T : x' = x /\ x'' = x).
+    { apply (Enderton3A x' x'' x x xx xx Hxx' Hxx). trivial. }
+    destruct T as [T1 T2]. replace x' with x in *. clear x' T1.
+    replace x'' with x in *. clear x'' T2.
+    assert (T : y = y').
+    { destruct HF as [_ HF]. apply (HF x y y' xy xy' Hxy Hxy' J R1). }
+    replace y' with y in *. clear y' T.
+    destruct HG as [_ HG]. apply (HG y w x yw' yx' Hyw' Hyx' Q2 R2).
+  - inverse F. rename x into F'. rename H0 into HF'.
+    destruct HFAB as [HF [HdomF [ranF [HranF HFAB]]]].
+    assert (P : FuncFromOnto F' ranF A).
+    { split.
+      - destruct H as [_ H]. apply (Enderton3F F F' HF'). assumption.
+      - split.
+        + inverse F'. domain F'. range F'.
+          apply (Enderton3E F F' x A ranF HF' H0 HdomF HranF).
+        + inverse F'. domain F'. range F'.
+          apply (Enderton3E F F' x A ranF HF' H0 HdomF HranF). }
+    apply Member_Exists_If_NonEmpty in HA. destruct HA as [a Ha].
+    singleton a. rename x into Sa. rename H0 into HSa.
+    minus B ranF. rename x into BmranF. rename H0 into  HBmranF.
+    prod BmranF Sa. rename x into BmranFxSa. rename H0 into HBmranFxSa.
+    binary_union F' BmranFxSa. rename x into G. rename H0 into HG.
+    exists G. intros _ _. compose G F. rename x into GoF. rename H0 into HGoF.
+    exists GoF. split; try assumption. split.
+      + split.
+        * split.
+          { intros yx Hyx. apply HG in Hyx. destruct Hyx as [I | I].
+            - apply HF' in I.  destruct I as [x [y [_ [I _]]]].
+              exists y, x. assumption.
+            - apply HBmranFxSa in I. destruct I as [b [a' [_ [_ I]]]].
+              exists b, a'. assumption. }
+          { intros x y z xy xz Hxy Hxz I J. apply HG in I. apply HG in J.
+            destruct I as [I | I]; destruct J as [J | J].
+            - destruct P as [[_ P] _]. apply (P x y z xy xz Hxy Hxz I J).
+            - apply HBmranFxSa in J as [b [a' [Hb [Ha' J]]]].
+              apply HBmranF in Hb as [Hb Hb'].
+              assert (T : b = x /\ a' = z).
+              { apply (Enderton3A b a' x z xz xz J Hxz). trivial. }
+              destruct T as [T _]. replace b with x in *. clear T b.
+              assert (Q : In x ranF).
+              { apply HF' in I. destruct I as [y' [x' [yx' [Hxy' [Hyx' I]]]]].
+                apply HranF. exists y', yx'. split; try assumption.
+                replace x with x'. assumption.
+                apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial. }
+              apply Hb' in Q. destruct Q.
+            - apply HBmranFxSa in I as [b [a' [Hb [Ha' I]]]].
+              apply HBmranF in Hb as [Hb Hb'].
+              assert (T : b = x /\ a' = y).
+              { apply (Enderton3A b a' x y xy xy I Hxy). trivial. }
+              destruct T as [T _ ]. replace b with  x in *. clear T b.
+              assert (Q : In x ranF).
+              { apply HF' in J. destruct J as [z' [x' [zx' [Hxz' [Hzx' J]]]]].
+                apply HranF. exists z', zx'. split; try assumption.
+                replace x with x'. assumption.
+                apply (Enderton3A x' z' x z xz xz Hxz' Hxz). trivial. }
+              apply Hb' in Q. destruct Q.
+            - apply HBmranFxSa in I. apply HBmranFxSa in J.
+              destruct I as [x' [y' [Hx' [Hy' I]]]].
+              destruct J as [x'' [z' [Hx'' [Hz' J]]]].
+              apply HSa in Hy'. apply HSa in Hz'.
+              rewrite Hy' in I. rewrite Hz' in J.
+              replace y with a.
+              apply (Enderton3A x'' a x z xz xz J Hxz). trivial.
+              apply (Enderton3A x' a x y xy xy I Hxy). trivial. }
+        * split.
+          { intros y. split; intros I.
+            - assert (Q : In y ranF \/ ~ In y ranF). { apply REM. }
+              destruct Q as [Q | Q].
+              + apply HranF in Q as [x [xy [Hxy Q]]].
+                ordpair y x. exists x, x0. split; try assumption.
+                apply HG. left. apply HF'. exists x, y, xy.
+                repeat (split; try assumption).
+              + ordpair y a. exists a, x. split; try assumption.
+                apply HG. right. apply HBmranFxSa.
+                exists y, a. repeat (split; try assumption).
+                * apply HBmranF. split; try assumption.
+                * apply HSa. trivial.
+            - destruct I as [x [yx [Hyx I]]]. apply HG in I. destruct I as [I | I].
+              + apply HF' in I. apply HFAB. apply HranF.
+                destruct I as [x' [y' [xy [Hyx' [Hxy I]]]]].
+                exists x, xy. split; try assumption.
+                replace x with x'. replace y with y'. assumption.
+                apply (Enderton3A y' x' y x yx yx Hyx' Hyx). trivial.
+                apply (Enderton3A y' x' y x yx yx Hyx' Hyx); trivial.
+              + apply HBmranFxSa in I. destruct I as [y' [x' [Hy' [Hx I]]]].
+                apply HBmranF in Hy'. replace y with y'. apply Hy'.
+                apply (Enderton3A y' x' y x yx yx I Hyx). trivial. }
+          { range G. rename x into ranG. rename H0 into HranG.
+            exists ranG. split; try assumption. intros x Hx.
+            apply HranG in Hx. destruct Hx as [y [yx [Hyx Hx]]].
+            ordpair x y. rename x0 into xy. rename H0 into Hxy.
+            apply HG in Hx. destruct Hx as [Hx | Hx].
+            - apply HdomF. exists y, xy. split; try assumption.
+              apply HF' in Hx. destruct Hx as [x' [y' [xy' [Hyx' [Hxy' Hx]]]]].
+              assert (T : y' = y /\ x' = x).
+              { apply (Enderton3A y' x' y x yx yx Hyx' Hyx). trivial. }
+              destruct T as [T1 T2]. replace y' with y in *. replace x' with x in *.
+              clear T1 T2 x' y'. replace xy with xy'; try assumption.
+              apply (OrdPair_Unique x y xy' xy Hxy' Hxy).
+            - apply HBmranFxSa in Hx. destruct Hx as [b [a' [Hb [Ha' Hx]]]].
+              assert (T : b = y /\ a' = x).
+              { apply (Enderton3A b a' y x yx yx Hx Hyx). trivial. }
+              destruct T as [T1 T2]. replace b with y in *.
+              replace a' with x in *. clear T1 T2 a' b.
+              apply HSa in Ha'. rewrite Ha'. assumption. }
+      + intros xx. split; intros I.
+        * apply HGoF in I.
+          destruct I as [x [x' [y [xy [yx [Hxx [Hxy [Hyx [I J]]]]]]]]].
+          apply HG in J. destruct J as [J | J].
+          { apply HF' in J. destruct J as [u [v [xy' [Hyx' [Hxy' K]]]]].
+            assert (T : y = v /\ x' = u).
+            { apply (Enderton3A y x' v u yx yx Hyx Hyx'). trivial. }
+            destruct T as [T1 T2]. replace v with y in *.
+            replace u with x' in *. clear T1 T2 u v. exists x. split.
+            - apply HdomF. exists y, xy. split; try assumption.
+            - replace x' with x in Hxx. assumption.
+              destruct H as [_ H]. apply (H x x' y xy xy'); try assumption. }
+          { apply HBmranFxSa in J. destruct J as [b [a' [Hb [Ha' J]]]].
+            assert (T : b = y /\ a' = x').
+            { apply (Enderton3A b a' y x' yx yx J Hyx). trivial. }
+            destruct T as [T1 T2]. replace b with y in *. replace a' with x' in *.
+            clear T1 T2 a' b. apply HBmranF in Hb. destruct Hb as [Hb Hb'].
+            assert (Q : In y ranF).
+            { apply HranF. exists x, xy. split; assumption. }
+            apply Hb' in Q. destruct Q. }
+        * destruct I as [x [Hx Hxx]]. apply HGoF.
+          apply HdomF in Hx. destruct Hx as [y [xy [Hxy I]]].
+          ordpair y x. rename x0 into yx. rename H0 into Hyx.
+          exists x, x, y, xy, yx. repeat (split; try assumption).
+          apply HG. left. apply HF'. exists x, y, xy.
+          repeat (split; try assumption).
+Qed.
 
 (** We now state the first form of the Axiom of Choice. *)
 
 Definition Axiom_of_Choice1 := forall R domR, Domain R domR -> Relation R ->
-  exists F domF, Func F /\ Subset F R /\ Domain F domF /\ domF = domR.
+  exists F, Func F /\ Subset F R /\ Domain F domR.
 
 Axiom Axiom_of_Choice : Axiom_of_Choice1.
 
 (** This allows us to state and prove the second half of Theorem 3J. *)
 
 Theorem Enderton3Jb : forall F A B, FuncFromInto F A B -> ~ Empty A ->
-  (exists H, RightInverse F H) <-> FuncFromOnto F A B.
-Admitted.
+  (exists H, RightInverse F A B H) <-> FuncFromOnto F A B.
+Proof.
+  intros F A B HFAB HA. split; intros H.
+  - split; try apply HFAB; split; try apply HFAB.
+    intros b; split; intros I.
+    + destruct H as [H H0]. unfold RightInverse in H0.
+      apply H0 in HFAB as H1; try assumption. clear H0. rename H1 into H0.
+      destruct H0 as [FoH [HFoH [HHBA HIA]]].
+      destruct HHBA as [HH [HdomH [ranH [HranH HHBA]]]].
+      assert (T : exists domH, Domain H domH /\ In b domH).
+      { exists B. split; try assumption. }
+      funval HH T H b. rename x into a. rename H0 into J.
+      apply J in HH as J'. clear J. rename J' into J.
+      apply J in T. clear J. rename T into J.
+      destruct J as [ba [Hba J]]. ordpair a b.
+      rename x into ab. rename H0 into Hab. exists a, ab.
+      split; try assumption.
+      assert (T : exists domF, Domain F domF /\ In a domF).
+      { exists A. destruct HFAB as [_ [P _]]. split; try assumption.
+        apply HHBA. apply HranH. exists b, ba. split; try assumption. }
+      destruct HFAB as [HF [HFAB]].
+      funval HF T F a. rename x into b'.
+      apply H1 in HF as H1'. clear H1. apply H1' in T. clear H1'.
+      destruct T as [ab' [Hab' K]].
+      ordpair b b'. rename x into bb. rename H1 into Hbb.
+      assert (L : In bb FoH).
+      { apply HFoH. exists b, b', a, ba, ab'. repeat (split; try assumption). }
+      apply HIA in L. destruct L as [b'' [L Hbb']].
+      assert (M : b'' = b /\ b'' = b').
+      { apply (Enderton3A b'' b'' b b' bb bb Hbb' Hbb). trivial. }
+      destruct M as [M1 M2]. replace b'' with b in *. replace b' with b in *.
+      replace ab with ab'. assumption.
+      apply (OrdPair_Unique a b ab' ab Hab' Hab).
+    + destruct HFAB as [HF [HdomF [ranF [HranF HFAB]]]].
+      apply HFAB. apply HranF. assumption.
+  - inverse F. rename x into F'. rename H0 into HF'.
+    assert (P : Domain F' B).
+    { destruct H as [HF [HdomF HranF]]. inverse F'.
+      apply (Enderton3E F F' x A B HF' H HdomF HranF). }
+    assert (Q : Relation F').
+    { intros yx I. apply HF' in I. destruct I as [x [y [_ [I _]]]].
+      exists y, x. assumption. }
+    rename H into H0.
+    destruct (Axiom_of_Choice F' B P Q) as [H [HH [Hsub HdomH]]].
+    exists H. intros _ _. compose F H.
+    rename x into FoH. rename H1 into HFoH. exists FoH.
+    clear HFAB. rename H0 into HFAB.
+    destruct HFAB as [HF [HdomF HranF]].
+    split; try assumption. split.
+    + split; try assumption. split; try assumption.
+      range H. rename x into ranH. rename H0 into HranH. exists ranH.
+      split; try assumption.
+      intros x I. apply HranH in I. destruct I as [y [yx [Hyx I]]].
+      apply HdomF. ordpair x y. rename x0 into xy. rename H0 into Hxy.
+      exists y, xy. split; try assumption. apply Hsub in I.
+      apply HF' in I. destruct I as [a [b [ab [Hba [Hab I]]]]].
+      assert (T : b = y /\ a = x).
+      { apply (Enderton3A b a y x yx yx Hba Hyx). trivial. }
+      destruct T as [T1 T2].
+      replace b with y in *. replace a with x in *. clear T1 T2 a b.
+      replace xy with ab. assumption.
+      apply (OrdPair_Unique x y ab xy Hab Hxy).
+    + intros yy. split; intros I.
+      * apply HFoH in I. destruct I as [y [y' [x [yx [xy [Hyy [Hyx [Hxy [I J]]]]]]]]].
+        exists y. split.
+        { apply HdomH. exists x, yx. split; try assumption. }
+        { apply Hsub in I. apply HF' in I.
+          destruct I as [a [b [ab [Hba [Hab I]]]]].
+          assert (T : b = y /\ a = x).
+          { apply (Enderton3A b a y x yx yx Hba Hyx). trivial. }
+          destruct T as [T1 T2].
+          replace b with y in *. replace a with x in *. clear T1 T2 a b.
+          assert (T : y' = y).
+          { destruct HF as [_ HF]. apply (HF x y' y xy ab Hxy Hab J I). }
+          replace y' with y in Hyy. assumption. }
+      * apply HFoH. destruct I as [y [I Hyy]].
+        apply HdomH in I. destruct I as [x [yx [Hyx I]]].
+        apply Hsub in I as J. apply HF' in J.
+        destruct J as [a [b [ab [Hba [Hab J]]]]].
+        assert (T : b = y /\ a = x).
+        { apply (Enderton3A b a y x yx yx Hba Hyx). trivial. }
+        destruct T as [T1 T2].
+        replace b with y in *. replace a with x in *. clear T1 T2 a b.
+        exists y, y, x, yx, ab. repeat (split; try assumption).
+Qed.
 
-(** The next to theorems wrap up the proof that left- and right- inverses are
-    well-defined. *)
+(** Informal reasoning and intuition tell me that these should hold. However,
+    the proofs seems rather non-trivial. Saving for later (TODO). *)
 
-Theorem LeftInverse_Unique : forall F G G', LeftInverse F G ->
-  LeftInverse F G' -> G = G'.
-Admitted.
+Theorem LeftInverse_Unique : forall F A B G G', FuncFromInto F A B ->
+  ~ Empty A -> OneToOne F -> LeftInverse F A B G -> LeftInverse F A B G' -> G = G'.
+Proof.
+  intros F A B G G' HFAB HA H HG HG'.
+  destruct (HG' HFAB HA) as [G'oF [HG'oF [HG'BA IA']]].
+  destruct (HG HFAB HA) as [GoF [HGoF [HGBA IA]]].
+  apply Extensionality_Axiom. intros yx. split; intros I.
+  -
+Abort. 
 
-Theorem RightInverse_Unique : forall F H H', RightInverse F H ->
-  RightInverse F H' -> H = H'.
-Admitted.
+Theorem RightInverse_Unique : forall F A B H H', RightInverse F A B H ->
+  RightInverse F A B H' -> H = H'.
+Abort.
 
 Definition Elementwise_Image F A B : Prop :=
   forall x, In x B <-> exists X, In X A /\ Image X F x.
