@@ -2039,3 +2039,117 @@ Proof.
   - apply HBpreA'. apply HBpreA. assumption.
   - apply HBpreA, HBpreA'. assumption.
 Qed.
+
+Theorem Exercise3_11 : forall F G A, Func F -> Func G -> Domain F A ->
+  Domain G A -> (forall x Fx, In x A -> FunVal F x Fx <-> FunVal G x Fx) ->
+  F = G.
+Admitted.
+
+Theorem Exercise3_12 : forall f g domf domg, Func f -> Func g ->
+  Domain f domf -> Domain g domg -> Subset f g <-> Subset domf domg /\
+  forall x fx, In x domf -> FunVal f x fx <-> FunVal g x fx.
+Admitted.
+
+Theorem Exercise3_13 : forall f g domf domg, Domain f domf -> Domain g domg ->
+  Subset f g -> Subset domg domf -> f = g.
+Admitted.
+
+Theorem Exercise3_14a : forall f g fng, BinaryIntersect f g fng ->
+  Func f -> Func g -> Func fng.
+Admitted.
+
+Theorem Exericse3_14b : forall f g fug domf domg domfndomg,
+  BinaryUnion f g fug -> Domain f domf -> Domain g domg ->
+  BinaryIntersect domf domg domfndomg ->
+  Func f -> Func g ->
+  Func fug <-> forall x fx, In x domfndomg -> FunVal f x fx <-> FunVal g x fx.
+Admitted.
+
+Theorem Exercise3_15 : forall A UA, Union A UA ->
+  (forall f, In f A -> Func f) ->
+  (forall f g, In f A -> In g A -> Subset f g \/ Subset g f) -> Func UA.
+Admitted.
+
+Theorem Exercise3_16 : ~ exists UF, forall f, Func f -> In f UF.
+Admitted.
+
+Theorem Exercise3_17 : forall A B AoB, Composition A B AoB ->
+  SingleRooted A -> SingleRooted B -> SingleRooted AoB.
+Admitted.
+
+Corollary Exercise3_17' : forall F G FoG, Composition F G FoG ->
+  Func F -> Func G -> OneToOne F -> OneToOne G -> OneToOne FoG.
+Admitted.
+
+(** Exercise 3-18 : Let R be the set
+      
+      {<0, 1>, <0, 2>, <0, 3>, <1, 2>, <1, 3>, <2, 3>}.
+    
+    Evaluate the following: RoR, R|{1}, R'|{1}, R[{1}], R'[{1}] *)
+
+(** Exercise 3-19 : Let A = {<{}, {{}, {{}}}>, <{{}}, {}>}.
+
+    Evaluate: A({}), A[{}], A[{{}}], A[{{}, {{}}}], A', AoA, A|{}, A|{{}},
+    A|{{}, {{}}}, UUA. *)
+
+Theorem Exercise3_20 : forall F A FlA ranF AxranF FnAxranF,
+  Restriction F A FlA -> Range F ranF -> Prod A ranF AxranF ->
+  BinaryIntersect F AxranF FnAxranF -> FlA = FnAxranF.
+Admitted.
+
+Theorem Exercise3_21 : forall R S T RoS SoT RoSoTl RoSoTr,
+  Composition R S RoS -> Composition S T SoT -> Composition RoS T RoSoTl ->
+  Composition R SoT RoSoTr -> RoSoTl = RoSoTr.
+Admitted.
+
+Theorem Exercise3_22a : forall F A B F_A_ F_B_,
+  Image A F F_A_ -> Image B F F_B_ -> Subset A B -> Subset F_A_ F_B_.
+Admitted.
+
+Theorem Exercise3_22b : forall F G A FoG FoG_A_ G_A_ F_G_A__,
+  Composition F G FoG -> Image A FoG FoG_A_ -> Image A G G_A_ ->
+  Image G_A_ F F_G_A__ -> FoG_A_ = F_G_A__.
+Admitted.
+
+Theorem Exercise3_22c : forall Q A B AuB QlAuB QlA QlB QlAuQlB,
+  BinaryUnion A B AuB -> Restriction Q AuB QlAuB -> Restriction Q A QlA ->
+  Restriction Q B QlB -> BinaryUnion QlA QlB QlAuQlB -> QlAuB = QlAuQlB.
+Admitted.
+
+Theorem Exercise3_23a : forall A B IA BoIA BlA,
+  Identity A IA -> Composition B IA BoIA -> Restriction B A BlA ->
+  BoIA = BlA.
+Admitted.
+
+Theorem Exercise3_23b : forall A C IA IA_C_ AnC,
+  Identity A IA -> Image C IA IA_C_ -> BinaryIntersect A C AnC -> IA_C_ = AnC.
+Admitted.
+
+Theorem Exercise3_24 : forall F A F' domF F'_A_, Inverse F F' ->
+  Image A F' F'_A_ -> Domain F domF ->
+  forall x, In x F'_A_ <-> In x domF /\ forall Fx, FunVal F x Fx -> In Fx A.
+Admitted.
+
+Theorem Exercise3_25a : forall G G' GoG' ranG IranG,
+  Inverse G G' -> Composition G G' GoG' -> Range G ranG -> Identity ranG IranG ->
+  OneToOne G -> GoG' = IranG.
+Admitted.
+
+Theorem Exercise3_25b : forall G G' GoG' ranG IranG,
+  Inverse G G' -> Composition G G' GoG' -> Range G ranG -> Identity ranG IranG ->
+  GoG' = IranG.
+Admitted.
+
+(** Exercise 3-26 (prove parts of Theorem 3K) is omitted. *)
+
+Theorem Exercise3_27 : forall F G FoG domFoG G' domF G'_domF_,
+  Composition F G FoG -> Domain FoG domFoG -> Inverse G G' ->
+  Domain F domF -> Image domF G' G'_domF_ -> domFoG = G'_domF_.
+Admitted.
+
+Theorem Exercise3_28 : forall f A B G domG PA PB,
+  Domain G domG -> PowerSet A PA -> PowerSet B PB -> FuncFromInto f A B ->
+  OneToOne f -> domG = PA -> Func G ->
+  (forall X, In X PA -> forall GX, FunVal G X GX <-> Image X f GX) ->
+  FuncFromInto G PA PB /\ OneToOne G.
+Admitted.
