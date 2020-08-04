@@ -2043,43 +2043,230 @@ Qed.
 Theorem Exercise3_11 : forall F G A, Func F -> Func G -> Domain F A ->
   Domain G A -> (forall x Fx, In x A -> FunVal F x Fx <-> FunVal G x Fx) ->
   F = G.
-Admitted.
+Proof.
+  intros F G A HF HG HdomF HdomG HFG.
+  apply Extensionality_Axiom. intros xy. split; intros H.
+  - destruct HF as [HRF HSVF]. apply HRF in H as Hxy.
+    destruct Hxy as [x [y Hxy]]. assert (P : In x A).
+    { apply HdomF. exists y, xy. split; try assumption. }
+    apply (HFG x y) in P as Q. assert (S : FunVal F x y).
+    { intros _ _. exists xy. split; assumption. }
+    apply Q in S. assert (T : exists A, Domain G A /\ In x A).
+    { exists A. split; assumption. }
+    destruct (S HG T) as [xy' [Hxy' U]].
+    replace xy with xy'. assumption.
+    apply (OrdPair_Unique x y xy' xy Hxy' Hxy).
+  - destruct HG as [HRG SVG]. apply HRG in H as Hxy.
+    destruct Hxy as [x [y Hxy]]. assert (P : In x A).
+    { apply HdomG. exists y, xy. split; assumption. }
+    apply (HFG x y) in P as Q. assert (S : FunVal G x y).
+    { intros _ _. exists xy. split; assumption. }
+    apply Q in S. assert (T : exists A, Domain F A /\ In x A).
+    { exists A. split; assumption. }
+    destruct (S HF T) as [xy' [Hxy' U]].
+    replace xy with xy'. assumption.
+    apply (OrdPair_Unique x y xy' xy Hxy' Hxy).
+Qed.
 
 Theorem Exercise3_12 : forall f g domf domg, Func f -> Func g ->
   Domain f domf -> Domain g domg -> Subset f g <-> Subset domf domg /\
   forall x fx, In x domf -> FunVal f x fx <-> FunVal g x fx.
-Admitted.
+Proof.
+  intros f g domf domg Hf Hg Hdomf Hdomg. split; intros H.
+  - assert (T : Subset domf domg).
+    { intros x I. apply Hdomg. apply Hdomf in I.
+      destruct I as [y [xy [Hxy I]]]. exists y, xy.
+      split; try assumption. apply H. assumption. }
+    split; try assumption.
+    intros x fx Hx. split; intros I.
+    + intros _ _. assert (P : exists domf, Domain f domf /\ In x domf).
+      { exists domf. split; try assumption. }
+      destruct (I Hf P) as [xy [Hxy Q]].
+      exists xy. split; try assumption. apply H. assumption.
+    + intros _ _. apply Hdomf in Hx.
+      destruct Hx as [y [xy [Hxy Hx]]].
+      exists xy. split; try assumption.
+      apply H in Hx. replace fx with y. assumption.
+      assert (J : exists domg, Domain g domg /\ In x domg).
+      { exists domg. split; try assumption. apply Hdomg.
+        exists y, xy. split; try assumption. } 
+      destruct (I Hg J) as [xy' [Hxy' K]]. destruct Hg as [_ Hg].
+      apply (Hg x y fx xy xy' Hxy Hxy' Hx K).
+  - intros xy J. destruct H as [H I].
+    destruct Hf as [Hf Hf']. apply Hf in J as Hxy. destruct Hxy as [x [y Hxy]].
+    assert (P : In x domf).
+    { apply Hdomf. exists y, xy. split; try assumption. }
+    apply (I x y) in P as Q. assert (R : FunVal f x y).
+    { intros _ _. exists xy. split; assumption. }
+    apply Q in R. apply R in Hg.
+    assert (S : exists domg, Domain g domg /\ In x domg).
+    { exists domg. split; try assumption. apply H. assumption. }
+    apply Hg in S. destruct S as [xy' [Hxy' S]].
+    replace xy with xy'; try assumption.
+    apply (OrdPair_Unique x y xy' xy Hxy' Hxy).
+Qed.
 
-Theorem Exercise3_13 : forall f g domf domg, Domain f domf -> Domain g domg ->
-  Subset f g -> Subset domg domf -> f = g.
-Admitted.
+Theorem Exercise3_13 : forall f g domf domg, Func f -> Func g ->
+  Domain f domf -> Domain g domg -> Subset f g -> Subset domg domf -> f = g.
+Proof.
+  intros f g domf domg Hf Hg Hdomf Hdomg Hsub Hsub'.
+  apply Extensionality_Axiom. intros xy.
+  split; intros H; try (apply Hsub; assumption).
+  destruct Hg as [Hg Hg']. apply Hg in H as I.
+  destruct I as [x [y Hxy]]. assert (P : In x domg).
+  { apply Hdomg. exists y, xy. split; assumption. }
+  apply Hsub' in P. apply Hdomf in P. destruct P as [y' [xy' [Hxy' P]]].
+  apply Hsub in P as Q. replace xy with xy'. assumption.
+  replace y' with y in Hxy'. apply (OrdPair_Unique x y xy' xy Hxy' Hxy).
+  apply (Hg' x y y' xy xy'); assumption.
+Qed. 
 
 Theorem Exercise3_14a : forall f g fng, BinaryIntersect f g fng ->
   Func f -> Func g -> Func fng.
-Admitted.
+Proof.
+  intros f g fng Hfng Hf Hg. split.
+  - intros xy Hxy. apply Hfng in Hxy as [_ Hxy]. destruct Hg as [Hg _].
+    apply Hg in Hxy. assumption.
+  - intros x y z xy xz Hxy Hxz H I. apply Hfng in H as [_ H].
+    apply Hfng in I as [_ I]. destruct Hg as [_ Hg].
+    apply (Hg x y z xy xz Hxy Hxz H I).
+Qed.
 
 Theorem Exericse3_14b : forall f g fug domf domg domfndomg,
   BinaryUnion f g fug -> Domain f domf -> Domain g domg ->
   BinaryIntersect domf domg domfndomg ->
   Func f -> Func g ->
   Func fug <-> forall x fx, In x domfndomg -> FunVal f x fx <-> FunVal g x fx.
-Admitted.
+Proof.
+  intros f g fug domf domg domfndomg Hfug Hdomf Hdomg Hdomfndomg Hf Hg.
+  split; intros H.
+  - intros x fx Hx. split; intros I.
+    + intros _ _. apply Hdomfndomg in Hx as [Hx Hx'].
+      assert (T : exists domF, Domain f domF /\ In x domF).
+      { exists domf. split; assumption. }
+      apply (I Hf) in T. apply Hdomg in Hx'.
+      destruct Hx' as [y' [xy' [Hxy' Hx']]].
+      destruct T as [xy [Hxy T]]. exists xy'. split; try assumption.
+      replace xy' with xy. assumption.
+      destruct H as [_ H]. apply (OrdPair_Unique x fx xy xy' Hxy).
+      replace fx with y'. assumption.
+      apply (H x y' fx xy' xy Hxy' Hxy).
+      * apply Hfug. right. assumption.
+      * apply Hfug. left. assumption.
+    + intros _ _. apply Hdomfndomg in Hx as [J K].
+      apply Hdomf in J. destruct J as [y [xy [Hxy J]]].
+      exists xy. split; try assumption. replace fx with y. assumption.
+      assert (P : In xy fug). { apply Hfug. left. assumption. }
+      assert (Q : exists domg, Domain g domg /\ In x domg).
+      { exists domg. split; assumption. }
+      apply (I Hg) in Q. destruct Q as [xy' [Hxy' Q]].
+      assert (R : In xy' fug). { apply Hfug. right. assumption. }
+      destruct H as [_ H]. apply (H x y fx xy xy' Hxy Hxy' P R).
+  - split.
+    + intros xy Hxy. apply Hfug in Hxy. destruct Hxy as [I | I].
+      * destruct Hf as [Hf _]. apply Hf in I. apply I.
+      * destruct Hg as [Hg _]. apply Hg in I. apply I.
+    + intros x y z xy xz Hxy Hxz I J. apply Hfug in I. apply Hfug in J.
+      destruct I as [I | I]; destruct J as [J | J].
+      * destruct Hf as [_ Hf]. apply (Hf x y z xy xz Hxy Hxz I J).
+      * assert (P : FunVal f x y). { intros. exists xy. split; assumption. }
+        assert (Q : In x domfndomg).
+        { apply Hdomfndomg. split.
+          - apply Hdomf. exists y, xy. split; assumption.
+          - apply Hdomg. exists z, xz. split; assumption. }
+        apply (H x y) in Q. apply Q in P.
+        clear Q. assert (Q : FunVal g x z).
+        { intros _ _. exists xz. split; assumption. }
+        assert (T : exists domg, Domain g domg /\ In x domg).
+        { exists domg. split; try assumption. apply Hdomg.
+          exists z, xz. split; assumption. }
+        apply (P Hg) in T as R. apply (Q Hg) in T.
+        destruct T as [xz' [Hxz' T]]. destruct R as [xy' [Hxy' R]].
+        destruct Hg as [_ Hg]. apply (Hg x y z xy' xz' Hxy' Hxz'); assumption.
+      * assert (P : FunVal f x z). { intros. exists xz. split; assumption. }
+        assert (Q : In x domfndomg).
+        { apply Hdomfndomg. split.
+          - apply Hdomf. exists z, xz. split; assumption.
+          - apply Hdomg. exists y, xy. split; assumption. }
+        apply (H x z) in Q. apply Q in P.
+        clear Q. assert (Q : FunVal g x y).
+        { intros _ _. exists xy. split; assumption. }
+        assert (T : exists domg, Domain g domg /\ In x domg).
+        { exists domg. split; try assumption. apply Hdomg.
+          exists y, xy. split; assumption. }
+        apply (P Hg) in T as R. apply (Q Hg) in T.
+        destruct T as [xy' [Hxy' T]]. destruct R as [xz' [Hxz' R]].
+        destruct Hg as [_ Hg]. apply (Hg x y z xy' xz' Hxy' Hxz'); assumption.
+      * destruct Hg as [_ Hg]. apply (Hg x y z xy xz Hxy Hxz); assumption.
+Qed.
 
 Theorem Exercise3_15 : forall A UA, Union A UA ->
   (forall f, In f A -> Func f) ->
   (forall f g, In f A -> In g A -> Subset f g \/ Subset g f) -> Func UA.
-Admitted.
+Proof.
+  intros A UA HUA HA Hsub. split.
+  - intros xy Hxy. apply HUA in Hxy. destruct Hxy as [f [Hxy Hf]].
+    apply HA in Hf. destruct Hf as [Hf _]. apply Hf in Hxy.
+    assumption.
+  - intros x y z xy xz Hxy Hxz H I.
+    apply HUA in H. apply HUA in I.
+    destruct H as [f [H Hf]]. destruct I as [g [I Hg]].
+    destruct (Hsub f g Hf Hg) as [J | J].
+    + apply J in H. destruct (HA g Hg) as [_ K].
+      apply (K x y z xy xz); assumption.
+    + apply J in I. destruct (HA f Hf) as [_ K].
+      apply (K x y z xy xz); assumption.
+Qed.
 
 Theorem Exercise3_16 : ~ exists UF, forall f, Func f -> In f UF.
-Admitted.
+Proof.
+  intros Con. destruct Con as [UF Con].
+  union UF. union x. union x0. rename x1 into U.
+  destruct (Enderton2A U) as [X HX]. apply HX. apply H1.
+  singleton X. exists x1. split.
+  - apply H2. trivial.
+  - apply H0. ordpair X X. exists x2. split.
+    + apply H3. left. assumption.
+    + apply H. singleton x2. exists x3. split.
+      * apply H4. trivial.
+      * apply Con. split.
+        { intros xy Hxy. exists X, X. apply H4 in Hxy. rewrite Hxy. assumption. }
+        { intros a b c ab ac Hab Hac I J. apply H4 in I. apply H4 in J.
+          rewrite I in Hab. rewrite J in Hac.
+          assert (X = a /\ X = b).
+          { apply (Enderton3A X X a b x2 x2); try assumption. trivial. }
+          assert (X = a /\ X = c).
+          { apply (Enderton3A X X a c x2 x2); try assumption. trivial. }
+          destruct H5 as [_ H5]. destruct H6 as [_ H6].
+          rewrite <- H5, <- H6. trivial. }
+Qed.
 
 Theorem Exercise3_17 : forall A B AoB, Composition A B AoB ->
   SingleRooted A -> SingleRooted B -> SingleRooted AoB.
-Admitted.
+Proof.
+  intros A B AoB HAoB HA HB. intros w x y wy xy Hwy Hxy H I.
+  apply HAoB in H. apply HAoB in I.
+  destruct H as [w' [y' [u [wu [uy [Hwy' [Hwu [Huy [H1 H2]]]]]]]]].
+  destruct I as [x' [y'' [v [xv [vy [Hxy' [Hxv [Hvy [I1 I2]]]]]]]]].
+  assert (T : w' = w /\ y' = y).
+  { apply (Enderton3A w' y' w y wy wy Hwy' Hwy). trivial. }
+  destruct T as [T1 T2]. replace w' with w in *. replace y' with y in *.
+  clear T1 T2 w' y'. assert (T : x' = x /\ y'' = y).
+  { apply (Enderton3A x' y'' x y xy xy Hxy' Hxy). trivial. }
+  destruct T as [T1 T2]. replace x' with x in *. replace y'' with y in *.
+  clear T1 T2 x' y''. replace v with u in *.
+  - apply (HB w x u wu xv); try assumption.
+  - apply (HA u v y uy vy); assumption.
+Qed.
 
 Corollary Exercise3_17' : forall F G FoG, Composition F G FoG ->
   Func F -> Func G -> OneToOne F -> OneToOne G -> OneToOne FoG.
-Admitted.
+Proof.
+  intros F G FoG HFoG HF HG HF' HG'. split.
+  - destruct (DomComp_Exists F G); try assumption.
+    apply (Enderton3H F G FoG x); assumption.
+  - apply (Exercise3_17 F G FoG HFoG). apply HF'. apply HG'.
+Qed.
 
 (** Exercise 3-18 : Let R be the set
       
@@ -2095,61 +2282,692 @@ Admitted.
 Theorem Exercise3_20 : forall F A FlA ranF AxranF FnAxranF,
   Restriction F A FlA -> Range F ranF -> Prod A ranF AxranF ->
   BinaryIntersect F AxranF FnAxranF -> FlA = FnAxranF.
-Admitted.
+Proof.
+  intros F A FlA ranF AxranF FnAxranF HFlA HranF HAxranF HFnAxranF.
+  apply Extensionality_Axiom. intros xy. split; intros H.
+  - apply HFnAxranF. apply HFlA in H.
+    destruct H as [x [y [Hxy [H I]]]]. split; try assumption.
+    apply HAxranF. exists x, y. repeat (split; try assumption).
+    apply HranF. exists x, xy. split; try assumption.
+  - apply HFlA. apply HFnAxranF in H. destruct H as [H I].
+    apply HAxranF in I. destruct I as [x [y [Hx [Hy I]]]].
+    exists x, y. repeat (split; try assumption).
+Qed.
 
 Theorem Exercise3_21 : forall R S T RoS SoT RoSoTl RoSoTr,
   Composition R S RoS -> Composition S T SoT -> Composition RoS T RoSoTl ->
   Composition R SoT RoSoTr -> RoSoTl = RoSoTr.
-Admitted.
+Proof.
+  intros R S T RoS SoT RoSoTl RoSoTr HRoS HSoT Hl Hr.
+  apply Extensionality_Axiom. intros wz. split; intros H.
+  - apply Hr. apply Hl in H.
+    destruct H as [w [z [x [wx [xz [Hwz [Hwx [Hxz [H I]]]]]]]]]. apply HRoS in I.
+    destruct I as [x' [z' [y [xy [yz [Hxz' [Hxy [Hyz [I J]]]]]]]]].
+    assert (P : x' = x /\ z' = z).
+    { apply (Enderton3A x' z' x z xz xz Hxz' Hxz). trivial. }
+    destruct P as [P1 P2]. replace x' with x in *. replace z' with z in *.
+    clear x' z' P1 P2. ordpair w y. rename x0 into wy. rename H0 into Hwy.
+    exists w, z, y, wy, yz. repeat (split; try assumption).
+    apply HSoT. exists w, y, x, wx, xy. repeat (split; try assumption).
+  - apply Hl. apply Hr in H.
+    destruct H as [w [z [y [wy [yz [Hwz [Hwy [Hyz [H I]]]]]]]]]. apply HSoT in H.
+    destruct H as [w' [y' [x [wx [xy [Hwy' [Hwx [Hxy [H J]]]]]]]]].
+    assert (P : w' = w /\ y' = y).
+    { apply (Enderton3A w' y' w y wy wy Hwy' Hwy). trivial. }
+    destruct P as [P1 P2]. replace w' with w in *. replace y' with y in *.
+    clear w' y' P1 P2. ordpair x z. rename x0 into xz. rename H0 into Hxz.
+    exists w, z, x, wx, xz. repeat (split; try assumption).
+    apply HRoS. exists x, z, y, xy, yz. repeat (split; try assumption).
+Qed.
 
 Theorem Exercise3_22a : forall F A B F_A_ F_B_,
   Image A F F_A_ -> Image B F F_B_ -> Subset A B -> Subset F_A_ F_B_.
-Admitted.
+Proof.
+  intros F A B F_A_ F_B_ HF_A_ HF_B_ Hsub y H.
+  apply HF_B_. apply HF_A_ in H. destruct H as [x [xy [Hxy [H I]]]].
+  apply Hsub in H. exists x, xy. repeat (split; try assumption).
+Qed.
 
 Theorem Exercise3_22b : forall F G A FoG FoG_A_ G_A_ F_G_A__,
   Composition F G FoG -> Image A FoG FoG_A_ -> Image A G G_A_ ->
   Image G_A_ F F_G_A__ -> FoG_A_ = F_G_A__.
-Admitted.
+Proof.
+  intros F G A FoG FoG_A_ G_A_ F_G_A__ HFoG HFoG_A_ HG_A_ HF_G_A__.
+  apply Extensionality_Axiom. intros z. split; intros H.
+  - apply HF_G_A__. apply HFoG_A_ in H.
+    destruct H as [x [xz [Hxz [H I]]]]. apply HFoG in I.
+    destruct I as [x' [z' [y [xy [yz [Hxz' [Hxy [Hyz [I J]]]]]]]]].
+    assert (P : x' = x /\ z' = z).
+    { apply (Enderton3A x' z' x z xz xz Hxz' Hxz). trivial. }
+    destruct P as [P1 P2]. replace x' with x in *. replace z' with z in *.
+    clear P1 P2 x' z'. exists y, yz. repeat (split; try assumption).
+    apply HG_A_. exists x, xy. repeat (split; try assumption).
+  - apply HF_G_A__ in H. destruct H as [y [yz [Hyz [H I]]]].
+    apply HFoG_A_. apply HG_A_ in H. destruct H as [x [xy [Hxy [H J]]]].
+    ordpair x z. rename x0 into xz. rename H0 into Hxz.
+    exists x, xz. repeat (split; try assumption).
+    apply HFoG. exists x, z, y, xy, yz. repeat (split; try assumption).
+Qed.
 
 Theorem Exercise3_22c : forall Q A B AuB QlAuB QlA QlB QlAuQlB,
   BinaryUnion A B AuB -> Restriction Q AuB QlAuB -> Restriction Q A QlA ->
   Restriction Q B QlB -> BinaryUnion QlA QlB QlAuQlB -> QlAuB = QlAuQlB.
-Admitted.
+Proof.
+  intros Q A B AuB QlAuB QlA QlB QlAuQlB HAuB HQlAuB HQlA HQlB HQlAuQlB.
+  apply Extensionality_Axiom. intros xy. split; intros H.
+  - apply HQlAuQlB. apply HQlAuB in H.
+    destruct H as [x [y [Hxy [H I]]]]. apply HAuB in I.
+    destruct I as [I | I].
+    + left. apply HQlA. exists x, y. repeat (split; try assumption).
+    + right. apply HQlB. exists x, y. repeat (split; try assumption).
+  - apply HQlAuB. apply HQlAuQlB in H. destruct H as [H | H].
+    + apply HQlA in H. destruct H as [x [y [Hxy [H I]]]].
+      exists x, y. repeat (split; try assumption).
+      apply HAuB. left. assumption.
+    + apply HQlB in H. destruct H as [x [y [Hxy [H I]]]].
+      exists x, y. repeat (split; try assumption).
+      apply HAuB. right. assumption.
+Qed.
 
 Theorem Exercise3_23a : forall A B IA BoIA BlA,
   Identity A IA -> Composition B IA BoIA -> Restriction B A BlA ->
   BoIA = BlA.
-Admitted.
+Proof.
+  intros A B IA BoIA BlA HIA HBoIA HBlA.
+  apply Extensionality_Axiom. intros xz. split; intros H.
+  - apply HBoIA in H. destruct H as [x [z [y [xy [yz [Hxz [Hxy [Hyz [H I]]]]]]]]].
+    apply HIA in H. destruct H as [x' [H Hxx]].
+    apply HBlA. assert (P : x' = x /\ x' = y).
+    { apply (Enderton3A x' x' x y xy xy Hxx Hxy). trivial. }
+    destruct P as [P1 P2]. rewrite P1 in P2. rewrite P1 in H.
+    rewrite P2 in H. exists x, z. repeat (split; try assumption).
+    replace xz with yz. assumption. rewrite <- P2 in Hyz.
+    apply (OrdPair_Unique x z yz xz Hyz Hxz).
+    rewrite <- P2 in H. assumption.
+  - apply HBoIA. apply HBlA in H. destruct H as [x [z [Hxz [H I]]]].
+    ordpair x x. rename x0 into xx. rename H0 into Hxx.
+    exists x, z, x, xx, xz. repeat (split; try assumption).
+    apply HIA. exists x. split; assumption.
+Qed.
 
 Theorem Exercise3_23b : forall A C IA IA_C_ AnC,
   Identity A IA -> Image C IA IA_C_ -> BinaryIntersect A C AnC -> IA_C_ = AnC.
-Admitted.
+Proof.
+  intros A C IA IA_C_ AnC HIA HIA_C_ HAnC.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HAnC. apply HIA_C_ in H.
+    destruct H as [x' [xx [Hxx [H I]]]].
+    apply HIA in I. destruct I as [x'' [I Hxx']].
+    assert (P : x'' = x' /\ x'' = x).
+    { apply (Enderton3A x'' x'' x' x xx xx Hxx' Hxx). trivial. }
+    replace  x' with x in *. replace x'' with x in *. split; assumption.
+    symmetry. apply P. destruct P as [P1 P2]. rewrite <- P1. symmetry; assumption.
+  - apply HIA_C_. apply HAnC in H. destruct H as [H I].
+    ordpair x x. rename x0 into xx. rename H0 into Hxx.
+    exists x, xx. repeat (split; try assumption).
+    apply HIA. exists x. split; assumption.
+Qed.
 
-Theorem Exercise3_24 : forall F A F' domF F'_A_, Inverse F F' ->
+Theorem Exercise3_24 : forall F A F' domF F'_A_, Func F -> Inverse F F' ->
   Image A F' F'_A_ -> Domain F domF ->
   forall x, In x F'_A_ <-> In x domF /\ forall Fx, FunVal F x Fx -> In Fx A.
-Admitted.
+Proof.
+  intros F A F' domF F'_A_ HF HF' HF'_A_ HdomF x. split; intros H.
+  - apply HF'_A_ in H. destruct H as [y [yx [Hyx [H I]]]].
+    apply HF' in I. destruct I as [x' [y' [xy [Hyx' [Hxy I]]]]].
+    assert (P : y' = y /\ x' = x).
+    { apply (Enderton3A y' x' y x yx yx Hyx' Hyx). trivial. }
+    destruct P as [P1 P2]. replace y' with y in *. replace x' with x in *.
+    split.
+    + apply HdomF. exists y, xy. split; assumption.
+    + intros Fx. intros HFx. replace Fx with y. assumption.
+      assert (Q : exists domF, Domain F domF /\ In x domF).
+      { exists domF. split; try assumption. apply HdomF.
+        exists y, xy. split; assumption. }
+      apply (HFx HF) in Q. destruct Q as [xy' [Hxy' Q]].
+      destruct HF as [_ HF]. apply (HF x y Fx xy xy'); assumption.
+  - apply HF'_A_. destruct H as [H I].
+    apply HdomF in H. destruct H as [y [xy [Hxy H]]].
+    ordpair y x. rename x0 into yx. rename H0 into Hyx.
+    exists y, yx. repeat (split; try assumption).
+    + apply I. intros _ _. exists xy. split; assumption.
+    + apply HF'. exists x, y, xy. repeat (split; try assumption).
+Qed.
 
 Theorem Exercise3_25a : forall G G' GoG' ranG IranG,
   Inverse G G' -> Composition G G' GoG' -> Range G ranG -> Identity ranG IranG ->
   OneToOne G -> GoG' = IranG.
-Admitted.
+Proof.
+  intros G G' GoG' ranG IranG HG' HGoG' HranG HIranG HG.
+  apply Extensionality_Axiom. intros xx. split; intros H.
+  - apply HIranG. apply HGoG' in H.
+    destruct H as [x [x' [y [xy [yx [Hxx [Hxy [Hyx [H I]]]]]]]]].
+    apply HG' in H. destruct H as [b' [a' [yx' [Hxy' [Hyx' H]]]]].
+    assert (P : a' = x /\ b' = y).
+    { apply (Enderton3A a' b' x y xy xy Hxy' Hxy). trivial. }
+    destruct P as [P1 P2].
+    replace a' with x in *. replace b' with y in *.
+    exists x. split.
+    + apply HranG. exists y, yx'. split; try assumption.
+    + replace x' with x in Hxx. assumption.
+      destruct HG as [[_ HG] _]. apply (HG y x x' yx' yx); assumption.
+  - apply HGoG'. apply HIranG in H. destruct H as [x [H Hxx]].
+    apply HranG in H. destruct H as [y [yx [Hyx H]]].
+    ordpair x y. rename x0 into xy. rename H0 into Hxy.
+    exists x, x, y, xy, yx. repeat (split; try assumption).
+    apply HG'. exists y, x, yx. repeat (split; try assumption).
+Qed.
 
-Theorem Exercise3_25b : forall G G' GoG' ranG IranG,
-  Inverse G G' -> Composition G G' GoG' -> Range G ranG -> Identity ranG IranG ->
+Theorem Exercise3_25b : forall G G' GoG' ranG IranG, Inverse G G' ->
+  Composition G G' GoG' -> Range G ranG -> Identity ranG IranG -> Func G ->
   GoG' = IranG.
-Admitted.
+Proof.
+  intros G G' GoG' ranG IranG HG' HGoG' HranG HIranG HG.
+  apply Extensionality_Axiom. intros xx. split; intros H.
+  - apply HIranG. apply HGoG' in H.
+    destruct H as [x [x' [y [xy [yx [Hxx [Hxy [Hyx [H I]]]]]]]]].
+    apply HG' in H. destruct H as [b' [a' [yx' [Hxy' [Hyx' H]]]]].
+    assert (P : a' = x /\ b' = y).
+    { apply (Enderton3A a' b' x y xy xy Hxy' Hxy). trivial. }
+    destruct P as [P1 P2].
+    replace a' with x in *. replace b' with y in *.
+    exists x. split.
+    + apply HranG. exists y, yx'. split; try assumption.
+    + replace x' with x in Hxx. assumption.
+      destruct HG as [_ HG]. apply (HG y x x' yx' yx); assumption.
+  - apply HGoG'. apply HIranG in H. destruct H as [x [H Hxx]].
+    apply HranG in H. destruct H as [y [yx [Hyx H]]].
+    ordpair x y. rename x0 into xy. rename H0 into Hxy.
+    exists x, x, y, xy, yx. repeat (split; try assumption).
+    apply HG'. exists y, x, yx. repeat (split; try assumption).
+Qed.
 
 (** Exercise 3-26 (prove parts of Theorem 3K) is omitted. *)
 
 Theorem Exercise3_27 : forall F G FoG domFoG G' domF G'_domF_,
   Composition F G FoG -> Domain FoG domFoG -> Inverse G G' ->
   Domain F domF -> Image domF G' G'_domF_ -> domFoG = G'_domF_.
-Admitted.
+Proof.
+  intros F G FoG domFoG G' domF G'_domF_ HFoG HdomFoG HG' HdomF HG'_domF_.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HG'_domF_. apply HdomFoG in H.
+    destruct H as [z [xz [Hxz H]]]. apply HFoG in H.
+    destruct H as [x' [z' [y [xy [yz [Hxz' [Hxy [Hyz [H I]]]]]]]]].
+    ordpair y x. rename x0 into yx. rename H0 into Hyx.
+    assert (P : x' = x /\ z' = z).
+    { apply (Enderton3A x' z' x z xz xz Hxz' Hxz). trivial. }
+    exists y, yx. repeat (split; try assumption).
+    + apply HdomF. exists z, yz. split; try assumption.
+      replace z with z'. assumption. apply P.
+    + apply HG'. exists x, y, xy. split; try assumption. split; try assumption.
+      replace x with x'. assumption. apply P.
+  - apply HdomFoG. apply HG'_domF_ in H.
+    destruct H as [y [yx [Hyx [H I]]]].
+    apply HdomF in H. destruct H as [z [yz [Hyz H]]].
+    ordpair x z. rename x0 into xz. rename H0 into Hxz. exists z, xz.
+    split; try assumption. apply HFoG. apply HG' in I.
+    destruct I as [x' [y' [xy [Hyx' [Hxy I]]]]]. exists x, z, y, xy, yz.
+    split; try assumption. split.
+    + assert (P : y' = y /\ x' = x).
+      { apply (Enderton3A y' x' y x yx yx Hyx' Hyx). trivial. }
+      replace y with y'. replace x with x'. assumption. apply P. apply P.
+    + repeat (split; try assumption).
+Qed.
 
-Theorem Exercise3_28 : forall f A B G domG PA PB,
-  Domain G domG -> PowerSet A PA -> PowerSet B PB -> FuncFromInto f A B ->
-  OneToOne f -> domG = PA -> Func G ->
-  (forall X, In X PA -> forall GX, FunVal G X GX <-> Image X f GX) ->
+Definition GivenByImage (f A B G : set) : Prop := FuncFromInto f A B ->
+  forall XY, In XY G <-> exists X Y, OrdPair X Y XY /\ Subset X A /\
+  Subset Y B /\ Image X f Y.
+
+Theorem GivenByImage_Exists : forall (f A B : set), FuncFromInto f A B ->
+  exists G, GivenByImage f A B G.
+Proof.
+  intros f A B HfAB. powerset A. rename x into PA. rename H into HPA.
+  powerset B. rename H into HPB. rename x into PB.
+  prod PA PB. rename x into PAxPB. rename H into HPAxPB.
+  build_set
+    (prod (prod set set) set)
+    (fun (t : set * set * set) (c x : set) => exists X Y, OrdPair X Y x /\
+      Subset X (snd (fst t)) /\ Subset Y (snd t) /\ Image X (fst (fst t)) Y)
+    ((f, A), B)
+    PAxPB.
+  rename x into G. rename H into HG.
+  exists G. intros _ XY. split; intros H.
+  - apply HG, H.
+  - apply HG. split; try assumption.
+    apply HPAxPB. destruct H as [X [Y [HXY [HXA [HYB _]]]]].
+    exists X, Y. split; try split; try assumption.
+    + apply HPA, HXA.
+    + apply HPB, HYB.
+Qed.
+
+Theorem GivenByImage_Unique : forall f A B G G', FuncFromInto f A B ->
+  GivenByImage f A B G -> GivenByImage f A B G' -> G = G'.
+Proof.
+  intros f A B G G' HfAB H H'.
+  apply Extensionality_Axiom. intros x. split; intros I.
+  - apply (H' HfAB), (H HfAB), I.
+  - apply (H HfAB), (H' HfAB), I.
+Qed.
+
+Lemma GivenByImage_Into : forall f A B G PA PB, FuncFromInto f A B ->
+  GivenByImage f A B G -> PowerSet A PA -> PowerSet B PB -> FuncFromInto G PA PB.
+Proof.
+  intros f A B G PA PB HfAB HG HPA HPB. split; try split.
+  - intros XY H. apply (HG HfAB) in H. destruct H as [X [Y [HXY _]]].
+    exists X, Y. assumption.
+  - intros X Y Z XY XZ HXY HXZ H I.
+    apply Extensionality_Axiom. intros y.
+    apply (HG HfAB) in H. apply (HG HfAB) in I.
+    destruct H as [X' [Y' [HXY' [HXA [HYB HY]]]]].
+    assert (T : X' = X /\ Y' = Y).
+    { apply (Enderton3A X' Y' X Y XY XY HXY' HXY). trivial. }
+    destruct T as [T1 T2]. replace X' with X in *. replace Y' with Y in *.
+    clear T1 T2 X' Y'.
+    destruct I as [X' [Z' [HXZ' [_ [HZY HZ]]]]].
+    assert (T : X' = X /\ Z' = Z).
+    { apply (Enderton3A X' Z' X Z XZ XZ HXZ' HXZ). trivial. }
+    destruct T as [T1 T2]. replace X' with X in *. replace Z' with Z in *.
+    clear T1 T2 Z' X'. split; intros H.
+    + apply HY in H. apply HZ. assumption.
+    + apply HY. apply HZ. assumption.
+  - intros X. split; intros H.
+    + image X f. rename x into Y. rename H0 into HY.
+      ordpair X Y. rename x into XY. rename H0 into HXY.
+      exists Y, XY. split; try assumption. apply (HG HfAB).
+      exists X, Y. split; try assumption. split; try (apply HPA; assumption).
+      split; try assumption. intros y Hy. apply HY in Hy.
+      destruct HfAB as [Hf [Hdomf [ranf [Hranf Hsub]]]].
+      apply Hsub. apply Hranf. destruct Hy as [x [xy [Hxy [_ Hy]]]].
+      exists x, xy. split; assumption.
+    + destruct H as [Y [XY [HXY H]]]. apply (HG HfAB) in H.
+      destruct H as [X' [Y' [HXY' [HXA [HYB H]]]]].
+      assert (P : X' = X /\ Y' = Y).
+      { apply (Enderton3A X' Y' X Y XY XY HXY' HXY). trivial. }
+      apply HPA. replace X with X'; try assumption; apply P.
+  - range G. rename x into ranG. rename H into HranG.
+    exists ranG. split; try assumption.
+    intros Y HY. apply HranG in HY. destruct HY as [X [XY [HXY H]]].
+    apply (HG HfAB) in H. destruct H as [X' [Y' [HXY' [_ [HYB _]]]]].
+    apply HPB. replace Y with Y'. assumption.
+    apply (Enderton3A X' Y' X Y XY XY HXY' HXY). trivial.
+Qed.
+
+Theorem Exercise3_28 : forall f A B G PA PB, FuncFromInto f A B ->
+  GivenByImage f A B G -> PowerSet A PA -> PowerSet B PB -> OneToOne f ->
   FuncFromInto G PA PB /\ OneToOne G.
-Admitted.
+Proof.
+  intros f A B G PA PB HfAB HG HPA HPB Hf. split.
+  - apply (GivenByImage_Into f A B G PA PB HfAB HG HPA HPB).
+  - split; try apply (GivenByImage_Into f A B G PA PB HfAB HG HPA HPB).
+    intros W X Y WY XY HWY HXY H I. apply (HG HfAB) in H. apply (HG HfAB) in I. apply Extensionality_Axiom. intros x.
+    destruct Hf as [Hf HSRf]. destruct H as [W' [Y' [HWY' [HWA [HYB HF_W_]]]]].
+    assert (T : W' = W /\ Y' = Y).
+    { apply (Enderton3A W' Y' W Y WY WY HWY' HWY). trivial. }
+    destruct T as [T1 T2]. replace W' with W in *. replace Y' with Y in *.
+    clear T1 T2 W' Y'.
+    destruct I as [X' [Y' [HXY' [HXA [_ HF_X_]]]]].
+    assert (T : X' = X /\ Y' = Y).
+    { apply (Enderton3A X' Y' X Y XY XY HXY' HXY). trivial. }
+    destruct T as [T1 T2]. replace X' with X in *. replace Y' with Y in *.
+    clear T1 T2 Y' X'. split; intros H.
+    + assert (P : exists domf, Domain f domf /\ In x domf).
+      { exists A. split. apply HfAB. apply HWA. assumption. }
+      funval Hf P f x. rename x0 into fx. rename H0 into Hfx.
+      apply (Hfx Hf) in P. destruct P as [xy [Hxy P]]. clear Hfx.
+      assert (Q : In fx Y).
+      { apply HF_W_. exists x, xy. repeat (split; try assumption). }
+      apply HF_X_ in Q. destruct Q as [x' [xy' [Hxy' [Q1 Q2]]]].
+      replace x with x'. assumption.
+      apply (HSRf x' x fx xy' xy); assumption.
+    + assert (P : exists domf, Domain f domf /\ In x domf).
+      { exists A. split. apply HfAB. apply HXA. assumption. }
+      funval Hf P f x. rename x0 into fx. rename H0 into Hfx.
+      apply (Hfx Hf) in P. destruct P as [xy [Hxy P]]. clear Hfx.
+      assert (Q : In fx Y).
+      { apply HF_X_. exists x, xy. repeat (split; try assumption). }
+      apply HF_W_ in Q. destruct Q as [x' [xy' [Hxy' [Q1 Q2]]]].
+      replace x with x'. assumption. apply (HSRf x' x fx xy' xy); try assumption.
+Qed.      
+
+Definition GivenByInverse (f A B G : set) : Prop := FuncFromInto f A B ->
+  forall yX, In yX G <-> exists y X, OrdPair y X yX /\ In y B /\
+  forall x, In x X <-> In x A /\ FunVal f x y.
+
+Theorem GivenByInverse_Exists : forall f A B,
+  FuncFromInto f A B -> exists G, GivenByInverse f A B G.
+Proof.
+  intros f A B HfAB. powerset A. rename x into PA. rename H into HPA.
+  prod B PA. rename x into BxPA. rename H into HBxPA.
+  build_set
+    set
+    (fun (f c yX : set) => exists y X, OrdPair y X yX /\ In y B /\
+      forall x, In x X <-> In x A /\ FunVal f x y)
+    f
+    BxPA.
+  rename x into G. rename H into HG. exists G.
+  intros _ yX. split; intros H.
+  - apply HG. assumption.
+  - apply HG. split; try assumption.
+    destruct H as [y [X [HyX [Hy H]]]]. apply HBxPA. exists y, X.
+    split; try assumption. split; try assumption.
+    apply HPA. intros x Hx. apply H in Hx. apply Hx.
+Qed.
+
+Theorem GivenByInverse_Unique : forall f A B G H, FuncFromInto f A B ->
+  GivenByInverse f A B G -> GivenByInverse f A B H -> G = H.
+Proof.
+  intros f A B G H HfAB HG HH. apply Extensionality_Axiom. intros x; split; intros I.
+  - apply (HH HfAB). apply (HG HfAB). assumption.
+  - apply (HG HfAB). apply (HH HfAB). assumption.
+Qed.
+
+Theorem GivenByInverse_Into : forall f A B G PA, PowerSet A PA ->
+  FuncFromInto f A B -> GivenByInverse f A B G -> FuncFromInto G B PA.
+Proof.
+  intros f A B G PA HPA HfAB HG. split; try split.
+  - intros yX H. apply (HG HfAB) in H. destruct H as [y [X [HyX _]]].
+    exists y, X. assumption.
+  - intros y W X yW yX HyW HyX H I. apply Extensionality_Axiom. intros x.
+    split; intros J.
+    + apply (HG HfAB) in H as [y' [W' [HyW' [H1 H2]]]].
+      apply (HG HfAB) in I as [y'' [X' [HyX' [I1 I2]]]].
+      assert (P : y' = y /\ W' = W).
+      { apply (Enderton3A y' W' y W yW yW); try assumption. trivial. }
+      assert (Q : y'' = y /\ X' = X).
+      { apply (Enderton3A y'' X' y X yX yX); try assumption. trivial. }
+      destruct P as [P1 P2]. destruct Q as [Q1 Q2].
+      replace y'' with y in *. replace y' with y in *.
+      replace X' with X in *. replace W' with W in *.
+      apply I2. apply H2. assumption.
+    + apply (HG HfAB) in H as [y' [W' [HyW' [H1 H2]]]].
+      apply (HG HfAB) in I as [y'' [X' [HyX' [I1 I2]]]].
+      assert (P : y' = y /\ W' = W).
+      { apply (Enderton3A y' W' y W yW yW); try assumption. trivial. }
+      assert (Q : y'' = y /\ X' = X).
+      { apply (Enderton3A y'' X' y X yX yX); try assumption. trivial. }
+      destruct P as [P1 P2]. destruct Q as [Q1 Q2].
+      replace y'' with y in *. replace y' with y in *.
+      replace X' with X in *. replace W' with W in *.
+      apply H2, I2. assumption.
+  - intros y. split; intros H.
+    + range f. rename x into ranf. rename H0 into Hranf.
+      assert (P : In y ranf \/ ~ In y ranf). { apply REM. }
+      destruct P as [P | P].
+      * build_set
+          (prod set set)
+          (fun t (c x : set) => FunVal (fst t) x (snd t))
+          (f, y)
+          A.
+        rename x into X. rename H0 into HX.
+        ordpair y X. rename x into yX. rename H0 into HyX. 
+        exists X, yX. split; try assumption. apply (HG HfAB).
+        exists y, X. repeat (split; try assumption).
+      * empty. rename x into X. rename H0 into HX.
+        ordpair y X. rename x into yX. rename H0 into HyX.
+        exists X, yX. split; try assumption. apply (HG HfAB).
+        exists y, X. split; try assumption. split; try assumption.
+        intros x. split; intros Con.
+        { apply HX in Con. destruct Con. }
+        { assert (Q : In y ranf). apply Hranf.
+          ordpair x y. exists x, x0. split; try assumption.
+          destruct Con as [HA Con]. destruct HfAB as [Hf HfAB].
+          assert (T : exists domf, Domain f domf /\ In x domf).
+          { exists A. split; try assumption. apply HfAB. }
+          apply (Con Hf) in T. destruct T as [xy [Hxy T]].
+          replace x0 with xy. assumption.
+          apply (OrdPair_Unique x y xy x0); assumption.
+          apply P in Q. destruct Q. }
+    + destruct H as [X [yX [HyX H]]]. apply (HG HfAB) in H.
+      destruct H as [y' [X' [HyX' [H I]]]].
+      replace y with y'. assumption.
+      apply (Enderton3A y' X' y X yX yX HyX' HyX). trivial.
+  - range G. rename x into ranG. rename H into HranG. exists ranG.
+    split; try assumption. intros X HX. apply HPA.
+    intros x Hx. apply HranG in HX. destruct HX as [y [yX [HyX HX]]].
+    apply (HG HfAB) in HX. destruct HX as [y' [X' [HyX' [H I]]]].
+    apply I. replace X' with X. assumption.
+    apply (Enderton3A y X y' X' yX yX); try assumption. trivial.
+Qed.
+
+Theorem Exercise3_29 : forall f A B G, FuncFromInto f A B ->
+  GivenByInverse f A B G -> FuncFromOnto f A B -> OneToOne G.
+Proof.
+  intros f A B G HfAB' HG HfAB.
+  powerset A. rename x into PA. rename H into HPA. split.
+  - apply (GivenByInverse_Into f A B G PA HPA HfAB' HG).
+  - intros y z X yX zX HyX HzX H I. apply (HG HfAB') in H. apply (HG HfAB') in I.
+    destruct H as [y' [X' [HyX' [H1 H2]]]]. destruct I as [z' [X'' [HzX' [I1 I2]]]].
+    destruct HfAB as [Hf [Hdomf Hranf]].
+    assert (P : y' = y /\ X' = X).
+    { apply (Enderton3A y' X' y X yX yX HyX' HyX). trivial. }
+    assert (Q : z' = z /\ X'' = X).
+    { apply (Enderton3A z' X'' z X zX zX HzX' HzX). trivial. }
+    destruct P as [P1 P2]. destruct Q as [Q1 Q2].
+    replace X' with X in *. replace X'' with X in *.
+    replace y' with y in *. replace z' with z in *.
+    clear X' X'' y' z' P1 P2 Q1 Q2 HyX' HzX'.
+    apply Hranf in I1. destruct I1 as [x [xz [Hxz I1]]].
+    assert (P : In x X).
+    { apply I2. split.
+      - apply Hdomf. exists z, xz. split; assumption.
+      - intros _ _. exists xz. split; assumption. }
+    apply H2 in P. destruct P as [_ P].
+    assert (Q : exists domf, Domain f domf /\ In x domf).
+    { exists A. split; try assumption. apply Hdomf. exists z, xz. split; assumption. }
+    apply (P Hf) in Q. destruct Q as [xy [Hxy Q]].
+    destruct Hf as [HR HSV]. apply (HSV x y z xy xz); try assumption.
+Qed.
+
+Definition Monotonic (F A PA : set) : Prop := PowerSet A PA ->
+  FuncFromInto F PA PA ->
+  forall X Y, Subset X Y -> Subset Y A -> forall FX FY, FunVal F X FX ->
+  FunVal F Y FY -> Subset FX FY.
+
+Definition IspreB (F A PA preB : set) : Prop := PowerSet A PA ->
+  FuncFromInto F PA PA ->
+  forall X, In X preB <-> Subset X A /\ forall FX, FunVal F X FX -> Subset FX X.
+
+Definition IspreC (F A PA preC : set) : Prop := PowerSet A PA ->
+  FuncFromInto F PA PA ->
+  forall X, In X preC <-> Subset X A /\ forall FX, FunVal F X FX -> Subset X FX.
+
+Theorem preB_Exists : forall (F A PA : set), PowerSet A PA ->
+  FuncFromInto F PA PA -> exists preB, IspreB F A PA preB.
+Proof.
+  intros F A PA HPA HF.
+  build_set
+    set
+    (fun (t c x : set) => forall FX, FunVal t x FX -> Subset FX x)
+    F
+    PA.
+  rename x into preB. rename H into HpreB. exists preB.
+  intros _ _ X. split.
+  - intros H. split.
+    + apply HPA. apply HpreB. assumption.
+    + apply HpreB. assumption.
+  - intros [H I]. apply HpreB. split.
+    + apply HPA. assumption.
+    + assumption.
+Qed.
+
+Theorem preC_Exists : forall (F A PA : set), PowerSet A PA ->
+  FuncFromInto F PA PA -> exists preC, IspreC F A PA preC.
+Proof.
+  intros F A PA HPA HF.
+  build_set
+    set
+    (fun (t c x : set) => forall FX, FunVal t x FX -> Subset x FX)
+    F
+    PA.
+  rename x into preC. rename H into HpreC. exists preC.
+  intros _ _ X. split.
+  - intros H. split.
+    + apply HPA. apply HpreC. assumption.
+    + apply HpreC. assumption.
+  - intros [H I]. apply HpreC. split; try assumption.
+    apply HPA. assumption.
+Qed.
+
+Theorem preB_Unique : forall F A PA preB preB', PowerSet A PA ->
+  FuncFromInto F PA PA -> IspreB F A PA preB -> IspreB F A PA preB' -> preB = preB'.
+Proof.
+  intros F A PA preB preB' HPA HF H H'.
+  apply Extensionality_Axiom. intros x. split; intros I.
+  - apply (H' HPA HF), (H HPA HF), I.
+  - apply (H HPA HF), (H' HPA HF), I.
+Qed.
+
+Theorem preC_Unique : forall F A PA preC preC', PowerSet A PA ->
+  FuncFromInto F PA PA -> IspreC F A PA preC -> IspreC F A PA preC' -> preC = preC'.
+Proof.
+  intros F A PA preC preC' HPA HF H H'.
+  apply Extensionality_Axiom. intros x. split; intros I.
+  - apply (H' HPA HF), (H HPA HF), I.
+  - apply (H HPA HF), (H' HPA HF), I.
+Qed.
+
+Lemma SubsetSymmetric_iff_Equal : forall A B, 
+  (Subset A B /\ Subset B A) <-> A = B.
+Proof.
+  intros A B. split; intros H.
+  - apply Extensionality_Axiom. intros x.
+    split; intros I; apply H; assumption.
+  -  rewrite H. split; apply Subset_Reflexive.
+Qed.
+
+Lemma preB_NonEmpty : forall F A PA preB, PowerSet A PA ->
+  FuncFromInto F PA PA -> IspreB F A PA preB -> ~Empty preB.
+Proof.
+  intros F A PA preB HPA HF HpreB Con. apply (Con A), (HpreB HPA HF). split.
+  - apply Subset_Reflexive.
+  - intros FA HFA y Hy. assert (P : In FA PA).
+    { destruct HF as [HF [HdomF [ranF [HranF Hsub]]]]. apply Hsub.
+      apply HranF. exists A. apply HFA. apply HF.
+      exists PA. split; try assumption. apply HPA. apply Subset_Reflexive. }
+    apply HPA in P. apply P. assumption.
+Qed.
+
+Lemma Exercise3_30aB : forall F A PA preB B,  PowerSet A PA ->
+  FuncFromInto F PA PA -> Monotonic F A PA -> IspreB F A PA preB ->
+  Intersect preB B -> FunVal F B B.
+Proof.
+  intros F A PA preB B HPA HF Hmono HpreB HB.
+  assert (Hne : ~ Empty preB). 
+  { apply (preB_NonEmpty F A PA preB); assumption. }
+  assert (HBsub : Subset B A).
+  { intros b Hb. assert (T : forall y, In y preB -> In b y).
+    { apply HB. apply Hne. apply Hb. }
+    apply Member_Exists_If_NonEmpty in Hne. destruct Hne as [X HX].
+    assert (U : In b X). { apply T. assumption. }
+    apply (HpreB HPA HF) in HX. apply HX. assumption. }
+  intros _ _. apply HPA in HBsub.
+  assert (HdomF : Domain F PA). { apply HF. }
+  apply HdomF in HBsub as P. destruct P as [FB [BFB [HBFB P]]].
+  exists BFB. split; try assumption. replace FB with B in HBFB. assumption.
+  symmetry. assert (Q : Subset FB B).
+  { intros b Hb.
+    assert (Q : forall FX,
+      (exists X, Subset X A /\ FunVal F X FX /\ Subset FX X) -> In b FX).
+    { intros FX [X [HXA [HFX HFXX]]]. assert (T : Subset FB FX).
+      { apply (Hmono HPA HF B X); try assumption.
+        - intros x Hx. assert (T : forall b', In b' preB -> In x b').
+          { apply HB. apply Hne. assumption. }
+          apply T. apply (HpreB HPA HF). split; try assumption.
+          intros FX' HFX'. replace FX' with FX. assumption.
+          apply (FunVal_Unique F X FX FX'); try assumption.
+          apply HF. exists PA. split; try assumption.
+          apply HPA. assumption.
+        - intros _ _. exists BFB. split; assumption. }
+      apply T. assumption. }
+    apply (HB Hne). intros X HX. apply (HpreB HPA HF) in HX.
+    destruct HX as [HXA HX]. apply HPA in HXA.
+    assert (T : exists domF, Domain F domF /\ In X domF).
+    { exists PA. split; try assumption. }
+    destruct HF as [HF _]. funval HF T F X. rename x into FX. rename H into HFX.
+    apply HX in HFX as Hsub. apply Hsub. apply Q. exists X.
+    repeat (split; try assumption). apply HPA. assumption. }
+  apply SubsetSymmetric_iff_Equal. split; try assumption.
+  assert (R : In FB preB).
+  { apply (HpreB HPA HF). apply HPA in HBsub. split.
+    - intros x Hx. apply Q in Hx. apply HBsub. assumption.
+    - intros FFB HFFB. apply (Hmono HPA HF FB B); try assumption. intros _ _.
+      exists BFB. split; assumption. }
+  intros x Hx.  assert (T : forall y, In y preB -> In x y).
+  { apply (HB Hne). assumption. }
+  apply T. assumption.
+Qed.
+
+Lemma Exercise3_30aC : forall F A PA preC C, PowerSet A PA ->
+  FuncFromInto F PA PA -> Monotonic F A PA -> IspreC F A PA preC ->
+  Union preC C -> FunVal F C C.
+Proof.
+  intros F A PA preC C HPA HF Hmono HpreC HC.
+  assert (HCsub : Subset C A).
+  { intros c Hc. apply HC in Hc as [X [Hc HX]].
+    apply (HpreC HPA HF) in HX as [HXsub HX]. apply HXsub. assumption. }
+  apply HPA in HCsub. assert (HdomF : Domain F PA). { apply HF. }
+  apply HdomF in HCsub as HFC. destruct HFC as [FC [CFC [HCFC P]]].
+  replace FC with C in HCFC. intros _ _. exists CFC. split; assumption.
+  assert (Q : Subset C FC).
+  { intros c H.
+    assert (Q : exists FX X, Subset X A /\ FunVal F X FX /\ Subset X FX /\ In c FX).
+    { apply HC in H. destruct H as [X [H I]].
+      apply (HpreC HPA HF) in I as [HXA I]. apply HPA in HXA as J.
+      apply HdomF in J as [FX [XFX [HXFX H']]]. exists FX, X.
+      repeat (split; try assumption).
+      - intros _ _. exists XFX. split; assumption.
+      - apply I. intros _ _. exists XFX. split; assumption.
+      - apply I. intros _ _. exists XFX. split; assumption. assumption. }
+    destruct Q as [FX [X [HXA [HFX [Hsub Q]]]]].
+    assert (T : Subset FX FC).
+    { apply (Hmono HPA HF X C); try assumption.
+      - intros x Hx. apply HC. exists X. split; try assumption.
+        apply (HpreC HPA HF). split; try assumption. intros FX' HFX'.
+        replace FX' with FX. assumption.
+        apply (FunVal_Unique F X FX FX'); try assumption; try apply HF.
+        exists PA. split; try assumption. apply HPA. assumption.
+      - apply HPA. assumption.
+      - intros _ _. exists CFC. split; assumption. }
+    apply T. assumption. }
+  apply SubsetSymmetric_iff_Equal. split; try assumption.
+  intros c Hc. apply HC. exists FC. split; try assumption.
+  apply (HpreC HPA HF). assert (T : Subset FC A).
+  { destruct HF as [HF [_ [ranF [HranF Hsub]]]]. apply HPA. apply Hsub.
+    apply HranF. exists C, CFC. split; assumption. }
+  split; try assumption. intros FFC HFFC.
+  apply (Hmono HPA HF C FC); try assumption. intros _ _. exists CFC.
+  split; assumption.
+Qed.
+
+Theorem Exercise3_30a : forall F A PA preB preC B C, PowerSet A PA ->
+  FuncFromInto F PA PA -> Monotonic F A PA -> IspreB F A PA preB ->
+  IspreC F A PA preC -> Intersect preB B -> Union preC C ->
+  FunVal F B B /\ FunVal F C C.
+Proof.
+  intros F A PA preB preC B C HPA HF Hmono HpreB HpreC HB HC. split.
+  - apply (Exercise3_30aB F A PA preB B); assumption.
+  - apply (Exercise3_30aC F A PA preC C); assumption.
+Qed.
+
+Theorem Exercise3_30b : forall F A PA preB preC B C X, PowerSet A PA ->
+  FuncFromInto F PA PA -> Monotonic F A PA -> IspreB F A PA preB ->
+  IspreC F A PA preC -> Intersect preB B -> Union preC C -> Subset X A ->
+  FunVal F X X -> Subset B X /\ Subset X C.
+Proof.
+  intros F A PA preB preC B C X HPA HF Hmono HpreB HpreC HB HC HXA HFX. split.
+  - assert (P : In X preB).
+    { apply (HpreB HPA HF). split; try assumption.
+      intros FX HFX'. replace FX with X. apply Subset_Reflexive.
+      apply (FunVal_Unique F X); try assumption; try apply HF.
+      exists PA. split; try (apply HPA; assumption); try apply HF. }
+    assert (Hne : ~ Empty preB). { apply (preB_NonEmpty F A PA preB HPA HF HpreB). }
+    intros b Hb. assert (Q : forall y, In y preB -> In b y).
+    { apply (HB Hne). assumption. }
+    apply Q. assumption.
+  - assert (P : In X preC).
+    { apply (HpreC HPA HF). split; try assumption. intros FX HFX'.
+      replace FX with X. apply Subset_Reflexive.
+      apply (FunVal_Unique F X); try assumption; try apply HF.
+      exists PA. split; try apply HPA; try assumption; try apply HF. }
+    intros c Hc. apply HC. exists X. split; assumption.
+Qed.
