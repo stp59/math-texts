@@ -2971,3 +2971,35 @@ Proof.
       exists PA. split; try apply HPA; try assumption; try apply HF. }
     intros c Hc. apply HC. exists X. split; assumption.
 Qed.
+
+(** Next we introduce an alternative definition for n-ary tuples which is
+    isomorphic to our current definition in the finite case, but extends into
+    the infinite case. We prove that it is well-defined, however, it is not
+    clear that the definition is non-trivial. For this, we introduce a new
+    formulation of the Axiom of Choice and prove it equivalent to the first.  *)
+
+Definition IndexedProd (I H XIH : set) : Prop :=
+  Func H -> (exists domH, Domain H domH /\ Subset I domH) ->
+  forall f, In f XIH <-> Func f /\ Domain f I /\
+  forall i, In i I -> forall fi Hi, FunVal f i fi -> FunVal H i Hi -> In fi Hi.
+
+Theorem IndexedProd_Exists : forall H I, Func H ->
+  (exists domH, Domain H domH /\ Subset I domH) -> exists XIH, IndexedProd I H XIH.
+Admitted.
+
+Theorem IndexedProd_Unique : forall H I XIH XIH', Func H ->
+  (exists domH, Domain H domH /\ Subset I domH) -> IndexedProd I H XIH ->
+  IndexedProd I H XIH' -> XIH = XIH'.
+Admitted.
+
+Theorem IndexProd_Empty_if_EltEmpty : forall (H I XIH : set),
+  Func H -> (exists domH, Domain H domH /\ Subset I domH) ->
+  IndexedProd H I XIH -> (exists i Hi, FunVal H i Hi /\ Empty Hi) -> Empty XIH.
+Admitted.
+
+Definition Axiom_of_Choice2 := forall I H XIH, Func H -> Domain H I ->
+  IndexedProd I H XIH -> (forall i Hi, In i I -> FunVal H i Hi -> ~ Empty Hi) ->
+  ~ Empty XIH.
+
+Theorem AC1_iff_AC2 : Axiom_of_Choice1 <-> Axiom_of_Choice2.
+Admitted.
