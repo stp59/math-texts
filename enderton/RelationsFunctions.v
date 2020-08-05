@@ -3234,3 +3234,57 @@ Admitted.
 
 (** Proving the stated theorem in this exercise is not part of the work
     prescribed by the the book. We leave is as TODO. *)
+
+(** The next section of the book gives a brief treatment of (linear) orderings. *)
+
+Definition Trichotomous (R A : set) : Prop :=
+  forall x y xy yx, In x A -> In y A -> OrdPair x y xy -> OrdPair y x yx ->
+  (In xy R /\ x <> y /\ ~ In yx R) \/
+  (~ In xy R /\ x = y /\ ~ In yx R) \/
+  (~ In xy R /\ x <> y /\ In yx R).
+
+Definition LinearOrdering (R A : set) : Prop :=
+  RelationOn R A /\ Transitive R /\ Trichotomous R A.
+
+Definition Irreflexive (R : set) : Prop :=
+  ~ exists x xx, OrdPair x x xx /\ In xx R.
+
+Definition Connected (R A : set) : Prop :=
+  forall x y, In x A -> In y A -> x <> y ->
+  (exists xy, OrdPair x y xy /\ In xy R) \/
+  (exists yx, OrdPair y x yx /\ In yx R).
+
+Theorem Enderton3R : forall A R, LinearOrdering R A ->
+  Irreflexive R /\ Connected R A.
+Admitted.
+
+Theorem Exercise3_43 : forall R A R', LinearOrdering R A -> Inverse R R' ->
+  LinearOrdering R' A.
+Admitted.
+
+Theorem Exercise3_44 : forall R A f, LinearOrdering R A -> FuncFromInto f A A ->
+  (forall x y xy fx fy fxfy, OrdPair x y xy -> In x A -> In y A -> FunVal f x fx ->
+    FunVal f y fy -> OrdPair fx fy fxfy -> In xy R -> In fxfy R) ->
+  OneToOne f /\ forall x y xy fx fy fxfy, OrdPair x y xy -> In x A -> In y A ->
+  FunVal f x fx -> FunVal f y fy -> OrdPair fx fy fxfy -> In fxfy R -> In xy R.
+Admitted.
+
+Definition LexicographicOrdering (A B RA RB L : set) : Prop :=
+  forall abcd, In abcd L <-> exists a b ab c d cd ac bd, In a A /\ In b B /\
+  OrdPair a b ab /\ In c A /\ In d B /\ OrdPair c d cd /\ OrdPair ab cd abcd /\
+  OrdPair a c ac /\ OrdPair b d bd /\
+  (In ac RA \/ (a = c /\ In bd RB)).
+
+Theorem LexicographicOrdering_Exists : forall A B RA RB, exists L,
+  LexicographicOrdering A B RA RB L.
+Admitted.
+
+Theorem LexicographicOrdering_Unique : forall A B RA RB L L',
+  LexicographicOrdering A B RA RB L -> LexicographicOrdering A B RA RB L' ->
+  L = L'.
+Admitted.
+
+Theorem Exercise3_45 : forall A B RA RB L AxB, Prod A B AxB ->
+  LinearOrdering RA A -> LinearOrdering RB B ->
+  LexicographicOrdering A B RA RB L -> LinearOrdering L AxB.
+Admitted.
