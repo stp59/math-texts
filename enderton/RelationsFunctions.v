@@ -2983,19 +2983,66 @@ Definition IndexedProd (I H XIH : set) : Prop :=
   forall f, In f XIH <-> Func f /\ Domain f I /\
   forall i, In i I -> forall fi Hi, FunVal f i fi -> FunVal H i Hi -> In fi Hi.
 
-Theorem IndexedProd_Exists : forall H I, Func H ->
+Theorem IndexedProd_Exists : forall I H, Func H ->
   (exists domH, Domain H domH /\ Subset I domH) -> exists XIH, IndexedProd I H XIH.
-Admitted.
+Proof.
+  intros I H HH HI. destruct (IndexedUnion_Exists I H HH HI).
+  rename x into UIH. rename H0 into HUIH. destruct (AllFunctions_Exists I UIH).
+  rename x into UIHpreI. rename H0 into HUIHpreI.
+  build_set
+    (prod set set)
+    (fun (t : set * set) (c x : set) => Func x /\ Domain x (fst t) /\
+      forall i, In i (fst t) ->
+      forall fi Hi, FunVal x i fi -> FunVal (snd t) i Hi -> In fi Hi)
+    (I, H)
+    UIHpreI.
+  rename x into XIH. rename H0 into HXIH. exists XIH.
+  intros _ _ f. split; intros P.
+  - apply HXIH. assumption.
+  - apply HXIH. split; try assumption. apply HUIHpreI.
+    split; try apply P. split; try apply P.
+    range f. rename x into ranf. rename H0 into Hranf. exists ranf.
+    split; try assumption. intros fi Hfi. apply HUIH; try assumption.
+    apply Hranf in Hfi. destruct Hfi as [i [ifi [Hifi Hfi]]].
+    assert (Q : exists domH, Domain H domH /\ In i domH).
+    { destruct HI as [domH [HdomH HI]]. exists domH.
+      split; try assumption. apply HI. apply P. exists fi, ifi.
+      split; try assumption. }
+    funval HH Q H i. rename x into Hi. apply (H0 HH) in Q. clear H0.
+    destruct Q as [iHi [HiHi Q]]. exists i, Hi. repeat split.
+    + destruct HI as [domH [HdomH HI]].
+      apply P. exists fi, ifi. split; assumption.
+    + intros _ _. exists iHi. split; assumption.
+    + destruct P as [_ [Hdomf P]]. apply (P i).
+      * apply Hdomf. exists fi, ifi. split; assumption.
+      * intros _ _. exists ifi. split; assumption.
+      * intros _ _. exists iHi. split; assumption.
+Qed.
 
 Theorem IndexedProd_Unique : forall H I XIH XIH', Func H ->
   (exists domH, Domain H domH /\ Subset I domH) -> IndexedProd I H XIH ->
   IndexedProd I H XIH' -> XIH = XIH'.
-Admitted.
+Proof.
+  intros H I XIH XIH' HH HI HXIH HXIH'.
+  apply Extensionality_Axiom. intros f. split; intros P.
+  - apply (HXIH' HH HI), (HXIH HH HI), P.
+  - apply (HXIH HH HI), (HXIH' HH HI), P.
+Qed.
 
 Theorem IndexProd_Empty_if_EltEmpty : forall (H I XIH : set),
   Func H -> (exists domH, Domain H domH /\ Subset I domH) ->
-  IndexedProd H I XIH -> (exists i Hi, FunVal H i Hi /\ Empty Hi) -> Empty XIH.
-Admitted.
+  IndexedProd I H XIH -> (exists i Hi, In i I /\ FunVal H i Hi /\ Empty Hi) ->
+  Empty XIH.
+Proof.
+  intros H I XIH HH HI HXIH He f Con. destruct He as [i [Hi [HHi [HHi' He]]]].
+  apply (HXIH HH HI) in Con. destruct Con as [Hf [Hdomf P]].
+  destruct HI as [domH [HdomH HI]].
+  assert (Q : exists domf, Domain f domf /\ In i domf).
+  { exists I. split; try assumption. }
+  funval Hf Q f i. rename x into fi. rename H0 into Hfi. apply (Hfi Hf) in Q.
+  destruct Q as [ifi [Hifi Q]]. apply (P i HHi fi Hi Hfi) in HHi'.
+  apply He in HHi'. assumption.
+Qed.
 
 Definition Axiom_of_Choice2 := forall I H XIH, Func H -> Domain H I ->
   IndexedProd I H XIH -> (forall i Hi, In i I -> FunVal H i Hi -> ~ Empty Hi) ->
