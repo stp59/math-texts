@@ -3049,4 +3049,188 @@ Definition Axiom_of_Choice2 := forall I H XIH, Func H -> Domain H I ->
   ~ Empty XIH.
 
 Theorem AC1_iff_AC2 : Axiom_of_Choice1 <-> Axiom_of_Choice2.
+Admitted. (* TODO *)
+
+(** Next, we treat the subject of equivalence relations and show the connection
+    with partitions. We start with the basic definitions. Note that the
+    reflexivity property must be define with respect to a set A. Otherwise, we
+    would get a contradiction with UUR being the universal set. *)
+
+Definition RelationOn (R A : set) : Prop :=
+  forall xy, In xy R -> exists x y, OrdPair x y xy /\ In x A /\ In y A.
+ 
+Definition Reflexive (R A : set) : Prop :=
+  forall x xx, OrdPair x x xx -> In x A -> In xx R.
+
+Definition Symmetric (R : set) : Prop :=
+  forall x y xy yx, OrdPair x y yx -> OrdPair y x yx -> In xy R -> In yx R.
+
+Definition Transitive (R : set) : Prop :=
+  forall x y z xy yz xz, OrdPair x y xy -> OrdPair y z yz -> OrdPair x z xz ->
+  In xy R -> In yz R -> In xz R.
+
+Definition EquivalenceRelation (R A : set) : Prop :=
+  RelationOn R A /\ Reflexive R A /\ Symmetric R /\ Transitive R.
+
+Theorem Enderton3M : forall R fldR, Field R fldR -> Symmetric R ->
+  Transitive R -> EquivalenceRelation R fldR.
 Admitted.
+
+(** The following definition of an equivalence class does not require R to be
+    an equivalence relation. In fact, it is well-defined on any set R. However,
+    they are only of interest in the case that R is an equivalence relation, and
+    all of our interesting theorems regarding these sets take R to be an
+    equivalence relation by assumption. *)
+
+Definition EquivalenceClass (x R xmodR : set) : Prop :=
+  forall t, In t xmodR <-> exists xt, OrdPair x t xt /\ In xt R.
+
+Theorem EquivalenceClass_Exists : forall x R, exists xmodR,
+  EquivalenceClass x R xmodR.
+Admitted.
+
+Theorem EquivalenceClass_Unique : forall x R xmodR xmodR',
+  EquivalenceClass x R xmodR -> EquivalenceClass x R xmodR' -> xmodR = xmodR'.
+Admitted.
+
+Lemma Enderton3N : forall R A x y xmodR ymodR xy, EquivalenceRelation R A ->
+  In x A -> In y A -> EquivalenceClass x R xmodR -> EquivalenceClass y R ymodR ->
+  OrdPair x y xy -> xmodR = ymodR <-> In xy R.
+Admitted.
+
+(** Now we give the definition of a partition in anticipation of the main
+    result of this section. *)
+
+Definition Partition (A PI : set) : Prop :=
+  (forall a, In a PI <-> Subset a A /\ ~ Empty a) /\
+  forall a b, In a PI -> In b PI -> (exists x, In x a /\ In x b) -> a = b /\
+  forall a, In a A -> exists b, In b PI /\ In a b.
+
+Definition Quotient (A R AmodR : set) : Prop :=
+  forall xmodR, In xmodR AmodR <-> exists x, In x A /\ EquivalenceClass x R xmodR.
+
+Theorem Quotient_Exists : forall A R, exists AmodR, Quotient A R AmodR.
+Admitted.
+
+Theorem Quotient_Unique : forall A R AmodR AmodR', Quotient A R AmodR ->
+  Quotient A R AmodR' -> AmodR = AmodR'.
+Admitted.
+
+Theorem Enderton3P : forall R A AmodR, EquivalenceRelation R A ->
+  Quotient A R AmodR -> Partition A AmodR.
+Admitted.
+
+Definition NaturalQuotientMap (A R phi : set) : Prop :=
+  forall xx, In xx phi <-> exists x xmodR, OrdPair x xmodR xx /\
+  EquivalenceClass x R xmodR.
+
+Theorem NaturalQuotientMap_Exists : forall A R, exists phi,
+  NaturalQuotientMap A R phi.
+Admitted.
+
+Theorem NaturalQuotientMap_Unique : forall A R phi phi',
+  NaturalQuotientMap A R phi -> NaturalQuotientMap A R phi' -> phi = phi'.
+Admitted.
+
+Definition Compatible (F R A : set) : Prop :=
+  EquivalenceRelation R A -> FuncFromInto F A A ->
+  forall x y xy Fx Fy FxFy, In x A -> In y A -> OrdPair x y xy ->
+  FunVal F x Fx -> FunVal F y Fy -> OrdPair Fx Fy FxFy -> In xy R -> In FxFy R.
+
+(** The full statement of the theorem is slightly different. For instance, the
+    right-to-left direction is stated as a contrapositive. Also, the uniqueness
+    of F' is asserted as part of the theorem. However, the book leaves the proof
+    as an exericse, so I've chosen to delay the statement of uniqueness until
+    then as well. There are also 'analogous results' for when F is not
+    F : A -> A  but F : AxA -> A, which are discussed in an exercise. *)
+
+Theorem Enderton3Q : forall R A F AmodR, EquivalenceRelation R A ->
+  FuncFromInto F A A -> Compatible F R A <->
+  (exists F', FuncFromInto F' AmodR AmodR /\ forall x xmodR Fx FxmodR F'xmodR,
+  In x A -> EquivalenceClass x R xmodR -> FunVal F x Fx ->
+  EquivalenceClass Fx R FxmodR -> FunVal F' xmodR F'xmodR -> F'xmodR = FxmodR).
+Admitted.
+
+Theorem Exercise3_32a : forall R R', Inverse R R' ->
+  Symmetric R <-> Subset R' R.
+Admitted.
+
+Theorem Exercise3_32b : forall R RoR, Composition R R RoR ->
+  Transitive R <-> Subset RoR R.
+Admitted.
+
+Theorem Exercise3_33 : forall R R' R'oR, Inverse R R' -> Composition R' R R'oR ->
+  (Symmetric R /\ Transitive R /\ Relation R) <-> R = R'oR.
+Admitted.
+
+Theorem Exercise3_34a : forall A NA, ~ Empty A ->
+  (forall R, In R A -> Transitive R /\ Relation R) -> Intersect A NA ->
+  Transitive NA /\ Relation NA.
+Admitted.
+
+Theorem Exercise3_34b : exists A UA, ~ Empty A /\
+  (forall R, In R A -> Transitive R /\ Relation R) /\ Union A UA /\
+  Relation UA /\ ~ Transitive A.
+Admitted.
+
+Theorem Exercise3_35 : forall R x xmodR Sx R_Sx_,
+  EquivalenceClass x R xmodR -> Singleton x Sx -> Image Sx R R_Sx_ ->
+  xmodR = R_Sx_.
+Admitted.
+
+Definition GivenByRangeER (f A B R Q : set) : Prop :=
+  FuncFromInto f A B -> EquivalenceRelation R B ->
+  forall xy, In xy Q <-> exists x y fx fy fxfy,
+  OrdPair x y xy /\ FunVal f x fx /\ FunVal f y fy /\ OrdPair fx fy fxfy /\
+  In fxfy R.
+
+Theorem GivenByRangeER_Exists : forall f A B R, FuncFromInto f A B ->
+  EquivalenceRelation R B -> exists Q, GivenByRangeER f A B R Q.
+Admitted.
+
+Theorem GivenByRangeER_Unique : forall f A B R Q Q',
+  FuncFromInto f A B -> EquivalenceRelation R B -> GivenByRangeER f A B R Q ->
+  GivenByRangeER f A B R Q' -> Q = Q'.
+Admitted.
+
+Theorem Exercise3_36 : forall f A B R Q, FuncFromInto f A B ->
+  EquivalenceRelation R B -> GivenByRangeER f A B R Q -> EquivalenceRelation Q A.
+Admitted.
+
+Definition GivenByPartition (PI Rpi: set) : Prop :=
+  forall xy, In xy Rpi <-> exists x y B,
+  OrdPair x y xy /\ In B PI /\ In x B /\ In y B.
+
+Theorem GivenByPartition_Exists : forall PI, exists Rpi, GivenByPartition PI Rpi.
+Admitted.
+
+Theorem GivenByPartition_Unique : forall PI R R', GivenByPartition PI R ->
+  GivenByPartition PI R' -> R = R'.
+Admitted.
+
+Theorem Exercise3_37 : forall A PI Rpi, Partition A PI ->
+  GivenByPartition PI Rpi -> EquivalenceRelation Rpi A.
+Admitted.
+
+(** The following two theorems are the primary results of interest in this
+    section. Intuitively, they say that our construction of a partition of A
+    from a relation on A given earlier in the chapter and our construction of
+    a relation on A from a partition of A given in Exercise 37 commute. *)
+
+Theorem Exercise3_38 : forall A PI Rpi AmodRpi, Partition A PI ->
+  GivenByPartition PI Rpi -> Quotient A Rpi AmodRpi -> PI = AmodRpi.
+Admitted.
+
+Theorem Exercise3_39 : forall A R AmodR Rpi, EquivalenceRelation R A ->
+  Quotient A R AmodR -> GivenByPartition AmodR Rpi -> R = Rpi.
+Admitted.
+
+(** Exercises 40 and 41 treat sets that we have yet to define, so we can only
+    treat them informally (TODO). *)
+
+(** Exercise 42 : State precisely the 'analogous results' mentioned in
+    Theorem 3Q. (This will require extending the concept of compatibility in a
+    suitable way.) *)
+
+(** Proving the stated theorem in this exercise is not part of the work
+    prescribed by the the book. We leave is as TODO. *)
