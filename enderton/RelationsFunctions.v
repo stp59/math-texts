@@ -3063,7 +3063,7 @@ Definition Reflexive (R A : set) : Prop :=
   forall x xx, OrdPair x x xx -> In x A -> In xx R.
 
 Definition Symmetric (R : set) : Prop :=
-  forall x y xy yx, OrdPair x y yx -> OrdPair y x yx -> In xy R -> In yx R.
+  forall x y xy yx, OrdPair x y xy -> OrdPair y x yx -> In xy R -> In yx R.
 
 Definition Transitive (R : set) : Prop :=
   forall x y z xy yz xz, OrdPair x y xy -> OrdPair y z yz -> OrdPair x z xz ->
@@ -3073,8 +3073,31 @@ Definition EquivalenceRelation (R A : set) : Prop :=
   RelationOn R A /\ Reflexive R A /\ Symmetric R /\ Transitive R.
 
 Theorem Enderton3M : forall R fldR, Field R fldR -> Symmetric R ->
-  Transitive R -> EquivalenceRelation R fldR.
-Admitted.
+  Transitive R -> Relation R -> EquivalenceRelation R fldR.
+Proof.
+  intros R fldR HfldR Hsym Htran HR. repeat split; try assumption.
+  - intros xy H. apply HR in H as I. destruct I as [x [y Hxy]].
+    exists x, y. split; try assumption.
+    domain R. rename x0 into domR. rename H0 into HdomR.
+    range R. rename x0 into ranR. rename H0 into HranR.
+    binary_union domR ranR. rename x0 into domRuranR. rename H0 into HdomRuranR.
+    split.
+    + apply HfldR. exists domR, ranR, domRuranR. repeat (split; try assumption).
+      apply HdomRuranR. left. apply HdomR. exists y, xy. split; try assumption.
+    + apply HfldR. exists domR, ranR, domRuranR. repeat (split; try assumption).
+      apply HdomRuranR. right. apply HranR. exists x, xy. split; try assumption.
+  - intros x xx Hxx Hx. apply HfldR in Hx.
+    destruct Hx as [domR [ranR [domRuranR [HdomR [HranR [HdomRuranR Hx]]]]]].
+    apply HdomRuranR in Hx. destruct Hx as [H |H].
+    + apply HdomR in H. destruct H as [y [xy [Hxy H]]].
+      ordpair y x. rename x0 into yx. rename H0 into Hyx.
+      assert (P : In yx R). { apply (Hsym x y xy yx Hxy Hyx H). }
+      apply (Htran x y x xy yx xx Hxy Hyx Hxx H P).
+    + apply HranR in H. destruct H as [y [yx [Hyx H]]].
+      ordpair x y. rename x0 into xy. rename H0 into Hxy.
+      assert (P : In xy R). { apply (Hsym y x yx xy Hyx Hxy H). }
+      apply (Htran x y x xy yx xx Hxy Hyx Hxx P H).
+Qed.
 
 (** The following definition of an equivalence class does not require R to be
     an equivalence relation. In fact, it is well-defined on any set R. However,
@@ -3087,50 +3110,178 @@ Definition EquivalenceClass (x R xmodR : set) : Prop :=
 
 Theorem EquivalenceClass_Exists : forall x R, exists xmodR,
   EquivalenceClass x R xmodR.
-Admitted.
+Proof.
+  intros x R. range R. rename x0 into ranR. rename H into HranR.
+  build_set
+    (prod set set)
+    (fun (t : set * set) (c y : set) =>
+      exists xy, OrdPair (fst t) y xy /\ In xy (snd t))
+    (x, R)
+    ranR.
+  rename x0 into xmodR. rename H into HxmodR. exists xmodR.
+  intros t. split; intros H.
+  - apply HxmodR. assumption.
+  - apply HxmodR. split; try assumption.
+    apply HranR. exists x. assumption.
+Qed.
 
 Theorem EquivalenceClass_Unique : forall x R xmodR xmodR',
   EquivalenceClass x R xmodR -> EquivalenceClass x R xmodR' -> xmodR = xmodR'.
-Admitted.
+Proof.
+  intros x R xmodR xmodR' HxmodR HxmodR'.
+  apply Extensionality_Axiom. intros t. split; intros H.
+  - apply HxmodR', HxmodR, H.
+  - apply HxmodR, HxmodR', H.
+Qed.
+
+Ltac equiv_class x R := destruct (EquivalenceClass_Exists x R).
+
+Lemma In_Own_Equivalence_Class : forall x R A xmodR, EquivalenceRelation R A ->
+  In x A -> EquivalenceClass x R xmodR -> In x xmodR.
+Proof.
+  intros x R A xmodR HRA Hx HxmodR. apply HxmodR.
+  ordpair x x. rename x0 into xx. rename H into Hxx.
+  exists xx. split; try assumption.
+  destruct HRA as [HRA [Hrefl _]]. apply (Hrefl x xx Hxx Hx).
+Qed.
 
 Lemma Enderton3N : forall R A x y xmodR ymodR xy, EquivalenceRelation R A ->
   In x A -> In y A -> EquivalenceClass x R xmodR -> EquivalenceClass y R ymodR ->
   OrdPair x y xy -> xmodR = ymodR <-> In xy R.
-Admitted.
+Proof.
+  intros R A x y xmodR ymodR xy HR Hx Hy HxmodR HymodR Hxy.
+  split; intros H.
+  - assert (P : In y xmodR).
+    { rewrite H. apply (In_Own_Equivalence_Class y R A ymodR HR Hy HymodR). }
+    apply HxmodR in P. destruct P as [xt [Hxt P]].
+    replace xy with xt. assumption. apply (OrdPair_Unique x y xt xy Hxt Hxy).
+  - apply Extensionality_Axiom. intros t.
+    destruct HR as [HRA [Hrefl [Hsym Htrans]]]. split; intros I.
+    + apply HymodR. ordpair y t. rename x0 into yt. rename H0 into Hyt.
+      exists yt. split; try assumption.
+      apply HxmodR in I. destruct I as [xt [Hxt I]].
+      ordpair y x. rename x0 into yx. rename H0 into Hyx.
+      apply (Htrans y x t yx xt yt); try assumption.
+      apply (Hsym x y xy yx); try assumption.
+    + apply HxmodR. apply HymodR in I. destruct I as [yt [Hyt I]].
+      ordpair x t. rename x0 into xt. rename H0 into Hxt.
+      exists xt. split; try assumption.
+      apply (Htrans x y t xy yt xt Hxy Hyt Hxt H I).
+Qed.
 
 (** Now we give the definition of a partition in anticipation of the main
     result of this section. *)
 
 Definition Partition (A PI : set) : Prop :=
-  (forall a, In a PI <-> Subset a A /\ ~ Empty a) /\
-  forall a b, In a PI -> In b PI -> (exists x, In x a /\ In x b) -> a = b /\
-  forall a, In a A -> exists b, In b PI /\ In a b.
+  (forall a, In a PI -> Subset a A /\ ~ Empty a) /\
+  (forall a b, In a PI -> In b PI -> (exists x, In x a /\ In x b) -> a = b) /\
+  (forall a, In a A -> exists b, In b PI /\ In a b).
 
-Definition Quotient (A R AmodR : set) : Prop :=
+Definition Quotient (A R AmodR : set) : Prop := RelationOn R A ->
   forall xmodR, In xmodR AmodR <-> exists x, In x A /\ EquivalenceClass x R xmodR.
 
-Theorem Quotient_Exists : forall A R, exists AmodR, Quotient A R AmodR.
-Admitted.
+Theorem Quotient_Exists : forall A R, RelationOn R A ->
+  exists AmodR, Quotient A R AmodR.
+Proof.
+  intros A R HRA. powerset A. rename x into PA. rename H into HPA.
+  build_set
+    (prod set set)
+    (fun (t : set * set) (c x : set) =>
+      exists a, In a (fst t) /\ EquivalenceClass a (snd t) x)
+    (A, R)
+    PA.
+  rename x into AmodR. rename H into HAmodR. exists AmodR.
+  intros _ xmodR. split; intros H; try apply HAmodR, H.
+  apply HAmodR; split; try assumption. apply HPA.
+  intros t Ht. destruct H as [x [H HxmodR]]. apply HxmodR in Ht.
+  destruct Ht as [xt [Hxt Ht]]. apply HRA in Ht.
+  destruct Ht as [x' [t' [Hxt' [Hx Ht]]]].
+  replace t with t'. assumption.
+  apply (Enderton3A x' t' x t xt xt Hxt' Hxt). trivial.
+Qed.
 
-Theorem Quotient_Unique : forall A R AmodR AmodR', Quotient A R AmodR ->
-  Quotient A R AmodR' -> AmodR = AmodR'.
-Admitted.
+Theorem Quotient_Unique : forall A R AmodR AmodR', RelationOn R A ->
+  Quotient A R AmodR -> Quotient A R AmodR' -> AmodR = AmodR'.
+Proof.
+  intros A R AmodR AmodR' HRA HAmodR HAmodR'.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply (HAmodR' HRA), (HAmodR HRA), H.
+  - apply (HAmodR HRA), (HAmodR' HRA), H.
+Qed.
+
+Ltac quotient H A R := destruct (Quotient_Exists A R H).
 
 Theorem Enderton3P : forall R A AmodR, EquivalenceRelation R A ->
   Quotient A R AmodR -> Partition A AmodR.
-Admitted.
+Proof.
+  intros R A AmodR HRA HAmodR. split.
+  - intros xmodR H. split.
+    + intros t I. destruct HRA as [HRA [Hrefl [Hsym Htrans]]].
+      apply (HAmodR HRA) in H. destruct H as [x [H HxmodR]].
+      apply HxmodR in I. destruct I as [xt [Hxt I]].
+      apply HRA in I. destruct I as [x' [t' [Hxt' [Hx Ht]]]].
+      replace t with t'. assumption.
+      apply (Enderton3A x' t' x t xt xt Hxt' Hxt). trivial.
+    + intros Con. destruct HRA as [HRA [Hrefl [Hsym Htrans]]].
+      apply (HAmodR HRA) in H. destruct H as [x [H HxmodR]].
+      assert (P : In x xmodR).
+      { apply (In_Own_Equivalence_Class x R A);
+        try assumption; repeat (split; try assumption). }
+      apply (Con x). assumption.
+  - split.
+    + intros xmodR ymodR HxmodR HymodR [t [H I]].
+      destruct HRA as [HRA [Hrefl [Hsym Htrans]]].
+      apply (HAmodR HRA) in HxmodR. apply (HAmodR HRA) in HymodR.
+      destruct HxmodR as [x [Hx HxmodR]]. destruct HymodR as [y [Hy HymodR]].
+      ordpair x y. rename x0 into xy. rename H0 into Hxy.
+      apply (Enderton3N R A x y xmodR ymodR xy);
+      try assumption; repeat (split; try assumption).
+      apply HxmodR in H. destruct H as [xt [Hxt H]].
+      apply HymodR in I. destruct I as [yt [Hyt i]].
+      ordpair t y. rename x0 into ty. rename H0 into Hty.
+      apply (Htrans x t y xt ty xy); try assumption.
+      apply (Hsym y t yt ty); try assumption.
+    + intros a H. equiv_class a R. rename x into amodR. rename H0 into HamodR.
+      exists amodR. split.
+      * destruct HRA as [HRA [Hrefl [Hsym Htrans]]]. apply (HAmodR HRA).
+        exists a. split; assumption.
+      * apply (In_Own_Equivalence_Class a R A amodR); assumption.
+Qed.
 
 Definition NaturalQuotientMap (A R phi : set) : Prop :=
-  forall xx, In xx phi <-> exists x xmodR, OrdPair x xmodR xx /\
-  EquivalenceClass x R xmodR.
+  EquivalenceRelation R A ->
+  forall xx, In xx phi <-> exists x xmodR, In x A /\ OrdPair x xmodR xx /\
+  EquivalenceClass x R xmodR. 
 
-Theorem NaturalQuotientMap_Exists : forall A R, exists phi,
-  NaturalQuotientMap A R phi.
-Admitted.
+Theorem NaturalQuotientMap_Exists : forall A R, EquivalenceRelation R A ->
+  exists phi, NaturalQuotientMap A R phi.
+Proof.
+  intros A R HRA. assert (T : RelationOn R A). { apply HRA. }
+  quotient T A R. rename x into AmodR. rename H into HAmodR.
+  prod A AmodR. rename x into AxAmodR. rename H into HAxAmodR.
+  build_set
+    set
+    (fun (t c x : set) => exists a amodR,
+      In a A /\ OrdPair a amodR x /\ EquivalenceClass a t amodR)
+    R
+    AxAmodR.
+  rename x into phi. rename H into Hphi. exists phi.
+  intros _ xx. split; intros H; try apply Hphi, H.
+  apply Hphi. split; try assumption.
+  apply HAxAmodR. destruct H as [x [xmodR [H [Hxx HxmodR]]]].
+  exists x, xmodR. split; try split; try assumption.
+  apply (HAmodR T). exists x. split; assumption.
+Qed.
 
 Theorem NaturalQuotientMap_Unique : forall A R phi phi',
-  NaturalQuotientMap A R phi -> NaturalQuotientMap A R phi' -> phi = phi'.
-Admitted.
+  EquivalenceRelation R A -> NaturalQuotientMap A R phi ->
+  NaturalQuotientMap A R phi' -> phi = phi'.
+Proof.
+  intros A R phi phi' HRA Hphi Hphi'.
+  apply Extensionality_Axiom. intros x; split; intros H.
+  - apply (Hphi' HRA), (Hphi HRA), H.
+  - apply (Hphi HRA), (Hphi' HRA), H.
+Qed.
 
 Definition Compatible (F R A : set) : Prop :=
   EquivalenceRelation R A -> FuncFromInto F A A ->
@@ -3144,73 +3295,496 @@ Definition Compatible (F R A : set) : Prop :=
     then as well. There are also 'analogous results' for when F is not
     F : A -> A  but F : AxA -> A, which are discussed in an exercise. *)
 
+Lemma ContrapositiveLaw : forall (P Q : Prop), (P -> Q) <-> (~Q -> ~P).
+Proof.
+  intros P Q. split; intros H.
+  - intros nQ Con. apply nQ, H, Con.
+  - intros HP. assert (I : Q \/ ~ Q). { apply REM. }
+    destruct I as [I | I]; try assumption.
+    apply H in I. apply I in HP. destruct HP.
+Qed.
+
+Definition SatisfiesStar (R A F AmodR F' : set) : Prop :=
+  forall x xmodR Fx FxmodR F'xmodR, In x A -> EquivalenceClass x R xmodR ->
+  FunVal F x Fx -> EquivalenceClass Fx R FxmodR -> FunVal F' xmodR F'xmodR ->
+  F'xmodR = FxmodR.
+
 Theorem Enderton3Q : forall R A F AmodR, EquivalenceRelation R A ->
-  FuncFromInto F A A -> Compatible F R A <->
-  (exists F', FuncFromInto F' AmodR AmodR /\ forall x xmodR Fx FxmodR F'xmodR,
-  In x A -> EquivalenceClass x R xmodR -> FunVal F x Fx ->
-  EquivalenceClass Fx R FxmodR -> FunVal F' xmodR F'xmodR -> F'xmodR = FxmodR).
-Admitted.
+  FuncFromInto F A A -> Quotient A R AmodR -> Compatible F R A <->
+  (exists F', FuncFromInto F' AmodR AmodR /\ SatisfiesStar R A F AmodR F').
+Proof.
+  intros R A F AmodR HRA HFAA HAmodR. split.
+  - intros Hcomp. prod AmodR AmodR.
+    rename x into AmodRxAmodR. rename H into HAmodRxAmodR.
+    build_set
+      (prod (prod set set) set)
+      (fun (t : set * set * set) (c xmodRFxmodR : set) =>
+        exists x xmodR Fx FxmodR, EquivalenceClass x (fst (fst t)) xmodR /\
+        FunVal (snd t) x Fx /\ EquivalenceClass Fx (fst (fst t)) FxmodR /\
+        OrdPair xmodR FxmodR xmodRFxmodR /\ In x A)
+      ((R, A), F)
+      AmodRxAmodR.
+    rename x into F'. rename H into HF'. exists F'.
+    assert (P : FuncFromInto F' AmodR AmodR).
+    { split; split.
+      - intros xFx I. apply HF' in I.
+        destruct I as [I [x [xmodR [Fx [FxmodR [HxmodR [HFx [HFxmodR [HxFx J]]]]]]]]].
+        exists xmodR, FxmodR. assumption.
+      - intros xmodR ymodR zmodR xy xz Hxy Hxz I J.
+        apply HF' in I. apply HF' in J. destruct I as [_ I]. destruct J as [_ J].
+        destruct I as [x [xmodR' [y [ymodR' [HxmodR [Hy [HymodR [Hxy' I]]]]]]]].
+        destruct J as [x' [xmodR'' [z [zmodR' [HxmodR' [Hz [HzmodR [Hxz' J]]]]]]]].
+        simpl in HxmodR', HzmodR, Hz, HymodR, HxmodR, Hy.
+        assert (T : xmodR' = xmodR /\ ymodR' = ymodR).
+        { apply (Enderton3A xmodR' ymodR' xmodR ymodR xy xy Hxy' Hxy). trivial. }
+        destruct T as [T1 T2]. replace xmodR' with xmodR in *.
+        replace ymodR' with ymodR in *. clear xmodR' ymodR' T1 T2.
+        assert (T : xmodR'' = xmodR /\ zmodR' = zmodR).
+        { apply (Enderton3A xmodR'' zmodR' xmodR zmodR xz xz Hxz' Hxz). trivial. }
+        destruct T as [T1 T2]. replace xmodR'' with xmodR in *.
+        replace zmodR' with zmodR in *. clear xmodR'' zmodR' T1 T2.
+        ordpair y z. rename x0 into yz. rename H into Hyz.
+        apply (Enderton3N R A y z ymodR zmodR yz HRA); try assumption.
+        + destruct HFAA as [HF [HdomF [ranF [HranF Hsub]]]]. apply Hsub.
+          apply HranF. exists x. apply Hy. apply HF.
+          exists A. split; assumption.
+        + destruct HFAA as [HF [HdomF [ranF [HranF Hsub]]]]. apply Hsub.
+          apply HranF. exists x'. apply Hz. apply HF.
+          exists A. split; assumption.
+        + ordpair x x'. rename x0 into xx'. rename H into Hxx'.
+          apply (Hcomp HRA HFAA x x' xx' y z yz); try assumption.
+          assert (T : In x' xmodR).
+          { apply (In_Own_Equivalence_Class x' R A xmodR); assumption. }
+          apply HxmodR in T. destruct T as [xx'' [Hxx'' T]].
+          replace xx' with xx''. assumption.
+          apply (OrdPair_Unique x x' xx'' xx' Hxx'' Hxx').
+      - intros xmodR. split; intros I.
+        + assert (HR : RelationOn R A). { apply HRA. }
+          apply (HAmodR HR) in I. destruct I as [x [I HxmodR]].
+          destruct HFAA as [HF [HdomF HFAA]].
+          assert (P : exists domF, Domain F domF /\ In x domF).
+          { exists A. split; try assumption. }
+          funval HF P F x. rename x0 into Fx. rename H into HFx.
+          equiv_class Fx R. rename x0 into FxmodR. rename H into HFxmodR.
+          ordpair xmodR FxmodR. rename x0 into xy. rename H into Hxy.
+          exists FxmodR, xy. split; try assumption. apply HF'. split.
+          * apply HAmodRxAmodR. exists xmodR, FxmodR.
+            repeat (split; try assumption).
+            { apply (HAmodR HR). exists x. split; assumption. }
+            { apply (HAmodR HR). exists Fx. split; try assumption.
+              destruct HFAA as [ranF [HranF Hsub]]. apply Hsub, HranF.
+              exists x. apply HFx; try assumption. }
+          * exists x, xmodR, Fx, FxmodR. repeat (split; try assumption).
+        + assert (HR : RelationOn R A). { apply HRA. }
+          apply (HAmodR HR). destruct I as [ymodR [xy [Hxy I]]].
+          apply HF' in I.
+          destruct I as [_ [x [xmodR' [y [ymodR' [HmodR [Hy [HymodR [Hxy' I]]]]]]]]].
+          exists x. split; try assumption. replace xmodR with xmodR'. assumption.
+          apply (Enderton3A xmodR' ymodR' xmodR ymodR xy xy Hxy' Hxy). trivial.
+      - range F'. rename x into ranF'. rename H into HranF'. exists ranF'.
+        split; try assumption. intros ymodR I.
+        assert (HR : RelationOn R A). { apply HRA. }
+        apply (HAmodR HR). apply HranF' in I.
+        destruct I as [xmodR [xy [Hxy I]]]. apply HF' in I.
+        destruct I as [_ [x [xmodR' [y [ymodR' [HxmodR [Hy [HymodR [Hxy' Hx]]]]]]]]].
+        exists y. split.
+        + destruct HFAA as [HF [HdomF [ranF [HranF Hsub]]]]. apply Hsub.
+          apply HranF. exists x. apply Hy; simpl. apply HF.
+          exists A. split; assumption.
+        + replace ymodR with ymodR'. apply HymodR.
+          apply (Enderton3A xmodR' ymodR' xmodR ymodR xy xy Hxy' Hxy). trivial. }
+    split; try assumption.
+    intros x xmodR y ymodR F'xmodR Hx HxmodR Hy HymodR HF'xmodR.
+    destruct P as [P Q].
+    assert (S : exists domF', Domain F' domF' /\ In xmodR domF').
+    { exists AmodR. split.
+      - apply Q.
+      - assert (HR : RelationOn R A). { apply HRA. }
+        apply (HAmodR HR). exists x. split; try assumption. }
+    apply (HF'xmodR P) in S. destruct S as [xy [Hxy S]].
+    apply HF' in S. destruct S as [_ [x' [xmodR' [y' [ymodR' S]]]]].
+    simpl in S. destruct S as [HxmodR' [Hy' [HymodR' [Hxy' S]]]].
+    assert (T : xmodR = xmodR' /\ F'xmodR = ymodR').
+    { apply (Enderton3A xmodR F'xmodR xmodR' ymodR' xy xy Hxy Hxy'). trivial. }
+    destruct T as [T1 T2]. replace xmodR' with xmodR in *.
+    replace ymodR' with F'xmodR in *. clear xmodR' ymodR' T1 T2.
+    assert (Htrans : Transitive R). { apply HRA. }
+    ordpair y y'. rename x0 into yy'. rename H into Hyy'.
+    ordpair x x'. rename x0 into xx'. rename H into Hxx'.
+    ordpair y' y.  rename x0 into y'y. rename H into Hy'y.
+    assert (yRy' : In yy' R).
+    { apply (Hcomp HRA HFAA x x' xx' y y' yy'); try assumption.
+      assert (T : In x' xmodR).
+      { apply (In_Own_Equivalence_Class x' R A); try assumption. }
+      apply HxmodR in T. destruct T as [xx'' [Hxx'' T]].
+      replace xx' with xx''. assumption.
+      apply (OrdPair_Unique x x' xx'' xx' Hxx'' Hxx'). }
+    assert (y'Ry : In y'y R).
+    { destruct HRA as [_ [_ [Hsym _]]]. apply (Hsym y y' yy' y'y); assumption. }
+    apply Extensionality_Axiom. intros t. split; intros I.
+    + apply HymodR. ordpair y t. rename x0 into yt. rename H into Hyt.
+      exists yt. split; try assumption. 
+      ordpair y' t. rename x0 into y't. rename H into Hy't.
+      apply (Htrans y y' t yy' y't yt); try assumption.
+      apply HymodR' in I. destruct I as [y't' [Hy't' I]].
+      replace y't with y't'. assumption.
+      apply (OrdPair_Unique y' t y't' y't); assumption.
+    + apply HymodR in I. destruct I as [yt [Hyt I]].
+      apply HymodR'. ordpair y' t. rename x0 into y't. rename H into Hy't.
+      exists y't. split; try assumption.
+      apply (Htrans y' y t y'y yt y't); try assumption.
+  - apply (ContrapositiveLaw _ (Compatible F R A)).
+    intros Hncomp Con. apply Hncomp.
+    intros _ _ x y xy Fx Fy FxFy Hx Hy Hxy HFx HFy HFxFy I.
+    destruct Con as [F' [HF'ARAR Hstar]].
+    equiv_class Fx R. rename x0 into FxmodR. rename H into HFxmodR.
+    equiv_class Fy R. rename x0 into FymodR. rename H into HFymodR.
+    destruct HFAA as [HF [HdomF [ranF [HranF Hsub]]]].
+    apply (Enderton3N R A Fx Fy FxmodR FymodR FxFy HRA); try assumption.
+    + apply Hsub. apply HranF. exists x. apply HFx; try assumption.
+      exists A. split; assumption.
+    + apply Hsub. apply HranF. exists y. apply HFy; try assumption.
+      exists A. split; assumption.
+    + assert (P : exists domF, Domain F domF /\ In x domF).
+      { exists A. split; assumption. }
+      assert (Q : exists domF, Domain F domF /\ In y domF).
+      { exists A. split; assumption. }
+      apply (HFx HF) in P. apply (HFy HF) in Q.
+      destruct P as [xFx [HxFx P]]. destruct Q as [yFy [HyFy Q]].
+      equiv_class x R. rename x0 into xmodR. rename H into HxmodR.
+      equiv_class y R. rename x0 into ymodR. rename H into HymodR.
+      assert (T : ymodR = xmodR).
+      { symmetry. apply (Enderton3N R A x y xmodR ymodR xy HRA); try assumption. }
+      replace ymodR with xmodR in *. clear ymodR T.
+      destruct HF'ARAR as [HF' [HdomF' [ranF' [HranF' Hsub']]]].
+      assert (T : exists domF', Domain F' domF' /\ In xmodR domF').
+      { exists AmodR. split; try assumption. destruct HRA as [HRA _].
+        apply (HAmodR HRA). exists x. split; assumption. }
+      funval HF' T F' xmodR. rename x0 into F'xmodR. rename H into HF'xmodR.
+      assert (S : F'xmodR = FxmodR).
+      { apply (Hstar x xmodR Fx FxmodR F'xmodR); assumption. }
+      rewrite <- S. apply (Hstar y xmodR Fy FymodR F'xmodR); try assumption.
+Qed.
+
+Check Enderton3Q.
+
+Theorem Enderton3Q' : forall R A F AmodR Fhat Fhat', EquivalenceRelation R A ->
+  FuncFromInto F A A -> Quotient A R AmodR -> Compatible F R A ->
+  FuncFromInto Fhat AmodR AmodR -> FuncFromInto Fhat' AmodR AmodR ->
+  SatisfiesStar R A F AmodR Fhat -> SatisfiesStar R A F AmodR Fhat' -> Fhat = Fhat'.
+Proof.
+  intros R A F AmodR Fhat Fhat' HRA HFAA HAmodR Hcomp HFARAR HFARAR' Hstar Hstar'.
+  apply Extensionality_Axiom. intros x. split; intros H.
+Admitted. (* TODO *)
 
 Theorem Exercise3_32a : forall R R', Inverse R R' ->
   Symmetric R <-> Subset R' R.
-Admitted.
+Proof.
+  intros R R' HR'. split; intros H.
+  - intros yx I. apply HR' in I. destruct I as [x [y [xy [Hyx [Hxy I]]]]].
+    apply (H x y xy yx Hxy Hyx I).
+  - intros x y xy yx Hxy Hyx I. apply H. apply HR'.
+    exists x, y, xy. repeat (split; try assumption).
+Qed.
 
 Theorem Exercise3_32b : forall R RoR, Composition R R RoR ->
   Transitive R <-> Subset RoR R.
-Admitted.
+Proof.
+  intros R RoR HRoR. split; intros H.
+  - intros xz I. apply HRoR in I.
+    destruct I as [x [z [y [xy [yz [Hxz [Hxy [Hyz [I J]]]]]]]]].
+    apply (H x y z xy yz xz); assumption.
+  - intros x y z xy yz xz Hxy Hyz Hxz I J. apply H. apply HRoR.
+    exists x, z, y, xy, yz. repeat (split; try assumption).
+Qed.
 
 Theorem Exercise3_33 : forall R R' R'oR, Inverse R R' -> Composition R' R R'oR ->
   (Symmetric R /\ Transitive R /\ Relation R) <-> R = R'oR.
-Admitted.
+Proof.
+  intros R R' R'oR HR' HR'oR. split.
+  - intros [Hsym [Htrans HR]]. apply Extensionality_Axiom.
+    intros xz. split; intros H.
+    + apply HR'oR. apply HR in H as I. destruct I as [x [z Hxz]].
+      ordpair z z. rename x0 into zz. rename H into Hzz.
+      exists x, z, z, xz, zz. repeat (split; try assumption).
+      apply HR'. exists z, z, zz. repeat (split; try assumption).
+      ordpair z x. rename x0 into zx. rename H into Hzx.
+      apply (Htrans z x z zx xz); try assumption.
+      apply (Hsym x z xz zx); try assumption.
+    + apply HR'oR in H. destruct H as [x [z [y [xy [yz [Hxz [Hxy [Hyz [H I]]]]]]]]].
+      apply HR' in I. destruct I as [z' [y' [zy [Hyz' [Hzy I]]]]].
+      assert (T : y' = y /\ z' = z).
+      { apply (Enderton3A y' z' y z yz yz Hyz' Hyz). trivial. }
+      destruct T as [T1 T2]. replace y' with y in *. replace z' with z in *.
+      clear z' y' T1 T2. apply (Htrans x y z xy yz xz); try assumption.
+      apply (Hsym z y zy yz); try assumption.
+  - intros H. assert (P : Symmetric R).
+    { intros x z xz zx Hxz Hzx I. rewrite H in I. apply HR'oR in I.
+      rewrite H. apply HR'oR.
+      destruct I as [x' [z' [y [xy [yz [Hxz' [Hxy [Hyz [I J]]]]]]]]].
+      assert (T : x' = x /\ z' = z).
+      { apply (Enderton3A x' z' x z xz xz Hxz' Hxz). trivial. }
+      destruct T as [T1 T2]. replace x' with x in *. replace z' with z in *.
+      clear x' z' T1 T2. exists z, x, y.
+      ordpair y x. rename x0 into yx. rename H0 into Hyx.
+      apply HR' in J. destruct J as [z' [y' [zy [Hyz' [Hzy J]]]]].
+      assert (T : y' = y /\ z' = z).
+      { apply (Enderton3A y' z' y z yz yz Hyz' Hyz). trivial. }
+      destruct T as [T1 T2]. replace y' with y in *. replace z' with z in *.
+      clear T1 T2 y' z'. exists zy, yx. repeat (split; try assumption).
+      apply HR'. exists x, y, xy. repeat (split; try assumption). }
+    repeat split.
+    + apply P.
+    + intros x y z xy yz xz Hxy Hyz Hxz I J. rewrite H. apply HR'oR.
+      ordpair z y. rename x0 into zy. rename H0 into Hzy.
+      exists x, z, y, xy, yz. repeat (split; try assumption).
+      apply HR'. exists z, y, zy. repeat (split; try assumption).
+      apply (P y z yz zy); try assumption.
+    + intros xz I. rewrite H in I. apply HR'oR in I.
+      destruct I as [x [z [y [xy [yz [Hxz [Hxy [Hyz [I J]]]]]]]]].
+      exists x, z. assumption.
+Qed.
 
 Theorem Exercise3_34a : forall A NA, ~ Empty A ->
   (forall R, In R A -> Transitive R /\ Relation R) -> Intersect A NA ->
   Transitive NA /\ Relation NA.
-Admitted.
+Proof.
+  intros A NA HA1 HA2 HNA. split.
+  - intros x y z xy yz xz Hxy Hyz Hxz H I.
+    apply (HNA HA1). intros R HR. destruct (HA2 R HR) as [Htrans HR'].
+    apply (Htrans x y z xy yz xz); try assumption.
+    + assert (T : forall y, In y A -> In xy y).
+      { apply HNA. apply HA1. apply H. }
+      apply T, HR.
+    + assert (T : forall y, In y A -> In yz y).
+      { apply HNA. apply HA1. apply I. }
+      apply T, HR.
+  - intros xy H. assert (P : forall R, In R A -> In xy R).
+    { apply (HNA HA1), H. }
+    apply (Member_Exists_If_NonEmpty) in HA1. destruct HA1 as [R HR].
+    apply HA2 in HR as HR'. apply P in HR. destruct HR' as [Htrans HR'].
+    apply HR' in HR. assumption.
+Qed.
 
 Theorem Exercise3_34b : exists A UA, ~ Empty A /\
   (forall R, In R A -> Transitive R /\ Relation R) /\ Union A UA /\
-  Relation UA /\ ~ Transitive A.
-Admitted.
+  Relation UA /\ ~ Transitive UA.
+Proof.
+  empty. singleton x. rename x0 into y. rename H into Hy.
+  singleton y. rename x0 into z. rename H into Hz.
+  ordpair x y. rename x0 into xy. rename H into Hxy.
+  ordpair y z. rename x0 into yz. rename H into Hyz.
+  singleton xy. rename x0 into Sxy. rename H into HSxy.
+  singleton yz. rename x0 into Syz. rename H into HSyz.
+  pair Sxy Syz. rename x0 into A. rename H into HA.
+  union A. rename x0 into UA. rename H into HUA.
+  exists A, UA. split; try split.
+  - intros Con. assert (P : In Sxy A).
+    { apply HA. left. trivial. }
+    apply Con in P. assumption.
+  - intros R HR. apply HA in HR. destruct HR as [HR | HR].
+    + replace R with Sxy in *. clear HR R. split.
+      * intros a b c ab bc ac Hab Hbc Hac H I. apply HSxy.
+        apply HSxy in H. replace ab with xy in *.
+        apply HSxy in I. replace bc with xy in *.
+        clear H I ab bc. apply (OrdPair_Unique x y ac xy); try assumption.
+        replace x with a. replace y with c. assumption.
+        apply (Enderton3A b c x y xy xy Hbc Hxy). trivial.
+        apply (Enderton3A a b x y xy xy Hab Hxy). trivial.
+      * intros ab Hab. exists x, y. apply HSxy in Hab. rewrite Hab. assumption.
+    + replace R with Syz in *. clear HR R. split.
+      * intros a b c ab bc ac Hab Hbc Hac H I. apply HSyz.
+        apply HSyz in H. replace ab with yz in *.
+        apply HSyz in I. replace bc with yz in *.
+        clear H I ab bc. apply (OrdPair_Unique y z ac yz); try assumption.
+        replace y with a. replace z with c. assumption.
+        apply (Enderton3A b c y z yz yz Hbc Hyz). trivial.
+        apply (Enderton3A a b y z yz yz Hab Hyz). trivial.
+      * intros ab Hab. exists y, z. apply HSyz in Hab. rewrite Hab. assumption.
+  - split; try assumption. split.
+    + intros ab H. apply HUA in H. destruct H as [R [H I]].
+      apply HA in I. destruct I as [I | I].
+      * exists x, y. rewrite I in H. apply HSxy in H. rewrite H. assumption.
+      * exists y, z. rewrite I in H. apply HSyz in H. rewrite H. assumption.
+    + intros Con. ordpair x z. rename x0 into xz. rename H into Hxz.
+      assert (P : In xz UA).
+      { apply (Con x y z xy yz xz); try assumption.
+        - apply HUA. exists Sxy. split; try (apply HSxy; trivial).
+          apply HA. left. trivial.
+        - apply HUA. exists Syz. split; try (apply HSyz; trivial).
+          apply HA. right. trivial. }
+      apply HUA in P. destruct P as [R [P Q]]. apply HA in Q.
+      destruct Q as [Q | Q].
+      * rewrite Q in P. apply HSxy in P. rewrite <- P in Hxy.
+        assert (S : y = z). { apply (Enderton3A x y x z xz xz Hxy Hxz). trivial. }
+        assert (T : x = y).
+        { rewrite S in H0. assert (T1 : In x z). { apply H0. trivial. }
+          apply Hz. assumption. }
+        assert (U : In x y). { apply H0. trivial. }
+        rewrite <- T in U. apply Hy in U. assumption.
+      * rewrite Q in P. apply HSyz in P. rewrite P in Hxz.
+        assert (S : x = y). { apply (Enderton3A x z y z yz yz Hxz Hyz). trivial. }
+        assert (T : In x y). { apply H0. trivial. }
+        rewrite <- S in T. apply Hy in T. assumption.
+Qed.
 
 Theorem Exercise3_35 : forall R x xmodR Sx R_Sx_,
   EquivalenceClass x R xmodR -> Singleton x Sx -> Image Sx R R_Sx_ ->
   xmodR = R_Sx_.
-Admitted.
+Proof.
+  intros R x xmodR Sx R_Sx_ HxmodR HSx HR_Sx_.
+  apply Extensionality_Axiom. intros t. split; intros H.
+  - apply HR_Sx_. apply HxmodR in H. exists x.
+    destruct H as [xt [Hxt H]]. exists xt. repeat (split; try assumption).
+    apply HSx. trivial.
+  - apply HxmodR. apply HR_Sx_ in H. destruct H as [x' [xt [Hxt [H I]]]].
+    exists xt. split; try assumption. replace x with x'. assumption.
+    apply HSx in H. apply H.
+Qed.
 
 Definition GivenByRangeER (f A B R Q : set) : Prop :=
   FuncFromInto f A B -> EquivalenceRelation R B ->
-  forall xy, In xy Q <-> exists x y fx fy fxfy,
+  forall xy, In xy Q <-> exists x y fx fy fxfy, In x A /\ In y A /\
   OrdPair x y xy /\ FunVal f x fx /\ FunVal f y fy /\ OrdPair fx fy fxfy /\
   In fxfy R.
 
 Theorem GivenByRangeER_Exists : forall f A B R, FuncFromInto f A B ->
   EquivalenceRelation R B -> exists Q, GivenByRangeER f A B R Q.
-Admitted.
+Proof.
+  intros f A B R HfAB HR. prod A A. rename x into AxA. rename H into HAxA.
+  build_set
+    (prod set set)
+    (fun (t : set * set) (c xy : set) => exists x y fx fy fxfy, In x A /\
+      In y A /\OrdPair x y xy /\ FunVal f x fx /\ FunVal f y fy /\
+      OrdPair fx fy fxfy /\ In fxfy R)
+    (f, R)
+    AxA.
+  rename x into Q. rename H into HQ. exists Q. intros _ _ xy. split; intros H.
+  - apply HQ. assumption.
+  - apply HQ. split; try assumption.
+    destruct H as [x [y [fx [fy [fxfy [Hxy [Hx [Hy _]]]]]]]].
+    apply HAxA. exists x, y. repeat (split; try assumption).
+Qed. 
 
 Theorem GivenByRangeER_Unique : forall f A B R Q Q',
   FuncFromInto f A B -> EquivalenceRelation R B -> GivenByRangeER f A B R Q ->
   GivenByRangeER f A B R Q' -> Q = Q'.
-Admitted.
+Proof.
+  intros f A B R Q Q' HfAB HRB HQ HQ'.
+  apply Extensionality_Axiom. intros xy. split; intros H.
+  - apply (HQ' HfAB HRB), (HQ HfAB HRB), H.
+  - apply (HQ HfAB HRB), (HQ' HfAB HRB), H.
+Qed.
 
 Theorem Exercise3_36 : forall f A B R Q, FuncFromInto f A B ->
   EquivalenceRelation R B -> GivenByRangeER f A B R Q -> EquivalenceRelation Q A.
-Admitted.
+Proof.
+  intros f A B R Q HfAB HRB HQ. repeat split.
+  - intros xy H. apply (HQ HfAB HRB) in H.
+    destruct H as [x [y [fx [fy [fxfy [Hx [Hy [Hxy [Hfx [Hfy [Hfxfy H]]]]]]]]]]].
+    exists x, y. repeat (split; try assumption).
+  - intros x xx Hxx H. apply (HQ HfAB HRB).
+    assert (T : exists domf, Domain f domf /\ In x domf).
+    { exists A. split; try assumption; apply HfAB. }
+    destruct HfAB as [Hf HfAB]. funval Hf T f x.
+    rename x0 into fx. rename H0 into Hfx. ordpair fx fx.
+    rename x0 into fxfx. rename H0 into Hfxfx.
+    exists x, x, fx, fx, fxfx. repeat (split; try assumption).
+    destruct HRB as [HRB [Hrefl _]]. apply (Hrefl fx fxfx Hfxfx).
+    destruct HfAB as [Hdomf [ranf [Hranf Hsub]]]. apply Hsub.
+    apply Hranf. exists x. apply Hfx; try assumption.
+  - intros x y xy yx Hxy Hyx H. apply (HQ HfAB HRB).
+    apply (HQ HfAB HRB) in H.
+    destruct H as [x' [y' [fx [fy [fxfy [Hx [Hy [Hxy' [Hfx [Hfy [Hfxfy H]]]]]]]]]]].
+    assert (T : x' = x /\ y' = y).
+    { apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial. }
+    destruct T as [T1 T2]. replace x' with x in *. replace y' with y in *.
+    clear x' y' T1 T2. ordpair fy fx. rename x0 into fyfx. rename H0 into Hfyfx.
+    exists y, x, fy, fx, fyfx. repeat (split; try assumption).
+    destruct HRB as [HRB [_ [Hsym _]]]. apply (Hsym fx fy fxfy); try assumption.
+  - intros x y z xy yz xz Hxy Hyz Hxz H I.
+    apply (HQ HfAB HRB). apply (HQ HfAB HRB) in H. apply (HQ HfAB HRB) in I.
+    destruct H as [x' [y' [fx [fy [fxfy [Hx [Hy [Hxy' [Hfx [Hfy [Hfxfy H]]]]]]]]]]].
+    assert (T : x' = x /\ y' = y).
+    { apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial. }
+    destruct T as [T1 T2]. replace x' with x in *. replace y' with y in *.
+    clear x' y' T1 T2.
+    destruct I as [y' [z' [fy' [fz [fyfz [Hy' [Hz [Hyz' [Hfy' [Hfz [Hfyfz I]]]]]]]]]]].
+    assert (T : y' = y /\ z' = z).
+    { apply (Enderton3A y' z' y z yz yz Hyz' Hyz). trivial. }
+    destruct T as [T1 T2]. replace y' with y in *. replace z' with z in *.
+    clear y' z' T1 T2. replace fy' with fy in *.
+    ordpair fx fz. rename x0 into fxfz. rename H0 into Hfxfz.
+    exists x, z, fx, fz, fxfz. repeat (split; try assumption).
+    destruct HRB as [HRB [_ [_ Htrans]]].
+    apply (Htrans fx fy fz fxfy fyfz fxfz); try assumption.
+    apply (FunVal_Unique f y fy fy'); try assumption.
+    apply HfAB. exists A. split; try assumption. apply HfAB.
+Qed.
 
 Definition GivenByPartition (PI Rpi: set) : Prop :=
   forall xy, In xy Rpi <-> exists x y B,
   OrdPair x y xy /\ In B PI /\ In x B /\ In y B.
 
 Theorem GivenByPartition_Exists : forall PI, exists Rpi, GivenByPartition PI Rpi.
-Admitted.
+Proof.
+  intros PI. union PI. rename x into UPI. rename H into HUPI.
+  prod UPI UPI. rename x into UPIxUPI. rename H into HUPIxUPI.
+  build_set
+    set
+    (fun (t c xy : set) => exists x y B,
+      OrdPair x y xy /\ In B t /\ In x B /\ In y B)
+    PI
+    UPIxUPI.
+  rename x into Rpi. rename H into HRpi. exists Rpi.
+  intros xy. split; intros H; try apply HRpi, H.
+  apply HRpi. split; try assumption.
+  apply HUPIxUPI. destruct H as [x [y [B [Hxy [HB [Hx Hy]]]]]].
+  exists x, y. repeat (split; try assumption);
+  apply HUPI; exists B; split; assumption.
+Qed.
 
 Theorem GivenByPartition_Unique : forall PI R R', GivenByPartition PI R ->
   GivenByPartition PI R' -> R = R'.
-Admitted.
+Proof.
+  intros PI R R' HR HR'. apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HR', HR, H.
+  - apply HR, HR', H.
+Qed.
 
 Theorem Exercise3_37 : forall A PI Rpi, Partition A PI ->
   GivenByPartition PI Rpi -> EquivalenceRelation Rpi A.
-Admitted.
+Proof.
+  intros A PI Rpi HPI HRpi. repeat split.
+  - intros xy H. apply HRpi in H.
+    destruct H as [x [y [B [Hxy [HB [Hx Hy]]]]]].
+    destruct HPI as [Hsub [Hdisjoint Hexh]].
+    exists x, y. split; try assumption; split.
+    + apply (Hsub B); try assumption.
+    + apply (Hsub B); try assumption.
+  - intros x xx Hxx H. apply HRpi.
+    destruct HPI as [Hsub [Hdis Hexh]]. destruct (Hexh x H) as [B [I J]].
+    exists x, x, B. repeat (split; try assumption).
+  - intros x y xy yx Hxy Hyx H. apply HRpi. apply HRpi in H.
+    destruct H as [x' [y' [B [Hxy' [HB [Hx Hy]]]]]].
+    assert (T : x' = x /\ y' = y).
+    { apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial. }
+    destruct T as [T1 T2]. replace x' with x in *. replace y' with y in *.
+    clear x' y' T1 T2. exists y, x, B. repeat (split; try assumption).
+  - intros x y z xy yz xz Hxy Hyz Hxz H I.
+    apply HRpi. apply HRpi in H. apply HRpi in I.
+    destruct H as [x' [y' [B1 [Hxy' [HB1 [Hx Hy]]]]]].
+    assert (T : x' = x /\ y' = y).
+    { apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial. }
+    destruct T as [T1 T2]. replace x' with x in *. replace y' with y in *.
+    clear x' y' T1 T2. destruct I as [y' [z' [B2 [Hyz' [HB2 [Hy' Hz]]]]]].
+    assert (T : y' = y /\ z' = z).
+    { apply (Enderton3A y' z' y z yz yz Hyz' Hyz). trivial. }
+    destruct T as [T1 T2]. replace y' with y in *. replace z' with z in *.
+    clear y' z' T1 T2. exists x, z, B1. repeat (split; try assumption).
+    replace B1 with B2. assumption. apply HPI;  try  assumption.
+    exists y. split; assumption.
+Qed.
 
 (** The following two theorems are the primary results of interest in this
     section. Intuitively, they say that our construction of a partition of A
@@ -3219,11 +3793,73 @@ Admitted.
 
 Theorem Exercise3_38 : forall A PI Rpi AmodRpi, Partition A PI ->
   GivenByPartition PI Rpi -> Quotient A Rpi AmodRpi -> PI = AmodRpi.
-Admitted.
+Proof.
+  intros A PI Rpi AmodRpi HPI HRpi HAmodRpi.
+  apply Extensionality_Axiom. intros B. split; intros H.
+  - apply HAmodRpi.
+    + intros xy I. apply HRpi in I. destruct I as [x [y [B' [Hxy [HB [Hx Hy]]]]]].
+      exists x, y. split; try assumption.
+      destruct HPI as [Hsub _]. split.
+      * apply (Hsub B' HB), Hx.
+      * apply (Hsub B' HB), Hy.
+    + destruct HPI as [Hsub HPI]. destruct (Hsub B H) as [Hsub' Hne].
+      apply Member_Exists_If_NonEmpty in Hne. destruct Hne as [x I].
+      exists x. split.
+      * apply Hsub'. assumption.
+      * intros t. split; intros J.
+        { ordpair x t. rename x0 into xt. rename H0 into Hxt.
+          exists xt. split; try assumption. apply HRpi.
+          exists x, t, B. repeat (split; try assumption). }
+        { destruct J as [xt [Hxt J]]. apply HRpi in J.
+          destruct J as [x' [t' [B' [Hxt' [HB' [Hx' Ht']]]]]].
+          assert (T : x' = x /\ t' = t).
+          { apply (Enderton3A x' t' x t xt xt Hxt' Hxt). trivial. }
+          destruct T as [T1 T2]. replace x' with x in *. replace t' with t in *.
+          clear x' t' T1 T2. replace B with B'. assumption.
+          apply HPI; try assumption. exists x. split; assumption. }
+  - apply HAmodRpi in H. destruct H as [x [H HxmodRpi]].
+    destruct HPI as [Hsub [Hdis Hexh]]. destruct (Hexh x H) as [B' [I J]].
+    replace B with B'; try assumption.
+    apply Extensionality_Axiom. intros t. split; intros K.
+    + apply HxmodRpi. ordpair x t. rename x0 into xt. rename H0 into Hxt.
+      exists xt. split; try assumption. apply HRpi.
+      exists x, t, B'. repeat (split; try assumption).
+    + apply HxmodRpi in K. destruct K as [xt [Hxt K]].
+      apply HRpi in K. destruct K as [x' [t' [B'' [Hxt' [HB' [Hx' Ht']]]]]].
+      assert (T : x' = x /\ t' = t).
+      { apply (Enderton3A x' t' x t xt xt Hxt' Hxt). trivial. }
+      destruct T as [T1 T2]. replace x' with x in *. replace t' with t in *.
+      clear x' t' T1 T2. replace B' with B''. assumption.
+      apply Hdis; try assumption. exists x. split; assumption.
+    + intros xy I. apply HRpi in I.
+      destruct I as [x [y [B' [Hxy [HB' [Hx Hy]]]]]].
+      exists x, y. split; try assumption. split;
+      destruct HPI as [Hsub _]; apply (Hsub B'); assumption.
+Qed.
 
 Theorem Exercise3_39 : forall A R AmodR Rpi, EquivalenceRelation R A ->
   Quotient A R AmodR -> GivenByPartition AmodR Rpi -> R = Rpi.
-Admitted.
+Proof.
+  intros A R AmodR Rpi HRA HAmodR HRpi.
+  apply Extensionality_Axiom. intros xy. split; intros H.
+  - apply HRpi. destruct HRA as [HRA [Hrefl [Hsym Htrans]]].
+    apply HRA in H as I. destruct I as [x [y [Hxy [Hx Hy]]]].
+    exists x, y. equiv_class x R. rename x0 into xmodR. rename H0 into HxmodR.
+    exists xmodR. split; try assumption. repeat split.
+    + apply HAmodR. { repeat split; assumption. }
+      exists x. split; try assumption.
+    + apply HxmodR. ordpair x x. rename x0 into xx. rename H0 into Hxx.
+      exists xx. split; try assumption. apply (Hrefl x xx Hxx Hx).
+    + apply HxmodR. exists xy. split; try assumption.
+  - apply HRpi in H. destruct H as [x [y [B [Hxy [HB [Hx Hy]]]]]].
+    apply HAmodR in HB; try apply HRA. destruct HB as [b [H HB]].
+    apply HB in Hx. apply HB in Hy.
+    destruct Hx as [bx [Hbx Hx]]. destruct Hy as [by' [Hby Hy]].
+    ordpair x b. rename x0 into xb. rename H0 into Hxb.
+    destruct HRA as [HRA [Hrefl [Hsym Htrans]]].
+    apply (Htrans x b y xb by' xy); try assumption.
+    apply (Hsym b x bx xb); try assumption.
+Qed.
 
 (** Exercises 40 and 41 treat sets that we have yet to define, so we can only
     treat them informally (TODO). *)
