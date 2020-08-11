@@ -3892,18 +3892,150 @@ Definition Connected (R A : set) : Prop :=
 
 Theorem Enderton3R : forall A R, LinearOrdering R A ->
   Irreflexive R /\ Connected R A.
-Admitted.
+Proof.
+  intros A R HRA. split.
+  - intros Con. destruct Con as [x [xx [Hxx Con]]].
+    destruct HRA as [HRA [Htans Htrich]]. assert (P : In x A).
+    { destruct (HRA xx Con) as [x' [x'' [Hxx' [Hx' Hx'']]]].
+      replace x with x'; try assumption.
+      apply (Enderton3A x' x'' x x xx xx Hxx' Hxx). trivial. }
+    destruct (Htrich x x xx xx P P Hxx Hxx) as [H | [H | H]].
+    + apply H in Con. apply Con.
+    + apply H in Con. apply Con.
+    + destruct H as [_ [H _]]. apply H. trivial.
+  - intros x y Hx Hy Hne. destruct HRA as [HRA [Htrans Htrich]].
+    ordpair x y. rename x0 into xy. rename H into Hxy.
+    ordpair y x. rename x0 into yx. rename H into Hyx.
+    destruct (Htrich x y xy yx Hx Hy Hxy Hyx) as [H | [H | H]].
+    + left. exists xy. split; try assumption. apply H.
+    + destruct H as [_ [H _]]. apply Hne in H. destruct H.
+    + right. exists yx. split; try assumption. apply H.
+Qed.
 
 Theorem Exercise3_43 : forall R A R', LinearOrdering R A -> Inverse R R' ->
   LinearOrdering R' A.
-Admitted.
+Proof.
+  intros R A R' HRA HR'. destruct HRA as [HRA [Htrans Htrich]]. repeat split.
+  - intros yx Hyx. apply HR' in Hyx.
+    destruct Hyx as [x [y [xy [Hyx [Hxy H]]]]]. exists y, x.
+    destruct (HRA xy H) as [x' [y' [Hxy' [Hx' Hy']]]].
+    split; try assumption. split.
+    + replace y with y'; try assumption.
+      apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial.
+    + replace x with x'; try assumption.
+      apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial.
+  - intros z y x zy yx zx Hzy Hyx Hzx H I.
+    apply HR' in H. apply HR' in I.
+    destruct H as [y' [z' [yz [Hzy' [Hyz H]]]]].
+    destruct I as [x' [y'' [xy [Hyx' [Hxy I]]]]].
+    ordpair x z. rename x0 into xz. rename H0 into Hxz.
+    apply HR'. exists x, z, xz. repeat (split; try assumption).
+    apply (Htrans x y z xy yz xz); try assumption.
+    + replace x with x'; (replace y with y''); try assumption;
+      apply (Enderton3A y'' x' y x yx yx Hyx' Hyx); trivial.
+    + replace y with y'; replace z with z'; try assumption;
+      apply (Enderton3A z' y' z y zy zy Hzy' Hzy); trivial.
+  - intros x y xy yx Hx Hy Hxy Hyx.
+    destruct (Htrich x y xy yx Hx Hy Hxy Hyx) as [H | [H | H]].
+    + right; right. repeat split.
+      * intros C. destruct H as [_ [_ H]]. apply H.
+        apply HR' in C. destruct C as [y' [x' [yx' [Hxy' [Hyx' C]]]]].
+        replace yx with yx'; try assumption.
+        apply (OrdPair_Unique y x yx' yx); try assumption.
+        replace y with y'; replace x with x'; try assumption;
+        apply (Enderton3A x' y' x y xy xy Hxy' Hxy); trivial.
+      * apply H.
+      * apply HR'. exists x, y, xy. repeat (split; try assumption). apply H.
+    + right; left. repeat (split).
+      * intros C. destruct H as [_ [_ H]]. apply H.
+        apply HR' in C. destruct C as [y' [x' [yx' [Hxy' [Hyx' C]]]]].
+        replace yx with yx'; try assumption.
+        apply (OrdPair_Unique y x yx' yx); try assumption.
+        replace y with y'; replace x with x'; try assumption;
+        apply (Enderton3A x' y' x y xy xy Hxy' Hxy); trivial.
+      * apply H.
+      * intros C. destruct H as [H _]. apply H.
+        apply HR' in C. destruct C as [x' [y' [xy' [Hyx' [Hxy' C]]]]].
+        replace xy with xy'; try assumption.
+        apply (OrdPair_Unique x y xy' xy); try assumption.
+        replace x with x'; replace y with y'; try assumption;
+        apply (Enderton3A y' x' y x yx yx Hyx' Hyx); trivial.
+    + left. repeat split.
+      * apply HR'. exists y, x, yx. repeat (split; try apply H; try assumption).
+      * apply H.
+      * intros C. destruct H as [H _]. apply H.
+        apply HR' in C. destruct C as [x' [y' [xy' [Hyx' [Hxy' C]]]]].
+        replace xy with xy'; try assumption.
+        apply (OrdPair_Unique x y xy' xy); try assumption.
+        replace x with x'; replace y with y'; try assumption;
+        apply (Enderton3A y' x' y x yx yx Hyx' Hyx); trivial.
+Qed.
 
 Theorem Exercise3_44 : forall R A f, LinearOrdering R A -> FuncFromInto f A A ->
   (forall x y xy fx fy fxfy, OrdPair x y xy -> In x A -> In y A -> FunVal f x fx ->
     FunVal f y fy -> OrdPair fx fy fxfy -> In xy R -> In fxfy R) ->
   OneToOne f /\ forall x y xy fx fy fxfy, OrdPair x y xy -> In x A -> In y A ->
   FunVal f x fx -> FunVal f y fy -> OrdPair fx fy fxfy -> In fxfy R -> In xy R.
-Admitted.
+Proof.
+  intros R A f HRA HfAA Hmono. split.
+  - split; try apply HfAA. intros w x y wy xy Hwy Hxy H I.
+    destruct HRA as [HRA [Htrans Htrich]].
+    ordpair w x. rename x0 into wx. rename H0 into Hwx.
+    ordpair x w. rename x0 into xw. rename H0 into Hxw.
+    ordpair y y. rename x0 into yy. rename H0 into Hyy.
+    assert (Hfw : FunVal f w y).
+    { intros _ _. exists wy. split; assumption. }
+    assert (Hfx : FunVal f x y).
+    { intros _ _. exists xy. split; assumption. }
+    assert (Hw : In w A).
+    { apply HfAA. exists y, wy. split; assumption. }
+    assert (Hx : In x A).
+    { apply HfAA. exists y, xy. split; assumption. }
+    assert (Hy : In y A).
+    { destruct HfAA as [_ [_ [ranf [Hranf J]]]]. apply J.
+      apply Hranf. exists x, xy. split; assumption. }
+    destruct (Htrich w x wx xw Hw Hx Hwx Hxw) as [P | [P | P]].
+    + destruct P as [P1 P2].
+      apply (Hmono w x wx y y yy Hwx Hw Hx Hfw Hfx Hyy) in P1.
+      destruct (Htrich y y yy yy Hy Hy Hyy Hyy) as [J | [J | J]];
+      apply J in P1; destruct P1.
+    + apply P.
+    + destruct P as [P1 [P2 P3]].
+      apply (Hmono x w xw y y yy Hxw Hx Hw Hfx Hfw Hyy) in P3.
+      destruct (Htrich y y yy yy Hy Hy Hyy Hyy) as [J | [J | J]];
+      apply J in P3; destruct P3.
+  - intros x y xy fx fy fxfy Hxy Hx Hy Hfx Hfy Hfxfy H.
+    ordpair fy fx. rename x0 into fyfx. rename H0 into Hfyfx.
+    ordpair y x. rename x0 into yx. rename H0 into Hyx.
+    destruct HRA as [HRA [Htrans Htrich]].
+    assert (Hfx' : exists domf, Domain f domf /\ In x domf).
+    { exists A. split; try assumption. apply HfAA. }
+    assert (Hfy' : exists domf, Domain f domf /\ In y domf).
+    { exists A. split; try assumption. apply HfAA. }
+    destruct HfAA as [Hf [Hdomf [ranf [Hranf Hsub]]]].
+    apply (Hfx Hf) in Hfx'. clear Hfx. rename Hfx' into Hfx.
+    apply (Hfy Hf) in Hfy'. clear Hfy. rename Hfy' into Hfy.
+    destruct Hfx as [xfx [Hxfx Hfx]]. destruct Hfy as [yfy [Hyfy Hfy]].
+    assert (HfxA : In fx A).
+    { apply Hsub. apply Hranf. exists x, xfx. split; assumption. }
+    assert (HfyA : In fy A).
+    { apply Hsub. apply Hranf. exists y, yfy. split; assumption. }
+    destruct (Htrich fx fy fxfy fyfx HfxA HfyA Hfxfy Hfyfx) as [J | [J | J]].
+    + destruct (Htrich x y xy yx Hx Hy Hxy Hyx) as [K | [K | K]].
+      * apply K.
+      * assert (C : fx = fy).
+        { destruct Hf as [Hf Hf']. apply (Hf' x fx fy xfx yfy); try assumption.
+          replace x with y; try assumption. symmetry. apply K. }
+        apply J in C. destruct C.
+      * assert (C : In fyfx R).
+        { apply (Hmono y x yx fy fx fyfx Hyx Hy Hx); try assumption.
+          - intros _ _. exists yfy. split; assumption.
+          - intros _ _. exists xfx. split; assumption.
+          - apply K. }
+        apply J in C. destruct C.
+    + apply J in H. destruct H.
+    + apply J in H. destruct H.
+Qed.
 
 Definition LexicographicOrdering (A B RA RB L : set) : Prop :=
   forall abcd, In abcd L <-> exists a b ab c d cd ac bd, In a A /\ In b B /\
@@ -3913,14 +4045,241 @@ Definition LexicographicOrdering (A B RA RB L : set) : Prop :=
 
 Theorem LexicographicOrdering_Exists : forall A B RA RB, exists L,
   LexicographicOrdering A B RA RB L.
-Admitted.
+Proof.
+  intros A B RA RB. prod A B. rename x into AxB. rename H into HAxB.
+  prod AxB AxB. rename x into AxBxAxB. rename H into HAxBxAxB.
+  build_set
+    (prod (prod set set) (prod set set))
+    (fun (t : (set * set) * (set * set)) (_ abcd : set) => exists a b ab c d cd ac bd,
+      In a (fst (fst t)) /\ In b (snd (fst t)) /\ OrdPair a b ab /\
+      In c (fst (fst t)) /\ In d (snd (fst t)) /\ OrdPair c d cd /\
+      OrdPair ab cd abcd /\ OrdPair a c ac /\ OrdPair b d bd /\
+      (In ac (fst (snd t)) \/ (a = c /\ In bd (snd (snd t)))))
+    ((A, B), (RA, RB))
+    AxBxAxB.
+  rename x into L. rename H into HL. exists L.
+  intros abcd. split; intros H; try apply HL, H.
+  apply HL. split; try assumption.
+  destruct H as [a [b [ab [c [d [cd [ac [bd H]]]]]]]].
+  apply HAxBxAxB. exists ab, cd. split; try split; try apply H.
+  - apply HAxB. exists a, b. repeat (split; try apply H).
+  - apply HAxB. exists c, d. repeat (split; try apply H).
+Qed.
 
 Theorem LexicographicOrdering_Unique : forall A B RA RB L L',
   LexicographicOrdering A B RA RB L -> LexicographicOrdering A B RA RB L' ->
   L = L'.
-Admitted.
+Proof.
+  intros A B RA RB L L' HL HL'.
+  apply Extensionality_Axiom. intros abcd. split; intros H.
+  - apply HL', HL, H.
+  - apply HL, HL', H.
+Qed.
 
 Theorem Exercise3_45 : forall A B RA RB L AxB, Prod A B AxB ->
   LinearOrdering RA A -> LinearOrdering RB B ->
   LexicographicOrdering A B RA RB L -> LinearOrdering L AxB.
-Admitted.
+Proof.
+  intros A B RA RB L AxB HAxB HRA HRB HL. repeat (split).
+  - intros abcd H. apply HL in H.
+    destruct H as [a [b [ab [c [d [cd [ac [bd H]]]]]]]].
+    exists ab, cd. repeat (split; try apply H).
+    + apply HAxB. exists a, b. repeat (split; try apply H).
+    + apply HAxB. exists c, d. repeat (split; try apply H).
+  - intros ab cd ef abcd cdef abef Habcd Hcdef Habef H I.
+    apply HL. apply HL in H. apply HL in I.
+    destruct H as [a [b [ab' [c [d [cd' [ac [bd H]]]]]]]].
+    destruct I as [c' [d' [cd'' [e [f [ef' [ce [df I]]]]]]]].
+    ordpair a e. rename x into ae. rename H0 into Hae.
+    ordpair b f. rename x into bf. rename H0 into Hbf.
+    exists a, b, ab', e, f, ef', ae, bf.
+    destruct H as [Ha [Hb [Hab' [Hc [Hd [Hcd' [Habcd' [Hac [Hbd H]]]]]]]]].
+    destruct I as [Hc' [Hd' [Hcd'' [He [Hf [Hef' [Hcdef' [Hce [Hdf I]]]]]]]]].
+    assert (T : c = c').
+    { apply (Enderton3A c d c' d' cd' cd'); try assumption; try trivial.
+      replace cd' with cd''; try assumption.
+      transitivity cd.
+      apply (Enderton3A cd'' ef' cd ef cdef cdef); try assumption; trivial.
+      apply (Enderton3A ab cd ab' cd' abcd abcd); try assumption; trivial. }
+    replace c' with c in *. clear c' T.
+    assert (T : d = d').
+    { apply (Enderton3A c d c d' cd' cd'); try assumption; try trivial.
+      replace cd' with cd''; try assumption.
+      transitivity cd.
+      apply (Enderton3A cd'' ef' cd ef cdef cdef); try assumption; trivial.
+      apply (Enderton3A ab cd ab' cd' abcd abcd); try assumption; trivial. }
+    replace d' with d in *. clear d' T.
+    split; try assumption. split; try assumption. split; try assumption.
+    split; try assumption. split; try assumption. split; try assumption. split.
+    + replace ab' with ab; replace ef' with ef; try assumption;
+      try (apply (Enderton3A cd ef cd'' ef' cdef cdef Hcdef Hcdef'); trivial).
+      apply (Enderton3A ab cd ab' cd' abcd abcd Habcd Habcd'); try trivial.
+    + repeat (split; try assumption).
+      destruct H as [H | H]; destruct I as [I | I].
+      * left. destruct HRA as [_ [Htrans _]].
+        apply (Htrans a c e ac ce ae); try assumption.
+      * left. replace ae with ac; try assumption.
+        apply (OrdPair_Unique a c ac ae); try assumption.
+        replace c with e; try assumption. symmetry. apply I.
+      * left. replace ae with ce; try assumption.
+        apply (OrdPair_Unique c e ce ae); try assumption.
+        replace c with a; try assumption. apply H.
+      * right. split.
+        { transitivity c. apply H. apply I. }
+        { destruct HRB as [_ [Htrans _]].
+          apply (Htrans b d f bd df bf); try assumption.
+          apply H. apply I. }
+  - intros ab cd abcd cdab Hab Hcd Habcd Hcdab.
+    apply HAxB in Hab. apply HAxB in Hcd. destruct Hab as [a [b [Ha [Hb Hab]]]].
+    destruct Hcd as [c [d [Hc [Hd Hcd]]]].
+    ordpair a c. rename x into ac. rename H into Hac.
+    ordpair b d. rename x into bd. rename H into Hbd.
+    ordpair c a. rename x into ca. rename H into Hca.
+    ordpair d b. rename x into db. rename H into Hdb.
+    destruct HRA as [HRA [HAtrans HAtrich]].
+    destruct HRB as [HRB [Hbtrans HBtrich]].
+    apply (HBtrich b d bd db Hb Hd Hbd) in Hdb as H.
+    apply (HAtrich a c ac ca Ha Hc Hac) in Hca as I.
+    destruct I as [I | [I | I]].
+    + left. split; try split.
+      * apply HL. exists a, b, ab, c, d, cd, ac, bd.
+        repeat (split; try assumption). left. apply I.
+      * destruct I as [I1 [I2 I3]]. intros C. apply I2.
+        apply (Enderton3A a b c d ab ab Hab). rewrite C. apply Hcd. trivial.
+      * intros C. apply HL in C.
+        destruct C as [c' [d' [cd' [a' [b' [ab' [ca' [db' C]]]]]]]].
+        destruct C as [Hc' [Hd' [Hcd' [Ha' [Hb' [Hab' [Hcdab' [Hca' [Hdb' C]]]]]]]]].
+        assert (T : cd' = cd /\ ab' = ab).
+        { apply (Enderton3A cd' ab' cd ab cdab cdab Hcdab' Hcdab). trivial. }
+        destruct T as [T1 T2]. replace cd' with cd in *. replace ab' with ab in *.
+        clear T1 T2 ab' cd'. assert (T : a' = a /\ b' = b).
+        { apply (Enderton3A a' b' a b ab ab Hab' Hab). trivial. }
+        destruct T as [T1 T2]. replace a' with a in *. replace b' with b in *.
+        clear T1 T2 a' b'. assert (T : c' = c /\ d' = d).
+        { apply (Enderton3A c' d' c d cd cd Hcd' Hcd). trivial. }
+        destruct T as [T1 T2]. replace c' with c in *. replace d' with d in *.
+        clear T1 T2 c' d' Hc' Hd' Ha' Hb' Hcd' Hab' Hcdab'.
+        assert (T : ca' = ca). { apply (OrdPair_Unique c a ca' ca Hca' Hca). }
+        replace ca' with ca in *. clear ca' T Hca'.
+        assert (T : db' = db). { apply (OrdPair_Unique d b db' db Hdb' Hdb). }
+        replace db' with db in *. clear T db' Hdb'. destruct C as [C | C].
+        { destruct I as [_ [_ I]]. apply I. assumption. }
+        { destruct C as [C _]. symmetry in C. destruct I as [_ [I _]].
+          apply I. assumption. }
+    + destruct I as [I1 [I2 I3]]. destruct H as [H | [H | H]].
+      * left. split; try split.
+        { apply HL. exists a, b, ab, c, d, cd, ac, bd.
+          repeat (split; try assumption). right. split; try assumption.
+          apply H. }
+        { intros C. destruct H as [_ [H _]]. apply H.
+          apply (Enderton3A a b c d ab ab Hab). rewrite C. assumption. trivial. }
+        { intros C. apply HL in C.
+          destruct C as [c' [d' [cd' [a' [b' [ab' [ca' [db' C]]]]]]]].
+          destruct C as [Hc' [Hd' [Hcd' [Ha' [Hb' [Hab' [Hcdab' [Hca' [Hdb' C]]]]]]]]].
+          assert (T : cd' = cd /\ ab' = ab).
+          { apply (Enderton3A cd' ab' cd ab cdab cdab Hcdab' Hcdab). trivial. }
+          destruct T as [T1 T2]. replace cd' with cd in *. replace ab' with ab in *.
+          clear T1 T2 ab' cd'. assert (T : a' = a /\ b' = b).
+          { apply (Enderton3A a' b' a b ab ab Hab' Hab). trivial. }
+          destruct T as [T1 T2]. replace a' with a in *. replace b' with b in *.
+          clear T1 T2 a' b'. assert (T : c' = c /\ d' = d).
+          { apply (Enderton3A c' d' c d cd cd Hcd' Hcd). trivial. }
+          destruct T as [T1 T2]. replace c' with c in *. replace d' with d in *.
+          clear T1 T2 c' d' Hc' Hd' Ha' Hb' Hcd' Hab' Hcdab'.
+          assert (T : ca' = ca). { apply (OrdPair_Unique c a ca' ca Hca' Hca). }
+          replace ca' with ca in *. clear ca' T Hca'.
+          assert (T : db' = db). { apply (OrdPair_Unique d b db' db Hdb' Hdb). }
+          replace db' with db in *. clear T db' Hdb'. destruct C as [C | C].
+          { apply I3. assumption. }
+          { destruct C as [_ C]. destruct H as [_ [_ H]]. apply H. assumption. } }
+      * right; left. split; try split.
+        { intros C. apply HL in C.
+          destruct C as [a' [b' [ab' [c' [d' [cd' [ac' [bd' C]]]]]]]].
+          destruct C as [Ha' [Hb' [Hab' [Hc' [Hd' [Hcd' [Habcd' [Hac' [Hbd' C]]]]]]]]].
+          assert (T : ab' = ab /\ cd' = cd).
+          { apply (Enderton3A ab' cd' ab cd abcd abcd Habcd' Habcd). trivial. }
+          destruct T as [T1 T2]. replace cd' with cd in *. replace ab' with ab in *.
+          clear T1 T2 ab' cd'. assert (T : a' = a /\ b' = b).
+          { apply (Enderton3A a' b' a b ab ab Hab' Hab). trivial. }
+          destruct T as [T1 T2]. replace a' with a in *. replace b' with b in *.
+          clear T1 T2 a' b'. assert (T : c' = c /\ d' = d).
+          { apply (Enderton3A c' d' c d cd cd Hcd' Hcd). trivial. }
+          destruct T as [T1 T2]. replace c' with c in *. replace d' with d in *.
+          clear T1 T2 c' d' Hc' Hd' Ha' Hb' Hcd' Hab' Habcd'.
+          assert (T : ac' = ac). { apply (OrdPair_Unique a c ac' ac Hac' Hac). }
+          replace ac' with ac in *. clear ac' T Hac'.
+          assert (T : bd' = bd). { apply (OrdPair_Unique b d bd' bd Hbd' Hbd). }
+          replace bd' with bd in *. clear T bd' Hbd'. destruct C as [C | C].
+          { apply I1. assumption. }
+          { destruct C as [_ C]. destruct H as [H _]. apply H. assumption. }  }
+        { apply (OrdPair_Unique a b ab cd Hab). rewrite I2.
+          destruct H as [_ [H _]]. rewrite H. assumption. }
+        { intros C. apply HL in C.
+          destruct C as [c' [d' [cd' [a' [b' [ab' [ca' [db' C]]]]]]]].
+          destruct C as [Hc' [Hd' [Hcd' [Ha' [Hb' [Hab' [Hcdab' [Hca' [Hdb' C]]]]]]]]].
+          assert (T : cd' = cd /\ ab' = ab).
+          { apply (Enderton3A cd' ab' cd ab cdab cdab Hcdab' Hcdab). trivial. }
+          destruct T as [T1 T2]. replace cd' with cd in *. replace ab' with ab in *.
+          clear T1 T2 ab' cd'. assert (T : a' = a /\ b' = b).
+          { apply (Enderton3A a' b' a b ab ab Hab' Hab). trivial. }
+          destruct T as [T1 T2]. replace a' with a in *. replace b' with b in *.
+          clear T1 T2 a' b'. assert (T : c' = c /\ d' = d).
+          { apply (Enderton3A c' d' c d cd cd Hcd' Hcd). trivial. }
+          destruct T as [T1 T2]. replace c' with c in *. replace d' with d in *.
+          clear T1 T2 c' d' Hc' Hd' Ha' Hb' Hcd' Hab' Hcdab'.
+          assert (T : ca' = ca). { apply (OrdPair_Unique c a ca' ca Hca' Hca). }
+          replace ca' with ca in *. clear ca' T Hca'.
+          assert (T : db' = db). { apply (OrdPair_Unique d b db' db Hdb' Hdb). }
+          replace db' with db in *. clear T db' Hdb'. destruct C as [C | C].
+          { apply I3. assumption. }
+          { destruct C as [_ C]. destruct H as [_ [_ H]]. apply H. assumption. }  }
+      * right; right. split; try split.
+        { intros C. apply HL in C.
+          destruct C as [a' [b' [ab' [c' [d' [cd' [ac' [bd' C]]]]]]]].
+          destruct C as [Ha' [Hb' [Hab' [Hc' [Hd' [Hcd' [Habcd' [Hac' [Hbd' C]]]]]]]]].
+          assert (T : ab' = ab /\ cd' = cd).
+          { apply (Enderton3A ab' cd' ab cd abcd abcd Habcd' Habcd). trivial. }
+          destruct T as [T1 T2]. replace cd' with cd in *. replace ab' with ab in *.
+          clear T1 T2 ab' cd'. assert (T : a' = a /\ b' = b).
+          { apply (Enderton3A a' b' a b ab ab Hab' Hab). trivial. }
+          destruct T as [T1 T2]. replace a' with a in *. replace b' with b in *.
+          clear T1 T2 a' b'. assert (T : c' = c /\ d' = d).
+          { apply (Enderton3A c' d' c d cd cd Hcd' Hcd). trivial. }
+          destruct T as [T1 T2]. replace c' with c in *. replace d' with d in *.
+          clear T1 T2 c' d' Hc' Hd' Ha' Hb' Hcd' Hab' Habcd'.
+          assert (T : ac' = ac). { apply (OrdPair_Unique a c ac' ac Hac' Hac). }
+          replace ac' with ac in *. clear ac' T Hac'.
+          assert (T : bd' = bd). { apply (OrdPair_Unique b d bd' bd Hbd' Hbd). }
+          replace bd' with bd in *. clear T bd' Hbd'. destruct C as [C | C].
+          { apply I1. assumption. }
+          { destruct C as [_ C]. destruct H as [H _]. apply H. assumption. } }
+        { intros C. destruct H as [_ [H _]]. apply H.
+          apply (Enderton3A a b c d ab ab Hab). rewrite C. assumption. trivial. }
+        { apply HL. exists c, d, cd, a, b, ab, ca, db.
+          repeat (split; try assumption). right. split; try apply H.
+          symmetry. assumption. }
+    + right; right. split; try split.
+      * intros C. apply HL in C.
+        destruct C as [a' [b' [ab' [c' [d' [cd' [ac' [bd' C]]]]]]]].
+        destruct C as [Ha' [Hb' [Hab' [Hc' [Hd' [Hcd' [Habcd' [Hac' [Hbd' C]]]]]]]]].
+        assert (T : ab' = ab /\ cd' = cd).
+        { apply (Enderton3A ab' cd' ab cd abcd abcd Habcd' Habcd). trivial. }
+        destruct T as [T1 T2]. replace cd' with cd in *. replace ab' with ab in *.
+        clear T1 T2 ab' cd'. assert (T : a' = a /\ b' = b).
+        { apply (Enderton3A a' b' a b ab ab Hab' Hab). trivial. }
+        destruct T as [T1 T2]. replace a' with a in *. replace b' with b in *.
+        clear T1 T2 a' b'. assert (T : c' = c /\ d' = d).
+        { apply (Enderton3A c' d' c d cd cd Hcd' Hcd). trivial. }
+        destruct T as [T1 T2]. replace c' with c in *. replace d' with d in *.
+        clear T1 T2 c' d' Hc' Hd' Ha' Hb' Hcd' Hab' Habcd'.
+        assert (T : ac' = ac). { apply (OrdPair_Unique a c ac' ac Hac' Hac). }
+        replace ac' with ac in *. clear ac' T Hac'.
+        assert (T : bd' = bd). { apply (OrdPair_Unique b d bd' bd Hbd' Hbd). }
+        replace bd' with bd in *. clear T bd' Hbd'. destruct C as [C | C].
+        { destruct I as [I _]. apply I. assumption. }
+        { destruct C as [C _]. destruct I as [_ [I _]]. apply I. assumption. }
+      * intros C. destruct I as [_ [I _]]. apply I.
+        apply (Enderton3A a b c d ab ab Hab); try trivial. rewrite C. assumption.
+      * apply HL. exists c, d, cd, a, b, ab, ca, db.
+        repeat (split; try assumption). left. apply I.
+Qed.
