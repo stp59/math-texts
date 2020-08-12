@@ -3627,16 +3627,80 @@ Proof.
       rewrite <- S. apply (Hstar y xmodR Fy FymodR F'xmodR); try assumption.
 Qed.
 
-Check Enderton3Q.
-
 Theorem Enderton3Q' : forall R A F AmodR Fhat Fhat', EquivalenceRelation R A ->
   FuncFromInto F A A -> Quotient A R AmodR -> Compatible F R A ->
   FuncFromInto Fhat AmodR AmodR -> FuncFromInto Fhat' AmodR AmodR ->
   SatisfiesStar R A F AmodR Fhat -> SatisfiesStar R A F AmodR Fhat' -> Fhat = Fhat'.
 Proof.
   intros R A F AmodR Fhat Fhat' HRA HFAA HAmodR Hcomp HFARAR HFARAR' Hstar Hstar'.
-  apply Extensionality_Axiom. intros x. split; intros H.
-Admitted. (* TODO *)
+  apply Extensionality_Axiom. intros xy. split; intros H.
+  - destruct HFARAR as [HFARAR [HdomFhat HranFhat]].
+    destruct HFARAR' as [HFARAR' [HdomFhat' HranFhat']].
+    destruct HFARAR as [HFARAR HsvFhat].
+    apply HFARAR in H as I. destruct I as [xmodR [ymodR Hxy]].
+    assert (T : exists domFhat', Domain Fhat' domFhat' /\ In xmodR domFhat').
+    { exists AmodR. split; try assumption. apply HdomFhat.
+      exists ymodR, xy. split; assumption. }
+    funval HFARAR' T Fhat' xmodR. rename x into ymodR'. rename H0 into HymodR'.
+    apply (HymodR' HFARAR') in T. destruct T as [xy' [Hxy' I]].
+    replace xy with xy'; try assumption.
+    apply (OrdPair_Unique xmodR ymodR xy' xy); try assumption.
+    replace ymodR with ymodR'; try assumption.
+    destruct HranFhat as [ranFhat [HranFhat Hsub]].
+    destruct HranFhat' as [ranFhat' [HranFhat' Hsub']].
+    clear HymodR'. assert (HxmodR : In xmodR AmodR).
+    { apply HdomFhat. exists ymodR, xy. split; assumption. }
+    assert (HymodR : In ymodR AmodR).
+    { apply Hsub. apply HranFhat. exists xmodR, xy. split; assumption. }
+    assert (HymodR' : In ymodR' AmodR).
+    { apply Hsub'. apply HranFhat'. exists xmodR, xy'. split; assumption. }
+    destruct HRA as [HRA HRA']. apply (HAmodR HRA) in HxmodR as [x [Hx HxmodR]].
+    apply (HAmodR HRA) in HymodR as [y [Hy HymodR]].
+    apply (HAmodR HRA) in HymodR' as [y' [Hy' HymodR']].
+    destruct HFAA as [HFAA [HdomF [ranF [HranF HsubF]]]].
+    assert (T : exists domF, Domain F domF /\ In x domF).
+    { exists A. split; assumption. }
+    funval HFAA T F x. rename x0 into Fx. rename H0 into HFx.
+    equiv_class Fx R. rename x0 into FxmodR. rename H0 into HFxmodR.
+    transitivity FxmodR.
+    + apply (Hstar' x xmodR Fx FxmodR ymodR' Hx HxmodR HFx HFxmodR).
+      intros _ _. exists xy'. split; assumption.
+    + symmetry. apply (Hstar x xmodR Fx FxmodR ymodR Hx HxmodR HFx HFxmodR).
+      intros _ _. exists xy. split; assumption.
+  - destruct HFARAR as [HFARAR [HdomFhat HranFhat]].
+    destruct HFARAR' as [HFARAR' [HdomFhat' HranFhat']].
+    destruct HFARAR' as [HFARAR' HsvFhat'].
+    apply HFARAR' in H as I. destruct I as [xmodR [ymodR Hxy]].
+    assert (T : exists domFhat, Domain Fhat domFhat /\ In xmodR domFhat).
+    { exists AmodR. split; try assumption. apply HdomFhat'.
+      exists ymodR, xy. split; assumption. }
+    funval HFARAR T Fhat xmodR. rename x into ymodR'. rename H0 into HymodR'.
+    apply (HymodR' HFARAR) in T. destruct T as [xy' [Hxy' I]].
+    replace xy with xy'; try assumption.
+    apply (OrdPair_Unique xmodR ymodR xy' xy); try assumption.
+    replace ymodR with ymodR'; try assumption.
+    destruct HranFhat as [ranFhat [HranFhat Hsub]].
+    destruct HranFhat' as [ranFhat' [HranFhat' Hsub']].
+    clear HymodR'. assert (HxmodR : In xmodR AmodR).
+    { apply HdomFhat'. exists ymodR, xy. split; assumption. }
+    assert (HymodR : In ymodR AmodR).
+    { apply Hsub'. apply HranFhat'. exists xmodR, xy. split; assumption. }
+    assert (HymodR' : In ymodR' AmodR).
+    { apply Hsub. apply HranFhat. exists xmodR, xy'. split; assumption. }
+    destruct HRA as [HRA HRA']. apply (HAmodR HRA) in HxmodR as [x [Hx HxmodR]].
+    apply (HAmodR HRA) in HymodR as [y [Hy HymodR]].
+    apply (HAmodR HRA) in HymodR' as [y' [Hy' HymodR']].
+    destruct HFAA as [HFAA [HdomF [ranF [HranF HsubF]]]].
+    assert (T : exists domF, Domain F domF /\ In x domF).
+    { exists A. split; assumption. }
+    funval HFAA T F x. rename x0 into Fx. rename H0 into HFx.
+    equiv_class Fx R. rename x0 into FxmodR. rename H0 into HFxmodR.
+    transitivity FxmodR.
+    + apply (Hstar x xmodR Fx FxmodR ymodR' Hx HxmodR HFx HFxmodR).
+      intros _ _. exists xy'. split; assumption.
+    + symmetry. apply (Hstar' x xmodR Fx FxmodR ymodR Hx HxmodR HFx HFxmodR).
+      intros _ _. exists xy. split; assumption.
+Qed.
 
 Theorem Exercise3_32a : forall R R', Inverse R R' ->
   Symmetric R <-> Subset R' R.
