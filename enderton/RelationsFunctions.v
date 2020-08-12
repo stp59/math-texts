@@ -4087,14 +4087,40 @@ Proof.
 Qed.
 
 (** Exercises 40 and 41 treat sets that we have yet to define, so we can only
-    treat them informally (TODO). *)
+    treat them informally. *)
+
+(** Exercise 3-40 : Define an equivalence relation R on the set P of positive
+    integers by mRn <-> m and n have the same number of prime factors.
+    
+    Is there a function f: P/R -> P/R such that f([n]) = [3n] for each n?
+    
+    No, there is not such a function. Leveraging Theorem 3Q, any function
+    f : P -> P satisfying f(n) = 3n is not compatible with R, so no f as 
+    describe above can exist. *)
+
+(** Exercise 3-41 : Let R be the set of real numbers and define the relation Q
+    on RxR by <u,v>Q<x,y> iff u + y = x + v. 
+    
+    a) Show that Q is an equivalence relation on RxR.
+
+      Each property of an equivalence relation can be shown by simple
+      applications of definitions.
+    
+    b) Is there a function G : (RxR)/Q -> RxR/Q satisfying the equation: 
+    
+      G([<x,y>]) = [<x + 2y, y + 2x>] ?
+      
+      Yes there is. We define f(x, y) to be <x + 2y, y + 2x>. This is
+      compatible with Q because if u + y = x + v then
+      u + 2v + y + 2x = x + 2y + v + 2u. Thus the F hat given by Theorem 3Q
+      is the desired G. *)
 
 (** Exercise 42 : State precisely the 'analogous results' mentioned in
     Theorem 3Q. (This will require extending the concept of compatibility in a
     suitable way.) *)
 
 (** Proving the stated theorem in this exercise is not part of the work
-    prescribed by the the book. We leave is as TODO. *)
+    prescribed by the the book. We leave it as TODO. *)
 
 (** The next section of the book gives a brief treatment of (linear) orderings. *)
 
@@ -4508,3 +4534,117 @@ Proof.
       * apply HL. exists c, d, cd, a, b, ab, ca, db.
         repeat (split; try assumption). left. apply I.
 Qed.
+
+(** Exercise 3-46 : Evaluate the following sets:
+    a) NN<x,y>
+    b) NNN{<x,y>}^-1 TODO *)
+
+(** Exercise 3-47 :
+    
+    a) Find all the functions from {0, 1, 2} into {3, 4}.
+    b) Find all the functions from {0, 1, 2} onto {3, 4, 5}. *)
+
+(** Exercise 3-48 : Let T be the set { {}, { {} } }. 
+    
+    a) Find all of the ordered pairs, if any, in PT.
+    b) Evaluate and simplify: (PT)^-1 o (PT | { {} }). *)
+
+(** Exercise 3-49 : Find as many equivalence relations as you can on the set
+    { 0, 1, 2 }. *)
+
+(** Exercise 3-50 :
+
+    a) Find a linear ordering on {0, 1, 2, 3} that contains the ordered pairs
+      <0, 3> and <2,1>.
+    b) Now find a different one meeting the same conditions. *)
+
+(** Exercise 3-51 : Find a many linear orderings as possible on the set
+    {0, 1, 2} that contain the pair <2, 0>. *)
+
+Theorem Exercise3_52 : forall A B C D AxB CxD, Prod A B AxB ->
+  Prod C D CxD -> AxB = CxD -> A = C /\ B = D <->
+  ~Empty A /\ ~Empty B /\ ~Empty C /\ ~Empty D.
+Admitted.
+
+Theorem Exercise3_53a : forall R S RuS RuS' R' S' R'uS',
+  BinaryUnion R S RuS -> Inverse RuS RuS' -> Inverse R R' -> Inverse S S' ->
+  BinaryUnion R' S' R'uS' -> RuS' = R'uS'.
+Admitted.
+
+Theorem Exercise3_53b : forall R S RnS RnS' R' S' R'nS',
+  BinaryIntersect R S RnS -> Inverse RnS RnS' -> Inverse R R' -> Inverse S S' ->
+  BinaryIntersect R' S' R'nS' -> RnS' = R'nS'.
+Admitted.
+
+Theorem Execise3_53c : forall R S RmS RmS' R' S' R'mS',
+  SetMinus R S RmS -> Inverse RmS RmS' -> Inverse R R' -> Inverse S S' ->
+  SetMinus R' S' R'mS' -> RmS' = R'mS'.
+Admitted.
+
+Theorem Exercise3_54a : forall A B C BuC AxBuC AxB AxC AxBuAxC,
+  BinaryUnion B C BuC -> Prod A BuC AxBuC -> Prod A B AxB -> Prod A C AxC ->
+  BinaryUnion AxB AxC AxBuAxC -> AxBuC = AxBuAxC.
+Admitted.
+
+Theorem Exercise3_54b : forall A B C BnC AxBnC AxB AxC AxBnAxC,
+  BinaryIntersect B C BnC -> Prod A BnC AxBnC -> Prod A B AxB -> Prod A C AxC ->
+  BinaryIntersect AxB AxC AxBnAxC -> AxBnC = AxBnAxC.
+Admitted.
+
+Theorem Exercise3_54c : forall A B C BmC AxBmC AxB AxC AxBmAxC,
+  SetMinus B C BmC -> Prod A BmC AxBmC -> Prod A B AxB -> Prod A C AxC ->
+  SetMinus AxB AxC AxBmAxC -> AxBmC = AxBmAxC.
+Admitted.
+
+Theorem Exercise3_55a : ~ forall A B C AxA BxC AxAuBxC AuB AuC AuBxAuC,
+  Prod A A AxA -> Prod B C BxC -> BinaryUnion AxA BxC AxAuBxC ->
+  BinaryUnion A B AuB -> BinaryUnion A C AuC -> Prod AuB AuC AuBxAuC ->
+  AxAuBxC = AuBxAuC.
+Admitted.
+
+Theorem Exercise3_55b : forall A B C AxA BxC AxAnBxC AnB AnC AnBxAnC,
+  Prod A A AxA -> Prod B C BxC -> BinaryIntersect AxA BxC AxAnBxC ->
+  BinaryIntersect A B AnB -> BinaryIntersect A C AnC -> Prod AnB AnC AnBxAnC ->
+  AxAnBxC = AnBxAnC.
+Admitted.
+
+Theorem Exercise3_56a : forall R S RuS domRuS domR domS domRudomS,
+  BinaryUnion R S RuS -> Domain RuS domRuS -> Domain R domR -> Domain S domS ->
+  BinaryUnion domR domS domRudomS -> domRuS = domRudomS.
+Admitted.
+
+Theorem Exercise3_56b : forall R S RnS domRnS domR domS domRndomS,
+  BinaryIntersect R S RnS -> Domain RnS domRnS -> Domain R domR ->
+  Domain S domS -> BinaryIntersect domR domS domRndomS -> domRnS = domRndomS.
+Admitted.
+
+Theorem Exercise3_57a : forall R S T SuT RoSuT RoS RoT RoSuRoT,
+  BinaryUnion S T SuT -> Composition R SuT RoSuT -> Composition R S RoS ->
+  Composition R T RoT -> BinaryUnion RoS RoT RoSuRoT -> RoSuT = RoSuRoT.
+Admitted.
+
+Theorem Exercise3_57b : forall R S T SnT RoSnT RoS RoT RoSnRoT,
+  BinaryIntersect S T SnT -> Composition R SnT RoSnT -> Composition R S RoS ->
+  Composition R T RoT -> BinaryIntersect RoS RoT RoSnRoT -> RoSnT = RoSnRoT.
+Admitted.
+
+Theorem Exercise3_58 : ~ forall F S F' F'_S_ F_F'_S__,
+  Inverse F F' -> Image S F' F'_S_ -> Image F'_S_ F F_F'_S__ -> F_F'_S__ = S.
+Admitted.
+
+Theorem Exercise3_59a : forall Q A B AnB QlAnB QlA QlB QlAnQlB,
+  BinaryIntersect A B AnB -> Restriction Q AnB QlAnB ->
+  Restriction Q A QlA -> Restriction Q B QlB -> BinaryIntersect QlA QlB QlAnQlB ->
+  QlAnB = QlAnQlB.
+Admitted.
+
+Theorem Exercise3_59b : forall Q A B AmB QlAmB QlA QlB QlAmQlB,
+  SetMinus A B AmB -> Restriction Q AmB QlAmB ->
+  Restriction Q A QlA -> Restriction Q B QlB -> SetMinus QlA QlB QlAmQlB ->
+  QlAmB = QlAmQlB.
+Admitted.
+
+Theorem Exercise3_60 : forall R S A RoS RoSlAl SlA RoSlAr,
+  Composition R S RoS -> Restriction RoS A RoSlAl -> Restriction S A SlA ->
+  Composition R SlA RoSlAr -> RoSlAl = RoSlAr.
+Admitted.
