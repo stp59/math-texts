@@ -3048,8 +3048,169 @@ Definition Axiom_of_Choice2 := forall I H XIH, Func H -> Domain H I ->
   IndexedProd I H XIH -> (forall i Hi, In i I -> FunVal H i Hi -> ~ Empty Hi) ->
   ~ Empty XIH.
 
+Lemma AC1_implies_AC2 : Axiom_of_Choice1 -> Axiom_of_Choice2.
+Proof.
+  intros AC1. intros I H XIH HH HdomH HXIH HHi C.
+  range H. rename x into ranH. rename H0 into HranH.
+  union ranH. rename x into UranH. rename H0 into HUranH.
+  prod I UranH. rename x into IxUranH. rename H0 into HIxUranH.
+  build_set
+    set
+    (fun (t c x : set) => exists i Hi j, OrdPair i j x /\ FunVal t i Hi /\ In j Hi)
+    H
+    IxUranH.
+  rename x into R. rename H0 into HR. assert (P : Domain R I).
+  { intros i. split; intros J.
+    - apply HdomH in J as K. destruct K as [Hi [iHi [HiHi K]]].
+      assert (T : FunVal H i Hi).
+      { intros _ _. exists iHi. split; try assumption. }
+      apply (HHi i Hi J) in T. apply Member_Exists_If_NonEmpty in T.
+      destruct T as [j T]. exists j. ordpair i j. rename x into ij.
+      rename H0 into Hij. exists ij. split; try assumption. apply HR. split.
+      + apply HIxUranH. exists i, j. split; try assumption. split; try assumption.
+        apply HUranH. exists Hi. split; try assumption. apply HranH.
+        exists i, iHi. split; assumption.
+      + exists i, Hi, j. repeat (split; try assumption). intros _ _.
+        exists iHi. split; assumption.
+    - destruct J as [j [ij [Hij J]]]. apply HR in J. destruct J as [J _].
+      apply HIxUranH in J. destruct J as [i' [j' [Hi [Hj J]]]].
+      replace i with i'. assumption. apply (Enderton3A i' j' i j ij ij J Hij).
+      trivial. }
+  assert (Q : Relation R).
+  { intros ij Q. apply HR in Q. destruct Q as [Q _]. apply HIxUranH in Q.
+    destruct Q as [i [j [_ [_ Q]]]]. exists i, j. assumption. }
+  apply (AC1 R I P) in Q as J. destruct J as [F [HF [Hsub HdomF]]].
+  assert (S : In F XIH).
+  { apply (HXIH HH).
+    - exists I. split; try assumption. apply Subset_Reflexive.
+    - split; try assumption; split; try assumption.
+      intros i J Fi Hi HFi HHi'.
+      assert (T : exists domF, Domain F domF /\ In i domF).
+      { exists I. split; assumption. }
+      apply (HFi HF) in T. destruct T as [ij [Hij T]].
+      apply Hsub in T. apply HR in T. destruct T as [_ T].
+      destruct T as [i' [Hi' [j [Hij' [HHi'' T]]]]].
+      assert (U : i' = i /\ j = Fi).
+      { apply (Enderton3A i' j i Fi ij ij Hij' Hij). trivial. }
+      replace Fi with j. replace Hi with Hi'. assumption.
+      destruct U as [U1 U2]. replace i' with i in *. replace j with Fi in *.
+      + apply (FunVal_Unique H i Hi' Hi HH).
+        * exists I. split; assumption.
+        * intros _ _. apply (HHi'' HH). exists I. split; assumption.
+        * intros _ _. apply (HHi' HH). exists I. split; assumption.
+      + apply U. }
+  apply C in S. assumption.
+Qed.
+
+Lemma AC2_implies_AC1 : Axiom_of_Choice2 -> Axiom_of_Choice1.
+Proof.
+  intros AC2. intros R domR HdomR HR.
+  assert (P : Empty R \/ ~ Empty R). { apply REM. }
+  destruct P as [P | P].
+  - exists R. split; try split.
+    + assumption.
+    + intros x y z xy xz Hxy Hxz H I. apply P in H. destruct H.
+    + apply Subset_Reflexive.
+    + assumption.
+  - domain R. rename x into I. rename H into HI.
+    range R. rename x into ranR. rename H into HranR.
+    powerset ranR. rename x into PranR. rename H into HPranR.
+    prod I PranR. rename H into HIxPranR. rename x into IxPranR.
+    build_set
+      set
+      (fun (t c x : set) => exists i J, OrdPair i J x /\ forall j, In j J <-> exists ij, OrdPair i j ij /\ In ij t)
+      R
+      IxPranR.
+    rename H into HH. rename x into H.
+    assert (Q : Func H).
+    { split.
+      - intros ij J. apply HH in J. destruct J as [J _]. apply HIxPranR in J.
+        destruct J as [i [j [_ [_ Hij]]]]. exists i, j. assumption.
+      - intros i J K iJ iK HiJ HiK L M. apply HH in L. apply HH in M.
+        destruct L as [L [i' [J' [HiJ' HJ]]]].
+        assert (T : i' = i /\ J' = J).
+        { apply (Enderton3A i' J' i J iJ iJ HiJ' HiJ). trivial. }
+        destruct T as [T1 T2]. replace i' with i in *. replace J' with J in *.
+        clear i' J' T1 T2. destruct M as [M [i' [K' [HiK' HK]]]].
+        assert (T : i' = i /\ K' = K).
+        { apply (Enderton3A i' K' i K iK iK HiK' HiK). trivial. }
+        destruct T as [T1 T2]. replace i' with i in *. replace K' with K in *.
+        clear i' K' T1 T2. apply Extensionality_Axiom. intros j. split; intros N.
+        + apply HK. apply HJ. assumption.
+        + apply HJ, HK. assumption. }
+    assert (S : Domain H I).
+    { intros i. singleton i. rename x into Si. rename H0 into HSi.
+      image Si R. rename x into R_Si_. rename H0 into HR_Si_.
+      ordpair i R_Si_. rename x into iRi. rename H0 into HiRi.
+      split; intros K.
+      - exists R_Si_, iRi. split; try assumption.
+        apply HH. split.
+        + apply HIxPranR. exists i, R_Si_. repeat (split; try assumption).
+          apply HPranR. intros j L. apply HranR. apply HR_Si_ in L.
+          destruct L as [i' [ij [Hij [_ L]]]]. exists i', ij. split; assumption.
+        + exists i, R_Si_. split; try assumption. intros j. split; intros L.
+          * apply HR_Si_ in L. destruct L as [i' [ij [Hij [Hi L]]]].
+            exists ij. split; try assumption. replace i with i'; try assumption.
+            apply HSi. assumption.
+          * apply HR_Si_. destruct L as [ij [Hij L]].
+            exists i, ij. repeat (split; try assumption). apply HSi. trivial.
+      - destruct K as [J [iJ [HiJ K]]]. apply HH in K. destruct K as [K _].
+        apply HIxPranR in K. destruct K as [i' [J' [Hi [_ HiJ']]]].
+        replace i with i'. assumption.
+        apply (Enderton3A i' J' i J iJ iJ HiJ' HiJ). trivial. }
+    assert (S' : exists domH, Domain H domH /\ Subset I domH).
+    { exists I. split; try assumption. apply Subset_Reflexive. }
+    destruct (IndexedProd_Exists I H Q S') as [XIH HXIH].
+    assert (T : forall i Hi, In i I -> FunVal H i Hi -> ~ Empty Hi).
+    { intros i J K L C. assert (M : exists domH, Domain H domH /\ In i domH).
+      { exists I. split; try assumption. }
+      apply (L Q) in M. destruct M as [iJ [HiJ M]].
+      apply HH in M. destruct M as [M [i' [J' [HiJ' HJ]]]].
+      assert (U : i' = i /\ J' = J).
+      { apply (Enderton3A i' J' i J iJ iJ HiJ' HiJ). trivial. }
+      destruct U as [U1 U2]. replace i' with i in *. replace J' with J in *.
+      clear U1 U2 i' J' HiJ'. apply HI in K. destruct K as [j [ij [Hij K]]].
+      assert (N : In j J).
+      { apply HJ. exists ij. split; try assumption. }
+      apply C in N. assumption. }
+    apply (AC2 I H XIH Q S HXIH) in T. apply Member_Exists_If_NonEmpty in T.
+    destruct T as [f Hf]. apply (HXIH Q S') in Hf.
+    destruct Hf as [Hf [Hdomf K]]. exists f. split; try assumption. split.
+    + intros ij L. destruct Hf as [Hf Hf']. apply Hf in L as M.
+      destruct M as [i [j Hij]]. assert (M : In i I).
+      { apply Hdomf. exists j, ij. split; try assumption. }
+      singleton i. rename x into Si. rename H0 into HSi.
+      image Si R. rename x into J. rename H0 into HJ.
+      ordpair i J. rename x into iJ. rename H0 into HiJ.
+      assert (N : FunVal f i j).
+      { intros _ _. exists ij. split; assumption. }
+      assert (O : FunVal H i J).
+      { intros _ _. exists iJ. split; try assumption. apply HH. split.
+        - apply HIxPranR. exists i, J. repeat (split; try assumption).
+          apply HPranR. intros j' Hj'. apply HranR.
+          apply HJ in Hj'. destruct Hj' as [i' [ij' [Hij' [Hi' Hj']]]].
+          exists i', ij'. split; try assumption.
+        - exists i, J. split; try assumption. intros j'. split; intros O.
+          + apply HJ in O. destruct O as [i' [ij' [Hij' [Hi' O]]]].
+            exists ij'. split; try assumption. replace i with i'. assumption.
+            apply HSi. assumption.
+          + apply HJ. destruct O as [ij' [Hij' O]].
+            exists i, ij'. split; try assumption. split; try assumption.
+            apply HSi. trivial. }
+      apply (K i M j J N) in O as T. apply HJ in T.
+      destruct T as [i' [ij' [Hij' [Hi' T]]]]. replace ij with ij'. assumption.
+      apply (OrdPair_Unique i j ij' ij); try assumption.
+      replace i with i'. assumption. apply HSi. assumption.
+    + replace domR with I. assumption.
+      apply (Domain_Unique R I domR); assumption.
+Qed.
+
 Theorem AC1_iff_AC2 : Axiom_of_Choice1 <-> Axiom_of_Choice2.
-Admitted. (* TODO *)
+Proof.
+  split.
+  - apply AC1_implies_AC2.
+  - apply AC2_implies_AC1.
+Qed.
 
 (** Next, we treat the subject of equivalence relations and show the connection
     with partitions. We start with the basic definitions. Note that the
