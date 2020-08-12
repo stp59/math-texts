@@ -32,7 +32,7 @@ Lemma Member_Exists_If_NonEmpty : forall (A : set),
   ~Empty A -> exists (x : set), In x A.
 Proof.
   intros A H. unfold Empty in H.
-  apply (Not_Forall_Implies_Exists set (fun x => In x A)).
+  apply (Not_Forall_Implies_Exists (fun x => In x A)).
   apply H.
 Qed.
 
