@@ -4562,89 +4562,430 @@ Qed.
     {0, 1, 2} that contain the pair <2, 0>. *)
 
 Theorem Exercise3_52 : forall A B C D AxB CxD, Prod A B AxB ->
-  Prod C D CxD -> AxB = CxD -> A = C /\ B = D <->
-  ~Empty A /\ ~Empty B /\ ~Empty C /\ ~Empty D.
-Admitted.
+  Prod C D CxD -> AxB = CxD -> (~Empty A /\ ~Empty B /\ ~Empty C /\ ~Empty D) ->
+  A = C /\ B = D.
+Proof.
+  intros A B C D AxB CxD HAxB HCxD Heq [HA [HB [HC HD]]]. split.
+  - apply Extensionality_Axiom. intros a; split; intros H.
+    + apply Member_Exists_If_NonEmpty in HB. destruct HB as [b Hb].
+      ordpair a b. rename x into ab. rename H0 into Hab.
+      assert (P : In ab AxB).
+      { apply HAxB. exists a, b. repeat (split; try assumption). }
+      rewrite Heq in P. apply HCxD in P.
+      destruct P as [c [d [Hc [Hd Hab']]]]. replace a with c. assumption.
+      apply (Enderton3A c d a b ab ab Hab' Hab). trivial.
+    + apply Member_Exists_If_NonEmpty in HD. destruct HD as [b Hb].
+      ordpair a b. rename x into ab. rename H0 into Hab.
+      assert (P : In ab CxD).
+      { apply HCxD. exists a, b. repeat (split; try assumption). }
+      rewrite <- Heq in P. apply HAxB in P.
+      destruct P as [c [d [Hc [Hd Hab']]]]. replace a with c. assumption.
+      apply (Enderton3A c d a b ab ab Hab' Hab). trivial.
+  - apply Extensionality_Axiom. intros b; split; intros H.
+    + apply Member_Exists_If_NonEmpty in HA. destruct HA as [a Ha].
+      ordpair a b. rename x into ab. rename H0 into Hab.
+      assert (P : In ab AxB).
+      { apply HAxB. exists a, b. repeat (split; try assumption). }
+      rewrite Heq in P. apply HCxD in P.
+      destruct P as [c [d [Hc [Hd Hab']]]]. replace b with d. assumption.
+      apply (Enderton3A c d a b ab ab Hab' Hab). trivial.
+    + apply Member_Exists_If_NonEmpty in HC. destruct HC as [a Ha].
+      ordpair a b. rename x into ab. rename H0 into Hab.
+      assert (P : In ab CxD).
+      { apply HCxD. exists a, b. repeat (split; try assumption). }
+      rewrite <- Heq in P. apply HAxB in P.
+      destruct P as [c [d [Hc [Hd Hab']]]]. replace b with d. assumption.
+      apply (Enderton3A c d a b ab ab Hab' Hab). trivial.
+Qed.
 
 Theorem Exercise3_53a : forall R S RuS RuS' R' S' R'uS',
   BinaryUnion R S RuS -> Inverse RuS RuS' -> Inverse R R' -> Inverse S S' ->
   BinaryUnion R' S' R'uS' -> RuS' = R'uS'.
-Admitted.
+Proof.
+  intros R S RuS RuS' R' S' R'uS' HRuS HRuS' HR' HS' HR'uS'.
+  apply (Extensionality_Axiom). intros yx. split; intros H.
+  - apply HR'uS'. apply HRuS' in H. destruct H as [x [y [xy [Hyx [Hxy H]]]]].
+    apply HRuS in H. destruct H as [H | H].
+    + left. apply HR'. exists x, y, xy. repeat (split; try assumption).
+    + right. apply HS'. exists x, y, xy. repeat (split; try assumption).
+  - apply HRuS'. apply HR'uS' in H. destruct H as [H | H].
+    + apply HR' in H. destruct H as [x [y [xy [Hyx [Hxy H]]]]].
+      exists x, y, xy. repeat (split; try assumption).
+      apply HRuS. left. apply H.
+    + apply HS' in H. destruct H as [x [y [xy [Hyx [Hxy H]]]]].
+      exists x, y, xy. repeat (split; try assumption).
+      apply HRuS. right. assumption.
+Qed.
 
 Theorem Exercise3_53b : forall R S RnS RnS' R' S' R'nS',
   BinaryIntersect R S RnS -> Inverse RnS RnS' -> Inverse R R' -> Inverse S S' ->
   BinaryIntersect R' S' R'nS' -> RnS' = R'nS'.
-Admitted.
+Proof.
+  intros R S RnS RnS' R' S' R'nS' HRnS HRnS' HR' HS' HR'nS'.
+  apply Extensionality_Axiom. intros yx. split; intros H.
+  - apply HR'nS'. apply HRnS' in H. destruct H as [x [y [xy [Hyx [Hxy H]]]]].
+    apply HRnS in H. destruct H as [H1 H2]. split.
+    + apply HR'. exists x, y, xy. repeat (split; try assumption).
+    + apply HS'. exists x, y, xy. repeat (split; try assumption).
+  - apply HRnS'. apply HR'nS' in H. destruct H as [H1 H2].
+    apply HR' in H1. destruct H1 as [x [y [xy [Hyx [Hxy H1]]]]].
+    apply HS' in H2. destruct H2 as [x' [y' [xy' [Hyx' [Hxy' H2]]]]].
+    exists x, y, xy. repeat (split; try assumption).
+    apply HRnS. split; try assumption.
+    replace xy with xy'. assumption.
+    apply (OrdPair_Unique x y xy' xy); try assumption.
+    replace x with x'; replace y with y'; try assumption;
+    apply (Enderton3A y' x' y x yx yx Hyx' Hyx); trivial.
+Qed.
 
 Theorem Execise3_53c : forall R S RmS RmS' R' S' R'mS',
   SetMinus R S RmS -> Inverse RmS RmS' -> Inverse R R' -> Inverse S S' ->
   SetMinus R' S' R'mS' -> RmS' = R'mS'.
-Admitted.
+Proof.
+  intros R S RmS RmS' R' S' R'mS' HRmS HRmS' HR' HS' HR'mS'.
+  apply Extensionality_Axiom. intros yx. split; intros H.
+  - apply HR'mS'. apply HRmS' in H. destruct H as [x [y [xy [Hyx [Hxy H]]]]].
+    apply HRmS in H. destruct H as [H1 H2]. split.
+    + apply HR'. exists x, y, xy. repeat (split; try assumption).
+    + intros C. apply H2. apply HS' in C.
+      destruct C as [x' [y' [xy' [Hyx' [Hxy' C]]]]].
+      replace xy with xy'; try assumption.
+      apply (OrdPair_Unique x y xy' xy); try assumption.
+      replace x with x'; replace y with y'; try assumption;
+      apply (Enderton3A y' x' y x yx yx Hyx' Hyx); trivial.
+  - apply HR'mS' in H. destruct H as [H1 H2]. apply HR' in H1.
+    destruct H1 as [x [y [xy [Hyx [Hxy H1]]]]]. apply HRmS'.
+    exists x, y, xy. repeat (split; try assumption).
+    apply HRmS. split; try assumption. intros C. apply H2.
+    apply HS'. exists x, y, xy. repeat (split; try assumption).
+Qed.
 
 Theorem Exercise3_54a : forall A B C BuC AxBuC AxB AxC AxBuAxC,
   BinaryUnion B C BuC -> Prod A BuC AxBuC -> Prod A B AxB -> Prod A C AxC ->
   BinaryUnion AxB AxC AxBuAxC -> AxBuC = AxBuAxC.
-Admitted.
+Proof.
+  intros A B C BuC AxBuC AxB AxC AxBuAxC HBuC HAxBuC HAxB HAxC HAxBuAxC.
+  apply (Extensionality_Axiom). intros xy. split; intros H.
+  - apply HAxBuAxC. apply HAxBuC in H. destruct H as [x [y [Hx [Hy Hxy]]]].
+    apply HBuC in Hy. destruct Hy as [Hy | Hy].
+    + left. apply HAxB. exists x, y. repeat (split; try assumption).
+    + right. apply HAxC. exists x, y. repeat (split; try assumption).
+  - apply HAxBuC. apply HAxBuAxC in H. destruct H as [H | H].
+    + apply HAxB in H. destruct H as [x [y [Hx [Hy Hxy]]]].
+      exists x, y. repeat (split; try assumption).
+      apply HBuC. left. assumption.
+    + apply HAxC in H. destruct H as [x [y [Hx [Hy Hxy]]]].
+      exists x, y. repeat (split; try assumption).
+      apply HBuC. right. assumption.
+Qed.
 
 Theorem Exercise3_54b : forall A B C BnC AxBnC AxB AxC AxBnAxC,
   BinaryIntersect B C BnC -> Prod A BnC AxBnC -> Prod A B AxB -> Prod A C AxC ->
   BinaryIntersect AxB AxC AxBnAxC -> AxBnC = AxBnAxC.
-Admitted.
+Proof.
+  intros A B C BnC AxBnC AxB AxC AxBnAxC HBnC HAxBnC HAxB HAxC HAxBnAxC.
+  apply Extensionality_Axiom. intros xy. split; intros H.
+  - apply HAxBnAxC. apply HAxBnC in H. destruct H as [x [y [Hx [Hy Hxy]]]].
+    apply HBnC in Hy. destruct Hy as [Hy Hy']. split.
+    + apply HAxB. exists x, y. repeat (split; try assumption).
+    + apply HAxC. exists x, y. repeat (split; try assumption).
+  - apply HAxBnC. apply HAxBnAxC in H. destruct H as [H I].
+    apply HAxB in H. apply HAxC in I.
+    destruct H as [x [y [Hx [Hy Hxy]]]]. destruct I as [x' [y' [Hx' [Hy' Hxy']]]].
+    exists x, y. repeat (split; try assumption).
+    apply HBnC. split; try assumption. replace y with y'; try assumption.
+    apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial.
+Qed.
 
 Theorem Exercise3_54c : forall A B C BmC AxBmC AxB AxC AxBmAxC,
   SetMinus B C BmC -> Prod A BmC AxBmC -> Prod A B AxB -> Prod A C AxC ->
   SetMinus AxB AxC AxBmAxC -> AxBmC = AxBmAxC.
-Admitted.
+Proof.
+  intros A B C BmC AxBmC AxB AxC AxBmAxC HBmC HAxBmC HAxB HAxC HAxBmAxC.
+  apply Extensionality_Axiom. intros xy. split; intros H.
+  - apply HAxBmC in H. destruct H as [x [y [Hx [Hy Hxy]]]].
+    apply HAxBmAxC. apply HBmC in Hy. destruct Hy as [Hy Hy']. split.
+    + apply HAxB. exists x, y. repeat (split; try assumption).
+    + intros Con. apply HAxC in Con. apply Hy'.
+      destruct Con as [x' [y' [Hx' [Hy'' Hxy']]]].
+      replace y with y'; try assumption.
+      apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial.
+  - apply HAxBmC. apply HAxBmAxC in H. destruct H as [H I].
+    apply HAxB in H. destruct H as [x [y [Hx [Hy Hxy]]]].
+    exists x, y. repeat (split; try assumption). apply HBmC.
+    split; try assumption. intros Con. apply I.
+    apply HAxC. exists x, y. repeat (split; try assumption).
+Qed.
 
 Theorem Exercise3_55a : ~ forall A B C AxA BxC AxAuBxC AuB AuC AuBxAuC,
   Prod A A AxA -> Prod B C BxC -> BinaryUnion AxA BxC AxAuBxC ->
   BinaryUnion A B AuB -> BinaryUnion A C AuC -> Prod AuB AuC AuBxAuC ->
   AxAuBxC = AuBxAuC.
-Admitted.
+Proof.
+  intros Con. empty. rename x into a. rename H into Ha.
+  singleton a. rename x into b. rename H into Hb.
+  singleton b. rename x into c. rename H into Hc.
+  singleton a. rename x into A. rename H into HA.
+  singleton b. rename x into B. rename H into HB.
+  singleton c. rename x into C. rename H into HC.
+  prod A A. rename x into AxA. rename H into HAxA.
+  prod B C. rename x into BxC. rename H into HBxC.
+  binary_union AxA BxC. rename x into AxAuBxC. rename H into HAxAuBxC.
+  binary_union A B. rename x into AuB. rename H into HAuB.
+  binary_union A C. rename x into AuC. rename H into HAuC.
+  prod AuB AuC. rename x into AuBxAuC. rename H into HAuBxAuC.
+  assert (P : AxAuBxC = AuBxAuC).
+  { apply (Con A B C AxA BxC AxAuBxC AuB AuC AuBxAuC); try assumption. }
+  ordpair a c. rename x into ac. rename H into Hac.
+  assert (Q : In ac AuBxAuC).
+  { apply HAuBxAuC. exists a, c. repeat (split; try assumption).
+    - apply HAuB. left. apply HA. trivial.
+    - apply HAuC. right. apply HC. trivial. }
+  rewrite <- P in Q. apply HAxAuBxC in Q. destruct Q as [Q | Q].
+  - apply HAxA in Q. destruct Q as [a' [c' [Ha' [Hc' Hac']]]].
+    assert (T : a' = a /\ c' = c).
+    { apply (Enderton3A a' c' a c ac ac Hac' Hac). trivial. }
+    replace a' with a in *; try (symmetry; apply T).
+    replace c' with c in *; try (symmetry; apply T).
+    clear T a' c'. apply HA in Hc'. rewrite <- Hc' in Ha.
+    apply (Ha b). apply Hc. trivial.
+  - apply HBxC in Q. destruct Q as [a' [c' [Ha' [Hc' Hac']]]].
+    assert (T : a = a' /\ c = c').
+    { apply (Enderton3A a c a' c' ac ac Hac Hac'). trivial. }
+    replace a' with a in *; try apply T.
+    replace c' with c in *; try apply T. clear T a' c'.
+    apply HB in Ha'. rewrite Ha' in Ha.
+    apply (Ha a). apply Hb. trivial.
+Qed.
 
 Theorem Exercise3_55b : forall A B C AxA BxC AxAnBxC AnB AnC AnBxAnC,
   Prod A A AxA -> Prod B C BxC -> BinaryIntersect AxA BxC AxAnBxC ->
   BinaryIntersect A B AnB -> BinaryIntersect A C AnC -> Prod AnB AnC AnBxAnC ->
   AxAnBxC = AnBxAnC.
-Admitted.
+Proof.
+  intros A B C AxA BxC AxAnBxC AnB AnC AnBxAnC HAxA HBxC HAxAnBxC HAnB HAnC HAnBxAnC.
+  apply Extensionality_Axiom. intros xy. split; intros H.
+  - apply HAnBxAnC. apply HAxAnBxC in H. destruct H as [H I].
+    apply HAxA in H. destruct H as [x [y [Hx [Hy Hxy]]]].
+    apply HBxC in I. destruct I as [x' [y' [Hx' [Hy' Hxy']]]].
+    exists x, y. repeat (split; try assumption).
+    + apply HAnB. split; try assumption. replace x with x'; try assumption.
+      apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial.
+    + apply HAnC. split; try assumption. replace y with y'; try assumption.
+      apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial.
+  - apply HAxAnBxC. apply HAnBxAnC in H.
+    destruct H as [x [y [Hx [Hy Hxy]]]]. apply HAnB in Hx. apply HAnC in Hy.
+    destruct Hx as [Hx Hx']. destruct Hy as [Hy Hy']. split.
+    + apply HAxA. exists x, y. repeat (split; try assumption).
+    + apply HBxC. exists x, y. repeat (split; try assumption).
+Qed.
 
 Theorem Exercise3_56a : forall R S RuS domRuS domR domS domRudomS,
   BinaryUnion R S RuS -> Domain RuS domRuS -> Domain R domR -> Domain S domS ->
   BinaryUnion domR domS domRudomS -> domRuS = domRudomS.
-Admitted.
+Proof.
+  intros R S RuS domRuS domR domS domRudomS HRuS HdomRuS HdomR HdomS HdomRudomS.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HdomRudomS. apply HdomRuS in H. destruct H as [y [xy[ Hxy H]]].
+    apply HRuS in H. destruct H as [H | H].
+    + left. apply HdomR. exists y, xy. split; assumption.
+    + right. apply HdomS. exists y, xy. split; assumption.
+  - apply HdomRuS. apply HdomRudomS in H. destruct H as [H | H].
+    + apply HdomR in H. destruct H as [y [xy [Hxy H]]].
+      exists y, xy. split; try assumption. apply HRuS. left. assumption.
+    + apply HdomS in H. destruct H as [y [xy [Hxy H]]].
+      exists y, xy. split; try assumption. apply HRuS. right. assumption.
+Qed.
 
-Theorem Exercise3_56b : forall R S RnS domRnS domR domS domRndomS,
+Theorem Exercise3_56b : ~ forall R S RnS domRnS domR domS domRndomS,
   BinaryIntersect R S RnS -> Domain RnS domRnS -> Domain R domR ->
   Domain S domS -> BinaryIntersect domR domS domRndomS -> domRnS = domRndomS.
-Admitted.
+Proof.
+  intros C. empty. rename x into a. rename H into Ha.
+  singleton a. rename x into b. rename H into Hb.
+  singleton b. rename x into c. rename H into Hc.
+  ordpair a b. rename x into ab. rename H into Hab.
+  ordpair a c. rename x into ac. rename H into Hac.
+  singleton ab. rename x into R. rename H into HR.
+  singleton ac. rename x into S. rename H into HS.
+  binary_intersect R S. rename x into RnS. rename H into HRnS.
+  domain RnS. rename x into domRnS. rename H into HdomRnS.
+  domain R. rename x into domR. rename H into HdomR.
+  domain S. rename x into domS. rename H into HdomS.
+  binary_intersect domR domS. rename x into domRndomS. rename H into HdomRndomS.
+  assert (P : domRnS = domRndomS).
+  { apply (C R S RnS domRnS domR domS domRndomS); try assumption. }
+  assert (Q : Empty domRnS).
+  { intros x C'. apply HdomRnS in C'.
+    destruct C' as [y [xy [Hxy C']]]. apply HRnS in C'.
+    destruct C' as [C1 C2]. apply HR in C1. apply HS in C2.
+    rewrite C1 in C2. assert (T : b = c).
+    { apply (Enderton3A a b a c ab ab); try assumption; try trivial.
+      rewrite C2. assumption. }
+    assert (T' : a = b).
+    { apply Hc. rewrite T in Hb. apply Hb. trivial. }
+    rewrite T' in Ha. apply (Ha a). apply Hb. trivial. }
+  apply (Q a). rewrite P. apply HdomRndomS. split.
+  + apply HdomR. exists b, ab. split; try assumption. apply HR. trivial.
+  + apply HdomS. exists c, ac. split; try assumption. apply HS. trivial.
+Qed.  
 
 Theorem Exercise3_57a : forall R S T SuT RoSuT RoS RoT RoSuRoT,
   BinaryUnion S T SuT -> Composition R SuT RoSuT -> Composition R S RoS ->
   Composition R T RoT -> BinaryUnion RoS RoT RoSuRoT -> RoSuT = RoSuRoT.
-Admitted.
+Proof.
+  intros R S T SuT RoSuT RoS RoT RoSuRoT HSuT HRoSuT HRoS HRoT HRoSuRoT.
+  apply Extensionality_Axiom. intros xz. split; intros H.
+  - apply HRoSuRoT. apply HRoSuT in H.
+    destruct H as [x [z [y [xy [yz [Hxz [Hxy [Hyz [H I]]]]]]]]].
+    apply HSuT in H. destruct H as [H | H].
+    + left. apply HRoS. exists x, z, y, xy, yz. repeat (split; try assumption).
+    + right. apply HRoT. exists x, z, y, xy, yz. repeat (split; try assumption).
+  - apply HRoSuT. apply HRoSuRoT in H. destruct H as [H | H].
+    + apply HRoS in H. destruct H as [x [z [y [xy [yz [Hxz [Hxy [Hyz [H I]]]]]]]]].
+      exists x, z, y, xy, yz. repeat (split; try assumption).
+      apply HSuT. left. assumption.
+    + apply HRoT in H. destruct H as [x [z [y [xy [yz [Hxz [Hxy [Hyz [H I]]]]]]]]].
+      exists x, z, y, xy, yz. repeat (split; try assumption).
+      apply HSuT. right. assumption.
+Qed.
 
-Theorem Exercise3_57b : forall R S T SnT RoSnT RoS RoT RoSnRoT,
+Theorem Exercise3_57b : ~ forall R S T SnT RoSnT RoS RoT RoSnRoT,
   BinaryIntersect S T SnT -> Composition R SnT RoSnT -> Composition R S RoS ->
   Composition R T RoT -> BinaryIntersect RoS RoT RoSnRoT -> RoSnT = RoSnRoT.
-Admitted.
+Proof.
+  intros C. empty. rename x into a. rename H into Ha.
+  singleton a. rename x into b. rename H into Hb.
+  singleton b. rename x into b'. rename H into Hb'.
+  singleton b'. rename x into c. rename H into Hc.
+  ordpair a b. rename x into ab. rename H into Hab.
+  ordpair a b'. rename x into ab'. rename H into Hab'.
+  ordpair b c. rename x into bc. rename H into Hbc.
+  ordpair b' c. rename x into b'c. rename H into Hb'c.
+  singleton ab. rename x into S. rename H into HS.
+  singleton ab'. rename x into T. rename H into HT.
+  pair bc b'c. rename x into R. rename H into HR.
+  binary_intersect S T. rename x into SnT. rename H into HSnT.
+  compose R SnT. rename x into RoSnT. rename H into HRoSnT.
+  compose R S. rename x into RoS. rename H into HRoS.
+  compose R T. rename x into RoT. rename H into HRoT.
+  binary_intersect RoS RoT. rename x into RoSnRoT. rename H into HRoSnRoT.
+  assert (H : RoSnT = RoSnRoT).
+  { apply (C R S T SnT RoSnT RoS RoT); try assumption. }
+  assert (P : Empty RoSnT).
+  { intros xz Hxz. apply HRoSnT in Hxz.
+    destruct Hxz as [x [z [y [xy [yz [Hxz [Hxy [Hyz [I J]]]]]]]]].
+    apply HSnT in I. destruct I as [I I'].
+    apply HS in I. apply HT in I'. rewrite I in I'.
+    replace a with b in Ha. apply (Ha a). apply Hb. trivial.
+    assert (P : b = b').
+    { apply (Enderton3A a b a b' ab ab Hab). rewrite I'. assumption. trivial. }
+    assert (Q : In a b').
+    { rewrite <- P. apply Hb. trivial. }
+    apply Hb' in Q. symmetry. assumption. }
+  ordpair a c. rename x into ac. rename H0 into Hac.
+  apply (P ac). rewrite H. apply HRoSnRoT. split.
+  - apply HRoS. exists a, c, b, ab, bc. repeat (split; try assumption).
+    apply HS. trivial. apply HR. left. trivial.
+  - apply HRoT. exists a, c, b', ab', b'c. repeat (split; try assumption).
+    apply HT. trivial. apply HR. right. trivial.
+Qed.
 
 Theorem Exercise3_58 : ~ forall F S F' F'_S_ F_F'_S__,
   Inverse F F' -> Image S F' F'_S_ -> Image F'_S_ F F_F'_S__ -> F_F'_S__ = S.
-Admitted.
+Proof.
+  intros C. empty. rename x into a. rename H into Ha.
+  singleton a. rename x into b. rename H into Hb.
+  singleton b. rename x into c. rename H into Hc.
+  ordpair a b. rename x into ab. rename H into Hab.
+  singleton ab. rename x into F. rename H into HF.
+  singleton c. rename x into S. rename H into HS.
+  inverse F. rename x into F'. rename H into HF'.
+  image S F'. rename x into F'_S_. rename H into HF'_S_.
+  image F'_S_ F. rename x into F_F'_S__. rename H into HF_F'_S__.
+  assert (P : F_F'_S__ = S).
+  { apply (C F S F' F'_S_); try assumption. }
+  assert (Q : Empty F_F'_S__).
+  { intros y C'. apply HF_F'_S__ in C'.
+    destruct C' as [x [xy [Hxy [H I]]]]. apply HF'_S_ in H.
+    destruct H as [y' [yx [Hyx [H J]]]]. apply HF' in J.
+    destruct J as [x' [y'' [xy' [Hyx' [Hxy' J]]]]].
+    assert (T : y'' = y' /\ x' = x).
+    { apply (Enderton3A y'' x' y' x yx yx Hyx' Hyx). trivial. }
+    replace y'' with y' in *; try (symmetry; apply T).
+    replace x' with x in *; try (symmetry; apply T). clear T y'' x' Hyx'.
+    apply HF in J. apply HF in I. rewrite <- J in I. replace xy' with xy in *.
+    replace y' with y in *;
+    try (apply (Enderton3A x y x y' xy xy Hxy Hxy'); trivial).
+    clear Hxy' xy' I. replace xy with ab in *. clear J.
+    assert (T : a = x /\ b = y).
+    { apply (Enderton3A a b x y ab ab Hab Hxy). trivial. }
+    replace x with a in *; try apply T. replace y with b in *; try apply T.
+    clear T y' Hxy xy y x. rename yx into ba. rename Hyx into Hba.
+    apply HS in H. assert (T : In a b). { apply Hb. trivial. }
+    rewrite H in T. apply Hc in T. rewrite T in Ha.
+    apply (Ha a). apply Hb. trivial. }
+  apply (Q c). rewrite P. apply HS. trivial.
+Qed.
 
 Theorem Exercise3_59a : forall Q A B AnB QlAnB QlA QlB QlAnQlB,
   BinaryIntersect A B AnB -> Restriction Q AnB QlAnB ->
   Restriction Q A QlA -> Restriction Q B QlB -> BinaryIntersect QlA QlB QlAnQlB ->
   QlAnB = QlAnQlB.
-Admitted.
+Proof.
+  intros Q A B AnB QlAnB QlA QlB QlAnQlB HAnB HQlAnB HQlA HQlB HQlAnQlB.
+  apply Extensionality_Axiom. intros xy. split; intros H.
+  - apply HQlAnQlB. apply HQlAnB in H. destruct H as [x [y [Hxy [H I]]]].
+    apply HAnB in I. destruct I as [I J]. split.
+    + apply HQlA. exists x, y. repeat (split; try assumption).
+    + apply HQlB. exists x, y. repeat (split; try assumption).
+  - apply HQlAnB. apply HQlAnQlB in H. destruct H as [H I].
+    apply HQlA in H. apply HQlB in I.
+    destruct H as [x [y [Hxy [H H']]]]. destruct I as [x' [y' [Hxy' [I I']]]].
+    exists x, y. repeat (split; try assumption). apply HAnB.
+    split; try assumption. replace x with x'; try assumption.
+    apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial.
+Qed.
 
 Theorem Exercise3_59b : forall Q A B AmB QlAmB QlA QlB QlAmQlB,
   SetMinus A B AmB -> Restriction Q AmB QlAmB ->
   Restriction Q A QlA -> Restriction Q B QlB -> SetMinus QlA QlB QlAmQlB ->
   QlAmB = QlAmQlB.
-Admitted.
+Proof.
+  intros Q A B AmB QlAmB QlA QlB QlAmQlB HAmB HQlAmB HQlA HQlB HQlAmQlB.
+  apply Extensionality_Axiom. intros xy. split; intros H.
+  - apply HQlAmB in H. destruct H as [x [y [Hxy [H I]]]].
+    apply HAmB in I. destruct I as [I J]. apply HQlAmQlB. split.
+    + apply HQlA. exists x, y. repeat (split; try assumption).
+    + intros C. apply J. apply HQlB in C.
+      destruct C as [x' [y' [Hxy' [C C']]]]. replace x with x'; try assumption.
+      apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial.
+  - apply HQlAmB. apply HQlAmQlB in H. destruct H as [H I].
+    apply HQlA in H. destruct H as [x [y [Hxy [H J]]]].
+    exists x, y. repeat (split; try assumption).
+    apply HAmB. split; try assumption. intros C. apply I.
+    apply HQlB. exists x, y. repeat (split; try assumption).
+Qed.
 
 Theorem Exercise3_60 : forall R S A RoS RoSlAl SlA RoSlAr,
   Composition R S RoS -> Restriction RoS A RoSlAl -> Restriction S A SlA ->
   Composition R SlA RoSlAr -> RoSlAl = RoSlAr.
-Admitted.
+Proof.
+  intros R S A RoS RoSlAl SlA RoSlAr HRoS  Hl HSlA Hr.
+  apply Extensionality_Axiom. intros xz. split; intros H.
+  - apply Hr. apply Hl in H. destruct H as [x [z [Hxz [H I]]]]. apply HRoS in H.
+    destruct H as [x' [z' [y [xy [yz [Hxz' [Hxy [Hyz [H J]]]]]]]]].
+    exists x, z, y, xy, yz. split; try assumption.
+    replace x with x'; replace z with z'; repeat (split; try assumption);
+    try (apply (Enderton3A x' z' x z xz xz Hxz' Hxz); trivial).
+    apply HSlA. exists x, y. split; try (split; assumption).
+    replace x with x'; try assumption.
+    apply (Enderton3A x' z' x z xz xz Hxz' Hxz). trivial.
+  - apply Hl. apply Hr in H.
+    destruct H as [x [z [y [xy [yz [Hxz [Hxy [Hyz [H I]]]]]]]]].
+    apply HSlA in H. destruct H as [x' [y' [Hxy' [H J]]]].
+    exists x, z. split; try assumption. split.
+    + apply HRoS. exists x, z, y, xy, yz. repeat (split; try assumption).
+    + replace x with x'; try assumption.
+      apply (Enderton3A x' y' x y xy xy Hxy' Hxy). trivial.
+Qed.
