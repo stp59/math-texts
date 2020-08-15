@@ -26,6 +26,8 @@ Proof.
     apply (Singleton_Unique a Sa' Sa); try assumption.
 Qed.
 
+Ltac succ n := destruct (Succ_Exists n).
+
 Definition Inductive (A : set ) : Prop :=
   (exists empty, Empty empty /\ In empty A) /\
   forall a aplus, Succ a aplus -> In a A -> In aplus A.
@@ -38,11 +40,26 @@ Definition NaturalNumber (x : set) : Prop :=
 Definition Nats (omga : set) : Prop :=
   forall x, In x omga <-> NaturalNumber x.
 
-Theorem Enderton4A : exists omga, forall x, In x omga <-> NaturalNumber x.
-Admitted.
+Theorem Enderton4A : exists omga, Nats omga.
+Proof.
+  destruct Infinity_Axiom as [A HA].
+  build_set
+    set
+    (fun (t c x : set) => NaturalNumber x)
+    A
+    A.
+  rename x into omga. rename H into Homga. exists omga.
+  intros n. split; intros H.
+  - apply Homga, H.
+  - apply Homga. split; try assumption. apply H, HA.
+Qed.
 
-Theorem Nats_Unique : forall omga omga', Nats omga -> Nats omga' -> omga = omga.
-Admitted.
+Theorem Nats_Unique : forall omga omga', Nats omga -> Nats omga' -> omga = omga'.
+Proof.
+  intros omga omga' H H'. apply Extensionality_Axiom. intros n. split; intros I.
+  - apply H', H, I.
+  - apply H, H', I.
+Qed.
 
 Ltac omga := destruct Enderton4A as [omga Homga].
 
@@ -50,18 +67,65 @@ Ltac zero := empty.
 
 Theorem Enderton4B : forall omga, Nats omga -> Inductive omga /\
   forall A, Inductive A -> Subset omga A.
-Admitted.
+Proof.
+  intros omga Homga. split.
+  - split.
+    + empty. exists x. split; try assumption. apply Homga.
+      intros A HA. destruct HA as [HA HA']. destruct HA as [x' [Hx' HA]].
+      replace x with x'; try assumption. apply Empty_Unique; assumption.
+    + intros a a' Ha' Ha. apply Homga. apply Homga in Ha.
+      intros A HA. destruct HA as [HA HA'].
+      apply (HA' a a'); try assumption. apply Ha. split; assumption.
+  - intros A HA n Hn. apply Homga; assumption.
+Qed.
 
 Theorem Induction_Principle_for_Omega : forall A omga, Nats omga ->
   Inductive A -> Subset A omga -> A = omga.
-Admitted.
+Proof.
+  intros A omga Homga HA Hsub. apply SubsetSymmetric_iff_Equal.
+  split; try assumption. apply Enderton4B; assumption.
+Qed.
+
+Lemma Zero_NaturalNumber : forall x, Empty x -> NaturalNumber x.
+Proof.
+  intros x Hx A HA. destruct HA as [[x' [Hx' HA]] _].
+  replace x with x'; try assumption. apply Empty_Unique; try assumption.
+Qed.
+
+Lemma Succ_NaturalNumber : forall m n, NaturalNumber m -> Succ m n ->
+  NaturalNumber n.
+Proof.
+  intros m n Hm Hn A [HA HA']. apply (HA' m n Hn). apply Hm. split; assumption.
+Qed.
+
+Lemma Succ_Inversion : forall m n p, Succ m p -> Succ n p -> m = n.
+Proof.
+  intros m n p Hp Hp'. destruct Hp as [Sm [HSm Hp]].
+  destruct Hp' as [Sn [HSn Hp']].
+Abort.
 
 Theorem Enderton4C : forall x, NaturalNumber x -> ~ Empty x ->
   exists w, NaturalNumber w /\ Succ w x.
-Admitted.
+Proof.
+  omga.
+  build_set set
+    (fun (t c x : set) => ~Empty x -> exists w, NaturalNumber w /\ Succ w x)
+    omga omga.
+  rename x into A. rename H into HA. intros n Hn.
+  destruct (Enderton4B omga Homga) as [[He Hind] Hsub].
+  apply HA. replace A with omga; try apply Homga; try assumption.
+  symmetry. apply Induction_Principle_for_Omega; try assumption.
+  - split.
+    + empty. exists x. split; try assumption. apply HA. split.
+      * apply Homga. apply Zero_NaturalNumber; try assumption.
+      * intros C. apply C in H. destruct H.
+    + intros a a' Ha' Ha. apply HA. split.
+      * apply (Hind a a' Ha'). apply HA; assumption.
+      * intros C. exists a. split; try assumption. apply Homga. apply HA, Ha.
+  - intros a Ha. apply HA. assumption.
+Qed.
 
-Theorem Exercise4_1 : True (* TODO *).
-Admitted.
+(** Exercise 4-1 : Show that 1 <> 3. TODO *)
 
 (** Next, we embed Peano's postulates in ZF[C]. Peano's postulates are a
     minimal axiomatization of the natural numbers which are provable in ZF[C].
@@ -87,11 +151,68 @@ Definition SuccessorFunc (sigma : set) : Prop :=
   NaturalNumber n /\ Succ n n'.
 
 Theorem SuccessorFunc_Exists : exists sigma, SuccessorFunc sigma.
-Admitted.
+Proof.
+  omga. prod omga omga. rename x into omgaxomga. rename H into Homgaxomga.
+  build_set
+    set
+    (fun (t c nm : set) => exists n m, OrdPair n m nm /\ NaturalNumber n /\ Succ n m)
+    omga
+    omgaxomga.
+  rename x into sigma. rename H into Hsigma. exists sigma.
+  intros nn'. split; intros H; try apply Hsigma, H.
+  apply Hsigma. split; try assumption.
+  apply Homgaxomga. destruct H as [n [n' [Hnn' [Hn Hn']]]].
+  exists n, n'. repeat (split; try assumption).
+  - apply Homga, Hn.
+  - apply Homga. intros A [HA' HA]. apply (HA n n' Hn'). apply Homga.
+    + apply Homga, Hn.
+    + split; assumption.
+Qed.
 
 Theorem SuccessorFunc_Unique : forall sigma sigma',
   SuccessorFunc sigma -> SuccessorFunc sigma' -> sigma = sigma'.
-Admitted.
+Proof.
+  intros sigma sigma' H H'. apply Extensionality_Axiom. intros x. split; intros I.
+  - apply H', H, I.
+  - apply H, H', I.
+Qed.
+
+Lemma SuccessorFunc_Into : forall sigma omga, SuccessorFunc sigma ->
+  Nats omga -> FuncFromInto sigma omga omga.
+Proof.
+  intros sigma omga Hsigma Homga. split; try split.
+  - intros mn Hmn. apply Hsigma in Hmn. destruct Hmn as [m [n [Hmn _]]].
+    exists m, n. assumption.
+  - intros m n p mn mp Hmn Hmp H I. apply Hsigma in H. apply Hsigma in I.
+    destruct H as [m' [n' [Hmn' [_ Hn]]]].
+    replace m' with m in *;
+    try (apply (Enderton3A m n m' n' mn mn Hmn Hmn'); trivial).
+    replace n' with n in *;
+    try (apply (Enderton3A m n m n' mn mn Hmn Hmn'); trivial).
+    clear m' n' Hmn'. destruct I as [m' [p' [Hmp' [_ Hp]]]].
+    replace m' with m in *;
+    try (apply (Enderton3A m p m' p' mp mp Hmp Hmp'); trivial).
+    replace p' with p in *;
+    try (apply (Enderton3A m p m p' mp mp Hmp Hmp'); trivial).
+    clear m' p' Hmp'. apply (Succ_Unique m n p); assumption.
+  - intros m. split; intros H.
+    + succ m. rename x into m'. rename H0 into Hm'.
+      ordpair m m'. rename x into mm'. rename H0 into Hmm'.
+      exists m', mm'. split; try assumption. apply Hsigma.
+      exists m, m'. repeat (split; try assumption). apply Homga, H.
+    + destruct H as [m' [mm' [Hmm' H]]]. apply Hsigma in H.
+      destruct H as [n [n' [Hnn' [Hn Hn']]]]. replace m with n.
+      apply Homga, Hn. apply (Enderton3A n n' m m' mm' mm' Hnn' Hmm'). trivial.
+  - range sigma. rename x into ransigma. rename H into Hransigma.
+    exists ransigma. split; try assumption.
+    intros n H. apply Homga. apply Hransigma in H.
+    destruct H as [m [mn [Hmn H]]]. apply Hsigma in H.
+    destruct H as [m' [n' [Hmn' [Hm Hn]]]]. replace n with n'.
+    apply (Succ_NaturalNumber m' n'); try assumption.
+    apply (Enderton3A m' n' m n mn mn Hmn' Hmn). trivial.
+Qed.
+
+Ltac sigma := destruct (SuccessorFunc_Exists) as [sigma Hsigma].
 
 Definition PeanoSystem_of_NaturalNumbers (P : set) : Prop :=
   exists N S NS e, OrdPair N S NS /\ OrdPair NS e P /\
@@ -99,56 +220,191 @@ Definition PeanoSystem_of_NaturalNumbers (P : set) : Prop :=
 
 Theorem PeanoSystem_of_NaturalNumbers_Exists : exists P,
   PeanoSystem_of_NaturalNumbers P.
-Admitted.
+Proof.
+  empty. rename x into e. rename H into He. omga. sigma.
+  ordpair omga sigma. rename x into os. rename H into Hos.
+  ordpair os e. rename x into P. rename H into HP. exists P.
+  exists omga, sigma, os, e. repeat (split; try assumption).
+Qed.
 
 Theorem PeanoSystem_of_NaturalNumbers_Unique : forall P P',
   PeanoSystem_of_NaturalNumbers P -> PeanoSystem_of_NaturalNumbers P' -> P = P'.
-Admitted.
+Proof.
+  intros P P' H H'. destruct H as [N [S [NS [e [HNS [HP [HN [HS He]]]]]]]].
+  destruct H' as [N' [S' [NS' [e' [HNS' [HP' [HN' [HS' He']]]]]]]].
+  apply (OrdPair_Unique NS e P P'); try assumption.
+  replace NS with NS'. replace e with e'. assumption.
+  - apply Empty_Unique; try assumption.
+  - apply (OrdPair_Unique N S NS' NS); try assumption.
+    replace N with N'. replace S with S'. assumption.
+    + apply SuccessorFunc_Unique; assumption.
+    + apply Nats_Unique; assumption.
+Qed.
+
+(** Theorem 4D states that the Peano System of Natural Numbers is, in fact,
+    a Peano System. It is state here by Enderton, but the full proof requires
+    some of the following results concerning transitive sets. For this reason,
+    we will delary the theorem statement for now. *)
 
 Definition TransitiveSet (A : set) : Prop :=
   forall a x, In a A -> In x a -> In x A.
 
 Theorem Enderton4E : forall a a' Ua', Succ a a' ->
   Union a' Ua' -> TransitiveSet a -> Ua' = a.
-Admitted.
+Proof.
+  intros a a' Ua' Ha' HUa' Ha.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HUa' in H. destruct H as [y [H I]].
+    destruct Ha' as [Sa [HSa Ha']]. apply Ha' in I. destruct I as [I | I].
+    + apply (Ha y x); try assumption.
+    + apply HSa in I. rewrite <- I. assumption.
+  - apply HUa'. exists a. split; try assumption.
+    destruct Ha' as [Sa [HSa Ha']]. apply Ha'.
+    right. apply HSa. trivial.
+Qed.
 
 Theorem Enderton4F : forall n, NaturalNumber n -> TransitiveSet n.
-Admitted.
+Proof.
+  omga. build_set set (fun (t c x : set) => TransitiveSet x) omga omga.
+  rename x into A. rename H into HA.
+  intros n Hn. apply HA. replace A with omga. apply Homga, Hn.
+  symmetry. apply Induction_Principle_for_Omega; try assumption.
+  - split.
+    + empty. exists x. split; try assumption. apply HA. split.
+      * apply Homga. apply (Zero_NaturalNumber x H).
+      * intros z y Hz Hy. apply H in Hz. destruct Hz.
+    + intros a a' Ha' Ha. apply HA. apply HA in Ha as [Ha Htrans]. split.
+      * apply Homga in Ha. apply Homga. apply (Succ_NaturalNumber a a' Ha Ha').
+      * intros y x Hy Hx. destruct Ha' as [Sa [HSa Ha']].
+        apply Ha' in Hy. destruct Hy as [Hy | Hy].
+        { apply Ha'. left. apply (Htrans y x Hy Hx). }
+        { apply HSa in Hy. replace y with a in Hx. apply Ha'. left. assumption. }
+  - intros a Ha. apply HA, Ha.
+Qed.
 
-Theorem Enderton4D : forall P, PeanoSystem_of_NaturalNumbers P ->
-  PeanoSystem P.
-Admitted.
+Theorem Enderton4D : forall P, PeanoSystem_of_NaturalNumbers P -> PeanoSystem P.
+Proof.
+  intros P HP. destruct HP as [N [S [NS [e [HNS [HP [HN [HS He]]]]]]]].
+  exists N, S, NS, e. split; try assumption. split; try assumption.
+  split; try apply (SuccessorFunc_Into S N HS HN).
+  split; try apply HN, (Zero_NaturalNumber e), He.
+  split; try split.
+  - intros ranS HranS C. apply HranS in C. destruct C as [d [de [Hde C]]].
+    apply (He d). apply HS in C. destruct C as [d' [e' [Hde' [Hd' He']]]].
+    replace d with d'. replace e with e'. destruct He' as [Sd [HSd He']].
+    apply He'. right. apply HSd. trivial.
+    + apply (Enderton3A d' e' d e de de Hde' Hde). trivial.
+    + apply (Enderton3A d' e' d e de de Hde' Hde). trivial.
+  - split; try apply (SuccessorFunc_Into S N HS HN).
+    intros m n p mp np Hmp Hnp H I. apply HS in H. apply HS in I.
+    destruct H as [m' [p' [Hmp' [Hm Hp]]]].
+    assert (T : m = m' /\ p = p').
+    { apply (Enderton3A m p m' p' mp mp Hmp Hmp'). trivial. }
+    replace m' with m in *; replace p' with p in *; try apply T.
+    clear m' p' T. destruct I as [n' [p' [Hnp' [Hn Hp']]]].
+    assert (T : n = n' /\ p = p').
+    { apply (Enderton3A n p n' p' np np Hnp Hnp'). trivial. }
+    replace n' with n in *; replace p' with p in *; try apply T.
+    clear n' p' T Hmp' Hnp'. union p. rename x into Up. rename H into HUp.
+    transitivity Up.
+    + symmetry. apply (Enderton4E m p Up Hp HUp).
+      apply Enderton4F. assumption.
+    + apply (Enderton4E n p Up Hp' HUp). apply Enderton4F. assumption.
+  - intros A Hsub HeA Hind.
+    apply Induction_Principle_for_Omega; try assumption. split.
+    + exists e. split; assumption.
+    + intros a a' Ha' Ha. apply (Hind a a'); try assumption.
+      intros _ _. ordpair a a'. rename x into aa'. rename H into Haa'.
+      exists aa'. split; try assumption. apply HS.
+      exists a, a'. split; try assumption. split; try assumption.
+      apply HN. apply Hsub. assumption.
+Qed.
 
 Theorem Enderton4G : forall omga, Nats omga -> TransitiveSet omga.
-Admitted.
+Proof.
+  intros omga Homga n m Hn Hm.
+  build_set set (fun (t c x : set) => Subset x t) omga omga.
+  rename x into T. rename H into HT.
+  assert (P : T = omga).
+  { apply Induction_Principle_for_Omega; try assumption; try split.
+    - empty. exists x. split; try assumption. apply HT. split.
+      + apply Homga, Zero_NaturalNumber, H.
+      + intros y Hy. apply H in Hy. destruct Hy.
+    - intros a a' Ha' Ha. apply HT in Ha. destruct Ha as [Ha1 Ha2].
+      apply HT. split.
+      + apply Homga, (Succ_NaturalNumber a a'); try assumption.
+        apply Homga, Ha1.
+      + intros x Hx. destruct Ha' as [Sa [HSa Ha']].
+        apply Ha' in Hx. destruct Hx as [Hx | Hx].
+        * apply Ha2. assumption.
+        * replace x with a; try assumption. symmetry. apply HSa. assumption.
+    - intros x H. apply HT. assumption. }
+  rewrite <- P in Hn. apply HT in Hn. destruct Hn as [Hn Hn'].
+  apply Hn'. assumption.
+Qed.
 
 Theorem Exercise4_2 : forall a a', Succ a a' ->
   TransitiveSet a -> TransitiveSet a'.
-Admitted.
+Proof.
+  intros a a' Ha' Ha. destruct Ha' as [Sa [HSa Ha']].
+  intros y x Hy Hx. apply Ha' in Hy. destruct Hy as [Hy | Hy].
+  - apply Ha'. left. apply (Ha y x); assumption.
+  - apply Ha'. apply HSa in Hy. rewrite Hy in Hx. left. assumption.
+Qed.
 
 Theorem Exercise4_3a : forall a Pa, PowerSet a Pa ->
   TransitiveSet a -> TransitiveSet Pa.
-Admitted.
+Proof.
+  intros a Pa HPa Ha. intros Y X HY HX. apply HPa in HY.
+  apply HPa. intros x Hx. apply HY in HX.
+  apply (Ha X x); assumption.
+Qed.
 
 Theorem Exercise4_3b : forall a Pa, PowerSet a Pa ->
   TransitiveSet Pa -> TransitiveSet a.
-Admitted.
+Proof.
+  intros a Pa HPa H y x Hy Hx. assert (P : Subset y a).
+  { apply HPa. singleton y. rename x0 into Sy. rename H0 into HSy.
+    apply (H Sy y).
+    - apply HPa. intros u Hu. apply HSy in Hu. replace u with y. assumption.
+    - apply HSy. trivial. }
+  apply P. assumption.
+Qed.
 
 Theorem Exercise4_4 : forall a Ua, Union a Ua ->
   TransitiveSet a -> TransitiveSet Ua.
-Admitted.
+Proof.
+  intros a Ua HUa H y x Hy Hx. apply HUa. apply HUa in Hy.
+  destruct Hy as [Y [Hy HY]]. exists y. split; try assumption.
+  apply (H Y y); try assumption.
+Qed.
 
 Theorem Exercise4_5a : forall A UA, Union A UA ->
   (forall a, In a A -> TransitiveSet a) -> TransitiveSet UA.
-Admitted.
+Proof.
+  intros A UA HUA HA. intros y x Hy Hx. apply HUA. apply HUA in Hy.
+  destruct Hy as [Y [Hy HY]]. apply HA in HY as HY'.
+  exists Y. split; try assumption. apply (HY' y x); try assumption.
+Qed.
 
 Theorem Exercise4_5b : forall A NA, ~Empty A -> Intersect A NA ->
   (forall a, In a A -> TransitiveSet a) -> TransitiveSet NA.
-Admitted.
+Proof.
+  intros A NA Hne HNA HA y x Hy Hx. apply (HNA Hne).
+  intros Y HY. assert (Hy' : forall z, In z A -> In y z).
+  { apply (HNA Hne). assumption. }
+  apply HA in HY as HY'. apply (HY' y x); try assumption.
+  apply Hy'. assumption.
+Qed.
 
 Theorem Exercise4_6 : forall a a' Ua', Succ a a' -> Union a' Ua' ->
   a = Ua' -> TransitiveSet a.
-Admitted.
+Proof.
+  intros a a' Ua' Ha' HUa' Heq y x Hy Hx. replace a with Ua'.
+  apply HUa'. destruct Ha' as [Sa [HSa Ha']].
+  exists y. split; try assumption.
+  apply Ha'. left. assumption.
+Qed.
 
 (** What follows is arguably the most interesting result so far. If we recall
     to the beginning of the book the concept of proving sets to be
