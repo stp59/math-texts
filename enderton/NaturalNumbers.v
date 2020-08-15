@@ -543,3 +543,116 @@ Theorem Strong_Induction_Principle_for_Omega : forall omga A, Nats omga ->
   A = omga.
 Admitted.
 
+(** Exercise 4-18 : Simplify: <_{-1}[{7,8}]. (The image of {7, 8} under the
+    inverse less-than relation. *)
+
+Theorem Exercise4_19 : forall m d, NaturalNumber m -> NaturalNumber d ->
+  ~ Empty d -> exists q r dq dqr, NaturalNumber q /\ NaturalNumber r /\
+  Mult d q dq /\ Add dq r dqr /\ m = dqr /\ Lt r d.
+Admitted.
+
+Theorem Exercise4_20 : forall A UA omga, ~ Empty A -> Union A UA -> Nats omga ->
+  Subset A omga -> UA = A -> A = omga.
+Admitted.
+
+Theorem Exercise4_21 : forall n x, NaturalNumber n -> In x n -> ~ Subset n x.
+Admitted.
+
+Theorem Exercise4_22 : forall m p p' mp', NaturalNumber m -> NaturalNumber p ->
+  Succ p p' -> Add m p' mp' -> In m mp'.
+Admitted.
+
+Theorem Exercise4_23 : forall m n, NaturalNumber m -> NaturalNumber n ->
+  Lt m n -> exists p p' mp', NaturalNumber p /\ Succ p p' /\ Add m p' mp' /\
+  mp' = n.
+Admitted.
+
+Theorem Exercise4_24 : forall m n p q mn pq, NaturalNumber m ->
+  NaturalNumber n -> NaturalNumber p -> NaturalNumber q -> Add m n mn ->
+  Add p q pq -> In m p <-> In q n.
+Admitted.
+
+Theorem Exercise4_25 : forall m n p q mq np mp nq mqnp mpnq,
+  NaturalNumber m -> NaturalNumber n -> NaturalNumber p -> NaturalNumber q ->
+  Mult m q mq -> Mult n p np -> Mult m p mp -> Mult n q nq -> Add mq np mqnp ->
+  Add mp nq mpnq -> In mqnp mpnq.
+Admitted.
+
+Theorem Exercise4_26 : forall n n' omga f ranf, NaturalNumber n -> Succ n n' ->
+  Nats omga -> FuncFromInto f n' omga -> Range f ranf -> exists x, In x ranf /\
+  forall x', In x' ranf -> In x' x.
+Admitted.
+
+Theorem Exercise4_27 : forall A G f1 f2 omga, Func G -> Nats omga ->
+  FuncFromInto f1 omga A -> FuncFromInto f2 omga A ->
+  (forall n f1ln f2ln domG f1n f2n Gf1ln Gf2ln, NaturalNumber n ->
+  Restriction f1 n f1ln -> Restriction f2 n f2ln -> Domain G domG ->
+  FunVal f1 n f1n -> FunVal f2 n f2n -> FunVal G f1ln Gf1ln ->
+  FunVal G f2ln Gf2ln -> In f1ln domG /\ In f2ln domG /\ f1n = Gf1ln /\
+  f2n = Gf2ln) -> f1 = f2.
+Admitted.
+
+(** Exercise 4-28 : Rewrite the proof of Theorem 4G using, place of induction,
+    the well-ordering of omega. TODO *)
+
+(** Exercise 4-29 : Write an expression for the set named 4 using only the
+    empty set symbole, left and right curly braces, and commas. *)
+
+(** Exercise 4-30 : What is U4? What is N4? *)
+
+(** Exercise 4-31 : What is UU7? *)
+
+(** Exercise 4-32 :
+    
+    a) Let A = {1}. Calculate A+ and U(A+).
+    b) What is U({2}+)?  *)
+
+(** Exercise 4-33 : Which of the following sets are transitive? (For each set S
+    that is not transitive, specify a member of US not belonging to S.)
+    
+    a) {0, 1, {1}}
+    b) {1}
+    c) <0, 1> *)
+
+(** Exercise 4-34 : Find a suitable a, b, etc. making each of the following sets
+    transitive. 
+    
+    a) { {{0}}, a, b }
+    b) { {{{0}}}, c, d, e} *)
+
+(** Exercise 4-35 : Let S be the set <1, 0>. 
+
+    a) Find a transitive set T1 for which S is a subset of T1.
+    b) Find a transitive set T2 for which S is a member of T2. *)
+
+(** Exercise 4-36 : By the Recursion Theorem, there is a function
+    h : omega -> omega for which h(0) = 3 and h(n+) = 2 * h(n). What is h(4)? *)
+
+
+Definition Has_n_Elts (S n : set) : Prop := NaturalNumber n /\
+  exists f, FuncFromOnto f n S /\ OneToOne f.
+
+Definition Disjoint (A B : set) : Prop :=
+  exists AnB, BinaryIntersect A B AnB /\ Empty AnB.
+
+Theorem Enderton4_36a : forall A B m n AuB mn, NaturalNumber m ->
+  NaturalNumber n -> Has_n_Elts A m -> Has_n_Elts B n -> BinaryUnion A B AuB ->
+  Add m n mn -> Disjoint A B -> Has_n_Elts AuB mn.
+Admitted.
+
+Theorem Enderton4_37b : forall A B m n AxB mn, NaturalNumber m ->
+  NaturalNumber n -> Has_n_Elts A m -> Has_n_Elts B n -> Prod A B AxB ->
+  Mult m n mn -> Has_n_Elts AxB mn.
+Admitted.
+
+(** Exercise 4-38 : Assume that h is the function from omega into omega for which
+    h(0) = 1 and h(n+) = h(n) + 3 (and note that h exists by the Recursion
+    Theorem). Give an explicit (non-recursive) expression for h(n). *)
+
+(** Exercise 4-39 : Assume that h is the function from omega into omega for which
+    h(0) = 1 and h(n+) = h(n) + (2 * n) + 1 (and note that h exists by the
+    Recursion Theorem). Give an explicit (non-recursive) expression for h(n). *)
+
+(** Exercise 4-40 : Assume that h is the function from omega into omega defined
+    by h(n) = 5 * n + 2 (and note that h exists by the Recursion Theorem).
+    Express h(n+) in terms of h(n) as simply as possible.  *)
