@@ -909,10 +909,170 @@ Corollary Enderton4H : forall N S e NS P omga sigma empty os Q,
   OrdPair N S NS -> OrdPair NS e P -> PeanoSystem P ->
   OrdPair omga sigma os -> OrdPair os empty Q -> PeanoSystem_of_NaturalNumbers Q ->
   exists h, FuncFromOnto h omga N /\ OneToOne h /\
-  (forall n sn hsn hn Shn, FunVal sigma n sn -> FunVal h sn hsn -> FunVal h n hn ->
-  FunVal S hn Shn -> hsn = Shn) /\
+  (forall n sn hsn hn Shn, In n omga -> FunVal sigma n sn -> FunVal h sn hsn ->
+  FunVal h n hn -> FunVal S hn Shn -> hsn = Shn) /\
   forall ho, FunVal h empty ho -> ho = e.
-Admitted.
+Proof.
+  intros N S e NS PN omga sigma empty os Pw HNS HNSe HPN Hos Hose HPw.
+  destruct HPw as [omga' [sigma' [os' [empty' [Hos' [Hose' [Homga [Hsigma He]]]]]]]].
+  assert (T : os = os' /\ empty = empty').
+  { apply (Enderton3A os empty os' empty' Pw Pw Hose Hose'). trivial. }
+  replace os' with os in *; replace empty' with empty in *; try apply T.
+  clear os' empty' T. rename empty into o. rename He into Ho.
+  assert (T : omga = omga' /\ sigma = sigma').
+  { apply (Enderton3A omga sigma omga' sigma' os os Hos Hos'). trivial. }
+  replace omga' with omga in *; replace sigma' with sigma in *; try apply T.
+  clear omga' sigma' Hos' T Hose'.
+  destruct HPN as [N' [S' [NS' [e' [HNS' [HNSe' [HS [He [HP1 [HP2 HP3]]]]]]]]]].
+  assert (T : NS = NS' /\ e = e').
+  { apply (Enderton3A NS e NS' e' PN PN HNSe HNSe'). trivial. }
+  replace NS' with NS in *; replace e' with e in *; try apply T.
+  clear NS' e' T. assert (T : N = N' /\ S = S').
+  { apply (Enderton3A N S N' S' NS NS HNS HNS'). trivial. }
+  replace N' with N in *; replace S' with S in *; try apply T.
+  clear N' S' HNS' T HNSe'. recursion N e S He HS.
+  rename x into h. rename H into Hh. exists h.
+  destruct Hh as [omga' [o' [Homga' [Ho' [HhomgaN [Hho Hhsn]]]]]].
+  assert (T : o = o'). { apply Empty_Unique; try assumption. }
+  replace o' with o in *; try apply T. clear o' T Ho'.
+  assert (T : omga = omga'). { apply Nats_Unique; try assumption. }
+  replace omga' with omga in *; try apply T. clear omga' T Homga'.
+  destruct HhomgaN as [Hfh [Hdomh [ranh [Hranh Hsub]]]].
+  assert (P : ranh = N).
+  { apply (HP3 ranh Hsub).
+    - apply Hranh. exists o. apply Hho; try assumption.
+      exists omga. split; try assumption.
+      apply Homga, Zero_NaturalNumber, Ho.
+    - intros hn Shn HShn Hhn. apply Hranh in Hhn.
+      destruct Hhn as [n [nhn [Hnhn Hnhn']]].
+      succ n. rename x into n'. rename H into Hn'.
+      assert (T : exists domh, Domain h domh /\ In n' domh).
+      { exists omga. split; try assumption. apply Homga.
+        apply (Succ_NaturalNumber n n'); try assumption.
+        apply Homga. apply Hdomh. exists hn, nhn. split; assumption. }
+      funval Hfh T h n'. rename x into hn'. rename H into Hhn'.
+      replace Shn with hn'.
+      + apply Hranh. exists n'. apply Hhn'; assumption.
+      + apply (Hhsn n n' hn hn' Shn); try assumption.
+        * apply Hdomh. exists hn, nhn. split; assumption.
+        * intros _ _. exists nhn. split; assumption. }
+  repeat (split; try assumption).
+  - intros H. rewrite <- P in H. apply Hranh in H. assumption.
+  - intros H. apply Hsub. apply Hranh. assumption.
+  - build_set set (fun (h c n : set) => forall m a na ma, OrdPair n a na ->
+      OrdPair m a ma -> In na h -> In ma h -> n = m) h omga.
+    rename x into T. rename H into HT. intros n m a na ma Hna Hma I J.
+    assert (Q : In n omga).
+    { apply Hdomh. exists a, na. split; assumption. }
+    replace omga with T in Q. apply HT in Q. destruct Q as [_ Q].
+    apply (Q m a na ma); try assumption.
+    clear n m a na ma Hna Hma I J Q. 
+    apply Induction_Principle_for_Omega; try assumption; try split.
+    + exists o. split; try assumption. apply HT.
+      split; try (apply Homga, (Zero_NaturalNumber), Ho).
+      intros m' hm' ohm' m'hm' Hohm' Hm'ho H I.
+      assert (Q : o = m' \/ o <> m'). { apply REM. }
+      destruct Q as [Q | Q]; try trivial.
+      destruct (Enderton4C m') as [m [Hm Hm']].
+      { apply Homga, Hdomh. exists hm', m'hm'. split; assumption. }
+      { intros c. apply Q. apply Empty_Unique; assumption. }
+      range S. rename x into ranS. rename H0 into HranS.
+      destruct (HP1 ranS HranS). apply HranS. apply Homga in Hm.
+      assert (H0 : exists domh, Domain h domh /\ In m domh).
+      { exists omga. split; try assumption. }
+      funval Hfh H0 h m. rename x into hm. rename H1 into Hhm.
+      exists hm. destruct (FunVal_Exists S hm); try apply HS.
+      { exists N. split. apply HS. apply Hsub. apply Hranh. exists m.
+        apply Hhm; try assumption. }
+      rename x into Shm. rename H1 into HShm.
+      replace e with Shm. apply HShm; try apply HS.
+      { exists N. split. apply HS. apply Hsub. apply Hranh. exists m.
+        apply Hhm; assumption. }
+      transitivity hm'.
+      * symmetry. apply (Hhsn m m' hm hm' Shm Hm Hm'); try assumption.
+        intros _ _. exists m'hm'. split; assumption.
+      * apply (FunVal_Unique h o hm' e); try assumption.
+        { exists omga. split; try assumption. apply Homga, Zero_NaturalNumber, Ho. }
+        { intros _ _. exists ohm'. split; try assumption. }
+    + intros n n' Hn' Hn. apply HT. apply HT in Hn.
+      destruct Hn as [Hn1 Hn2]. apply Homga in Hn1.
+      split; try (apply Homga, (Succ_NaturalNumber n n'); assumption).
+      intros m' hn' n'hn' m'hn' Hn'hn' Hm'hn' H I.
+      destruct (Enderton4C m') as [m [Hm Hm']].
+      { apply Homga, Hdomh. exists hn', m'hn'. split; assumption. }
+      { intros C. range S. rename x into ranS. rename H0 into HranS.
+        destruct (HP1 ranS HranS). apply HranS. apply Homga in Hn1.
+        assert (H0 : exists domh, Domain h domh /\ In n domh).
+        { exists omga. split; try assumption. }
+        funval Hfh H0 h n. rename x into hn. rename H1 into Hhn.
+        exists hn. destruct (FunVal_Exists S hn); try apply HS.
+        { exists N. split. apply HS. apply Hsub. apply Hranh. exists n.
+          apply Hhn; try assumption. }
+        rename x into Shn. rename H1 into HShn.
+        replace e with Shn. apply HShn; try apply HS.
+        { exists N. split. apply HS. apply Hsub. apply Hranh. exists n.
+          apply Hhn; assumption. }
+        transitivity hn'.
+        * symmetry. apply (Hhsn n n' hn hn' Shn Hn1 Hn'); try assumption.
+          intros _ _. exists n'hn'. split; assumption.
+        * apply (FunVal_Unique h m' hn' e); try assumption.
+          { exists omga. split; try assumption. apply Homga, Zero_NaturalNumber, C. }
+          { intros _ _. exists m'hn'. split; try assumption. }
+          replace m' with o; try assumption. apply Empty_Unique; assumption. }
+      assert (H0 : exists domh, Domain h domh /\ In n domh).
+      { exists omga. split; try assumption. apply Homga; assumption. }
+      assert (H1 : exists domh, Domain h domh /\ In m domh).
+      { exists omga. split; try assumption. apply Homga; assumption. }
+      funval Hfh H0 h n. rename x into hn. rename H2 into Hhn.
+      funval Hfh H1 h m. rename x into hm. rename H2 into Hhm.
+      assert (H2 : exists domS, Domain S domS /\ In hn domS).
+      { exists N. split. apply HS. apply Hsub. apply Hranh.
+        exists n. apply Hhn; assumption. }
+      assert (H3 : exists domS, Domain S domS /\ In hm domS).
+      { exists N. split. apply HS. apply Hsub. apply Hranh.
+        exists m. apply Hhm; assumption. }
+      destruct HS as [HfS HS].
+      funval HfS H2 S hn. rename x into Shn. rename H4 into HShn.
+      funval HfS H3 S hm. rename x into Shm. rename H4 into HShm.
+      apply (Succ_Unique m); try assumption. replace m with n; try assumption.
+      assert (Q : Shn = Shm).
+      { transitivity hn'.
+        - symmetry. apply (Hhsn n n' hn hn' Shn); try assumption.
+          + apply Homga; assumption.
+          + intros _ _. exists n'hn'. split; assumption.
+        - apply (Hhsn m m' hm hn' Shm); try assumption.
+          + apply Homga; assumption.
+          + intros _ _. exists m'hn'. split; assumption. }
+      assert (R : hn = hm).
+      { destruct HP2 as [_ HP2].
+        destruct HShn as [hnShn [HhnShn HhnShn']]; try assumption.
+        destruct HShm as [hmShm [HhmShm HhmShm']]; try assumption.
+        ordpair hm Shn. rename x into hmShn. rename H into HhmShn.
+        apply (HP2 hn hm Shn hnShn hmShn); try assumption.
+        replace hmShn with hmShm; try assumption.
+        apply (OrdPair_Unique hm Shm); try assumption. rewrite <- Q. assumption. }
+      destruct Hhn as [nhn [Hnhn Hnhn']]; try assumption.
+      destruct Hhm as [mhm [Hmhm Hmhm']]; try assumption.
+      ordpair m hn. rename x into mhn. rename H4 into Hmhn.
+      apply (Hn2 m hn nhn mhn); try assumption.
+      replace mhn with mhm; try assumption.
+      apply (OrdPair_Unique m hm mhm mhn); try assumption.
+      rewrite <- R. assumption.
+    + intros t Ht. apply HT in Ht as [Ht _]. assumption.
+  - intros n sn hsn hn Shn Hsn Hhsn' Hhn HShn.
+    apply (Hhsn n sn hn hsn Shn); try assumption.
+    destruct Hhsn' as [nsn [Hnsn Hnsn']].
+    + destruct (SuccessorFunc_Into sigma omga); try assumption.
+    + exists omga. split; try assumption.
+      destruct (SuccessorFunc_Into sigma omga) as [_ [H0 _]]; try assumption.
+    + apply Hsigma in Hnsn'. destruct Hnsn' as [n' [sn' [Hnsn' [Hn Hn']]]].
+      assert (T : n' = n /\ sn' = sn).
+      { apply (Enderton3A n' sn' n sn nsn nsn Hnsn' Hnsn). trivial. }
+      replace n with n'; replace sn with sn'; try apply T. assumption.
+  - intros ho Hho'. apply (FunVal_Unique h o ho e); try assumption.
+    exists omga. split; try assumption. apply Homga.
+    apply Zero_NaturalNumber. apply Ho.
+Qed.
 
 (** Exercise 4 - 7 : Complete part of the proof of the recusion theorem. *)
 
