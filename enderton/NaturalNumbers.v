@@ -939,7 +939,7 @@ Proof.
   replace omga' with omga in *; try apply T. clear omga' T Homga'.
   destruct HhomgaN as [Hfh [Hdomh [ranh [Hranh Hsub]]]].
   assert (P : ranh = N).
-  { apply (HP3 ranh Hsub).
+  { apply (HP3 ranh Hsub). unfold Peano3 in HP3.
     - apply Hranh. exists o. apply Hho; try assumption.
       exists omga. split; try assumption.
       apply Homga, Zero_NaturalNumber, Ho.
@@ -1076,37 +1076,390 @@ Qed.
 
 (** Exercise 4 - 7 : Complete part of the proof of the recusion theorem. *)
 
-Theorem Exercise4_8 : forall f A c ranf h, FuncFromInto f A A -> In c A ->
-  ~ In c ranf -> Range f ranf -> RecursiveFunction A c f h -> OneToOne h.
-Admitted.
+Theorem Exercise4_8 : forall f A c ranf Amranf h, FuncFromInto f A A ->
+  OneToOne f -> Range f ranf -> SetMinus A ranf Amranf -> In c Amranf ->
+  RecursiveFunction A c f h -> OneToOne h.
+Proof.
+  intros f A c ranf Amranf h HfAA Hf Hranf HAmranf Hc Hh.
+  destruct Hh as [omga [o [Homga [Ho [HhomgaA [Hho Hhn']]]]]].
+  split; try apply HhomgaA. intros m n hm mhm nhm Hmhm Hnhm H I.
+  build_set set (fun (h c m : set) => forall n hm mhm nhm, OrdPair m hm mhm ->
+    OrdPair n hm nhm -> In mhm h -> In nhm h -> m = n) h omga.
+  rename x into S. rename H0 into HS. assert (P : In m omga).
+  { apply HhomgaA. exists hm, mhm. split; assumption. }
+  replace omga with S in P. apply HS in P. destruct P as [_ P].
+  apply (P n hm mhm nhm); try assumption.
+  clear Hnhm Hmhm n hm mhm nhm H I P m.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros s Hs; apply HS in Hs; destruct Hs as [Hs _]; assumption).
+  - exists o. split; try assumption. apply HS. split.
+    + apply Homga, Zero_NaturalNumber. assumption.
+    + intros n' hm mhm n'hm Hmhm Hn'hm H I.
+      assert (Q : o = n' \/ o <> n'). { apply REM. }
+      destruct Q as [Q | Q]; try assumption. apply HAmranf in Hc.
+      destruct Hc as [Hc Hc']. destruct Hc'. apply Hranf.
+      destruct (Enderton4C n') as [n [Hn Hn']].
+      { apply Homga, HhomgaA. exists hm, n'hm. split; assumption. }
+      { intros C. apply Q. apply Empty_Unique; try assumption. }
+      assert (R : hm = c).
+      { apply (FunVal_Unique h o hm c); try apply  HhomgaA; try assumption.
+        - exists omga. split. apply HhomgaA.
+          apply Homga, Zero_NaturalNumber, Ho.
+        - intros _ _. exists mhm. split; assumption. }
+      replace hm with c in *. clear R.
+      assert (H0 : exists domh, Domain h domh /\ In n domh).
+      { exists omga. split. try apply HhomgaA. apply Homga. assumption. }
+      destruct HhomgaA as [Hfh HhomgaA].
+      funval Hfh H0 h n. rename x into hn. rename H1 into Hhn.
+      destruct Hhn as [nhn [Hnhn Hnhn']]; try assumption.
+      destruct HhomgaA as [Hdomh [rnah [Hranh Hsub]]].
+      exists hn. destruct (FunVal_Exists f hn); try apply HfAA.
+      { exists A. split. apply HfAA. apply Hsub. apply Hranh.
+        exists n, nhn. split; try assumption. }
+      rename x into fhn. rename H1 into Hfhn.
+      destruct Hfhn as [hnfhn [Hhnfhn Hhnfhn']]; try apply HfAA.
+      { exists A. split. apply HfAA. apply Hsub. apply Hranh.
+        exists n, nhn. split; try assumption. }
+      exists hnfhn. split; try assumption. replace c with fhn; try assumption.
+      symmetry. apply (Hhn' n n' hn c fhn); try assumption.
+      * apply Homga; assumption.
+      * intros _ _. exists nhn. split; assumption.
+      * intros _ _. exists n'hm. split; assumption.
+      * intros _ _. exists hnfhn. split; assumption.
+  - intros n n' Hn' Hn. apply HS. apply HS in Hn. destruct Hn as [Hn1 Hn2].
+    apply Homga in Hn1. split; try (apply Homga, (Succ_NaturalNumber n n'); assumption).
+    intros m' hm' n'hm' m'hm' Hn'hm' Hm'hm' H I.
+    destruct HhomgaA as [Hfh [Hdomh [ranh [Hranh Hsub]]]].
+    destruct (Enderton4C m') as [m [Hm Hm']].
+    { apply Homga, Hdomh. exists hm', m'hm'. split; assumption. }
+    { intros C. apply HAmranf in Hc. destruct Hc as [Hc Hc']. apply Hc'.
+      apply Hranf. assert (T : hm' = c).
+      { apply (FunVal_Unique h o hm' c); try assumption.
+        - exists omga. split; try assumption. apply Homga, Zero_NaturalNumber, Ho.
+        - intros _ _. exists m'hm'. split; try assumption.
+          replace o with m'; try assumption. apply Empty_Unique; try assumption. }
+      replace hm' with c in *. clear T.
+      assert (H0 : exists domh, Domain h domh /\ In n domh).
+      { exists omga. split; try assumption. apply Homga. assumption. }
+      funval Hfh H0 h n. rename x into hn. rename H1 into Hhn.
+      destruct Hhn as [nhn [Hnhn Hnhn']]; try assumption.
+      exists hn. destruct (FunVal_Exists f hn); try apply HfAA.
+      { exists A. split. apply HfAA. apply Hsub. apply Hranh.
+        exists n, nhn. split; try assumption. }
+      rename x into fhn. rename H1 into Hfhn.
+      destruct Hfhn as [hnfhn [Hhnfhn Hhnfhn']]; try apply HfAA.
+      { exists A. split. apply HfAA. apply Hsub. apply Hranh.
+        exists n, nhn. split; try assumption. }
+      exists hnfhn. split; try assumption. replace c with fhn; try assumption.
+      symmetry. apply (Hhn' n n' hn c fhn); try assumption.
+      * apply Homga; assumption.
+      * intros _ _. exists nhn. split; try assumption.
+      * intros _ _. exists n'hm'. split; assumption.
+      * intros _ _. exists hnfhn. split; assumption. }
+    assert (H0 : exists domh, Domain h domh /\ In n domh).
+    { exists omga. split; try assumption. apply Homga. assumption. }
+    assert (H1 : exists domh, Domain h domh /\ In m domh).
+    { exists omga. split; try assumption. apply Homga. assumption. }
+    funval Hfh H0 h n. rename x into hn. rename H2 into Hhn.
+    funval Hfh H1 h m. rename x into hm. rename H2 into Hhm.
+    destruct Hhn as [nhn [Hnhn Hnhn']]; try assumption.
+    destruct Hhm as [mhm [Hmhm Hmhm']]; try assumption.
+    assert (H2 : exists domf, Domain f domf /\ In hm domf).
+    { exists A. split. apply HfAA. apply Hsub. apply Hranh.
+      exists m, mhm. split; assumption. }
+    assert (H3 : exists domf, Domain f domf /\ In hn domf).
+    { exists A. split. apply HfAA. apply Hsub. apply Hranh.
+      exists n, nhn. split; assumption. }
+    destruct HfAA as [Hff HfAA].
+    funval Hff H2 f hm. rename x into fhm. rename H4 into Hfhm.
+    funval Hff H3 f hn. rename x into fhn. rename H4 into Hfhn.
+    assert (P : fhm = fhn).
+    { transitivity hm'.
+      - symmetry. apply (Hhn' m m' hm hm' fhm); try assumption.
+        + apply Homga. assumption.
+        + intros _ _. exists mhm. split; assumption.
+        + intros _ _. exists m'hm'. split; assumption.
+      - apply (Hhn' n n' hn hm' fhn); try assumption.
+        + apply Homga. assumption.
+        + intros _ _. exists nhn. split; assumption.
+        + intros _ _. exists n'hm'. split; assumption. }
+    assert (Q : hm = hn).
+    { destruct Hf as [_ Hf].
+      destruct Hfhm as [hmfhm [Hhmfhm Hhmfhm']]; try assumption.
+      destruct Hfhn as [hnfhn [Hhnfhn Hfnhfn']]; try assumption.
+      apply (Hf hm hn fhm hmfhm hnfhn); try assumption.
+      replace fhm with fhn; try assumption. }
+    apply (Succ_Unique n n' m'); try assumption.
+    replace n with m; try assumption.
+    ordpair n hm. rename x into nhm. rename H2 into Hnhm.
+    symmetry. apply (Hn2 m hm nhm mhm); try assumption.
+    replace nhm with nhn; try assumption.
+    apply (OrdPair_Unique n hn nhn nhm); try assumption.
+    replace hn with hm; try assumption.
+Qed. 
 
 Definition preClosure1 (f B A preC1 : set) : Prop :=
-  FuncFromInto f B B -> Subset A B ->
   forall X, In X preC1 <-> Subset A X /\ Subset X B /\
   forall fX, Image X f fX -> Subset fX X.
 
 Theorem preClosure1_Exists : forall f B A, exists preC1, preClosure1 f B A preC1.
-Admitted.
+Proof.
+  intros f B A. powerset B. rename x into PB. rename H into HPB.
+  build_set
+    (prod (prod set set) set)
+    (fun (t : set * set * set) (c X : set) => Subset (snd t) X /\
+      Subset X (snd (fst t)) /\ forall fX, Image X (fst (fst t)) fX -> Subset fX X)
+    (f, B, A)
+    PB.
+  rename x into preC1. rename H into HpreC1. exists preC1.
+  intros X. split; intros H; try apply HpreC1; try assumption.
+  split; try apply H. apply HPB. intros x Hx.
+  destruct H as [_ [H _]]. apply H. assumption.
+Qed.
 
 Theorem preClosure1_Unique : forall f B A C C', preClosure1 f B A C ->
   preClosure1 f B A C' -> C = C'.
-Admitted.
+Proof.
+  intros f B A C C' HC HC'.
+  apply Extensionality_Axiom. intros x. split; intros H.
+  - apply HC', HC, H.
+  - apply HC, HC', H.
+Qed.
 
-Definition preClosure2 (f B A preC2 : set) : Prop :=
-  exists PB F h, GivenByImage f B B F /\ PowerSet B PB /\
+Print GivenByImage.
+
+Definition GivenByImageClosure (f B F : set) : Prop :=
+  forall XY, In XY F <-> exists X Y fX, OrdPair X Y XY /\
+  Subset X B /\ Subset Y B /\ Image X f fX /\ BinaryUnion X fX Y.
+
+Theorem GivenByImageClosure_Exists : forall f B, exists F, GivenByImageClosure f B F.
+Proof.
+  intros f B. powerset B. rename x into PB. rename H into HPB.
+  prod PB PB. rename x into PBxPB. rename H into HPBxPB.
+  build_set
+    (prod set set)
+    (fun (t : set * set) (c x : set) => exists X Y fX, OrdPair X Y x /\
+      Subset X (fst t) /\ Subset Y (fst t) /\ Image X (snd t) fX /\
+      BinaryUnion X fX Y)
+    (B, f)
+    PBxPB.
+  rename x into F. rename H into HF. exists F. intros XY. split; intros H.
+  - apply HF, H.
+  - apply HF. split; try assumption. apply HPBxPB.
+    destruct H as [X [Y [fX [HXY [HX [HY [HfX H]]]]]]].
+    exists X, Y. repeat (split; try assumption; try apply HPB; try assumption).
+Qed.
+
+Theorem GivenByImageClosure_Unique : forall f B F G,
+  GivenByImageClosure f B F -> GivenByImageClosure f B G -> F = G.
+Proof.
+  intros f B F G HF HG. apply Extensionality_Axiom. intros x; split; intros H.
+  - apply HG, HF, H.
+  - apply HF, HG, H.
+Qed.
+
+Theorem GivenByImageClosure_Into : forall f B PB F, FuncFromInto f B B ->
+  PowerSet B PB -> GivenByImageClosure f B F -> FuncFromInto F PB PB.
+Proof.
+  intros f B PB F [Hf [Hdomf [ranf [Hranf Hsub]]]] HPB HF. repeat split.
+  - intros xy H. apply HF in H. destruct H as [X [Y [_ [HXY _]]]].
+    exists X, Y. assumption.
+  - intros X Y Z XY XZ HXY HXZ H I. apply HF in H. apply HF in I.
+    destruct H as [X' [Y' [fX [HXY' [HX [HY [HfX H]]]]]]].
+    assert (T : X = X' /\ Y = Y').
+    { apply (Enderton3A X Y X' Y' XY XY HXY HXY'). trivial. }
+    replace X' with X in *; replace Y' with Y in *; try apply T.
+    clear X' Y' T HXY'. destruct I as [X' [Z' [fX' [HXZ' [HX' [HY' [HfX' I]]]]]]].
+    assert (T : X = X' /\ Z = Z').
+    { apply (Enderton3A X Z X' Z' XZ XZ HXZ HXZ'). trivial. }
+    replace X' with X in *; replace Z' with Z in *; try apply T.
+    clear X' Z' T HXZ'. apply (BinaryUnion_Unique X fX Y Z); try assumption.
+    replace fX with fX'; try assumption.
+    apply (Image_Unique X f fX' fX); assumption.
+  - rename x into X. intros HX. image X f. rename x into fX. rename H into HfX.
+    binary_union X fX. rename x into Y. rename H into HY.
+    ordpair X Y. rename x into XY. rename H into HXY.
+    exists Y, XY. split; try assumption. apply HF.
+    exists X, Y, fX. repeat (split; try assumption).
+    + apply HPB; assumption.
+    + intros y H. apply HY in H. destruct H as [H | H].
+      * apply HPB in HX. apply HX, H.
+      * apply HfX in H. destruct H as [x [xy [Hxy [H I]]]].
+        apply Hsub. apply Hranf. exists x, xy. split; try assumption.
+  - rename x into X. intros [Y [XY [HXY H]]]. apply HF in H.
+    destruct H as [X' [Y' [fX [HXY' [HX [HY [HfX H]]]]]]].
+    apply HPB. replace X with X'; try assumption.
+    apply (Enderton3A X' Y' X Y XY XY HXY' HXY). trivial.
+  - range F. rename x into ranF. rename H into HranF.
+    exists ranF. split; try assumption.
+    intros Y H. apply HranF in H. destruct H as [X [XY [HXY H]]].
+    apply HF in H. destruct H as [X' [Y' [fX [HXY' [_ [HY _]]]]]].
+    apply HPB. replace Y with Y'; try assumption.
+    apply (Enderton3A X' Y' X Y XY XY HXY' HXY). trivial.
+Qed.
+
+Definition preClosure2 (f B A preC2 : set) : Prop := FuncFromInto f B B ->
+  Subset A B -> exists PB F h, GivenByImageClosure f B F /\ PowerSet B PB /\
   RecursiveFunction PB A F h /\ Range h preC2.
 
-Theorem preClosure2_Exists : forall f B A, exists C, preClosure2 f B A C.
-Admitted.
+Theorem preClosure2_Exists : forall f B A, FuncFromInto f B B -> Subset A B ->
+  exists C, preClosure2 f B A C.
+Proof.
+  intros f B A HfBB HAB. powerset B. rename x into PB. rename H into HPB.
+  destruct (GivenByImageClosure_Exists f B). rename x into F. rename H into HF.
+  assert (HFPBPB : FuncFromInto F PB PB).
+  { apply (GivenByImageClosure_Into f B); try assumption. }
+  assert (HA : In A PB).
+  { apply HPB. assumption. }
+  recursion PB A F HA HFPBPB. rename x into h. rename H into Hh.
+  range h. rename x into ranh. rename H into Hranh.
+  exists ranh. intros _ _. exists PB, F, h. repeat (split; try assumption).
+Qed.
 
-Theorem preClosure2_Unique : forall f B A C C', preClosure2 f B A C ->
+Theorem preClosure2_Unique : forall f B A C C', FuncFromInto f B B ->
+  Subset A B -> preClosure2 f B A C ->
   preClosure2 f B A C' -> C = C'.
-Admitted.
+Proof.
+  intros f B A C C' HfBB HAB HC HC'.
+  destruct HC as [PB [F [h [HF [HPB [Hh Hranh]]]]]]; try assumption.
+  destruct HC' as [PB' [F' [h' [HF' [HPB' [Hh' Hranh']]]]]]; try assumption.
+  apply (Range_Unique h C C'); try assumption.
+  replace h with h'; try assumption.
+  apply (RecursiveFunction_Unique PB A F h' h); try assumption.
+  { apply HPB; assumption. }
+  { apply (GivenByImageClosure_Into f B); try assumption. }
+  replace PB with PB'.
+  - replace F with F'; try assumption.
+    apply (GivenByImageClosure_Unique f B); try assumption.
+  - apply (Power_Set_Unique B PB' PB); try assumption.
+Qed.
+
+Lemma Subset_Transitive : forall A B C, Subset A B -> Subset B C -> Subset A C.
+Proof.
+  intros A B C HAB HBC. intros a H. apply HBC, HAB, H.
+Qed.
 
 Theorem Exercise4_9 : forall f B A C1 C2 NC1 UC2, FuncFromInto f B B ->
   Subset A B -> preClosure1 f B A C1 -> preClosure2 f B A C2 -> 
   Intersect C1 NC1 -> Union C2 UC2 -> NC1 = UC2.
-Admitted.
+Proof.
+  intros f B A C1 C2 NC1 UC2 HfBB HAB HC1 HC2 HNC1 HUC2.
+  assert (Hne : ~ Empty C1).
+  { intros C. apply (C B). apply HC1. split; try assumption.
+    split; try apply Subset_Reflexive. intros fB HfB b H.
+    apply HfB in H. destruct H as [a [ab [Hab [Ha H]]]].
+    destruct HfBB as [Hf [Hdomf [ranf [Hranf Hsub]]]].
+    apply Hsub, Hranf. exists a, ab. split; try assumption. }
+  apply (SubsetSymmetric_iff_Equal). split.
+  - image UC2 f. rename x into fUC2. rename H into HfUC2.
+    assert (P : Subset fUC2 UC2).
+    { intros y H. apply HUC2. apply HfUC2 in H.
+      destruct H as [x [xy [Hxy [Hx H]]]]. apply HUC2 in Hx.
+      destruct Hx as [X [Hx HX]].
+      destruct HC2 as [PB [F [h [HF [HPB [Hh Hranh]]]]]]; try assumption.
+      apply Hranh in HX. destruct HX as [n [nX [HnX HX]]].
+      destruct Hh as [omga [e [Homga [He [[Hfh [Hdomh Hranh']] [Hhe Hhn']]]]]].
+      destruct Hranh' as [ranh' [Hranh' Hsub]].
+      succ n. rename x0 into n'. rename H0 into Hn'.
+      assert (H0 : exists domh, Domain h domh /\ In n' domh).
+      { exists omga. split; try assumption. apply Homga.
+        apply (Succ_NaturalNumber n n'); try assumption.
+        apply Homga. apply Hdomh. exists X, nX. split; assumption. }
+      assert (H1 : exists domF, Domain F domF /\ In X domF).
+      { exists PB. split. apply (GivenByImageClosure_Into f B); try assumption.
+        apply Hsub. apply Hranh'. exists n, nX. split; assumption. }
+      destruct (GivenByImageClosure_Into f B PB F) as [HfF _]; try assumption.
+      funval Hfh H0 h n'. rename x0 into Y. rename H2 into HY.
+      funval HfF H1 F X. rename x0 into Y'. rename H2 into HY'.
+      destruct HY' as [XY [HXY HXY']]; try assumption.
+      apply HF in HXY'. destruct HXY' as [X' [Y'' [fX [HXY' [HX' [HY' [HfX I]]]]]]].
+      exists Y''. split.
+      - apply I. right. apply HfX. exists x, xy. repeat (split; try assumption).
+        replace X' with X; try assumption.
+        apply (Enderton3A X Y' X' Y'' XY XY HXY HXY'). trivial.
+      - replace Y'' with Y. apply Hranh. exists n'. apply HY; try assumption.
+        transitivity Y'.
+        + apply (Hhn' n n' X Y Y'); try assumption.
+          * apply Hdomh. exists X, nX. split; try assumption.
+          * intros _ _. exists nX. split; try assumption.
+          * intros _ _. exists XY. split; try assumption.
+            apply HF. exists X', Y'', fX. repeat (split; try assumption).
+        + apply (Enderton3A X Y' X' Y'' XY XY HXY HXY'). trivial. }
+    assert (Q : In UC2 C1).
+    { apply HC1. 
+      destruct HC2 as [PB [F [h [HF [HPB [Hh Hranh]]]]]]; try assumption.
+      destruct Hh as [omga [o [Homga [Ho [Hh [Hho Hhn']]]]]]. split; try split.
+      - intros a H. apply HUC2. exists A. split; try assumption.
+        apply Hranh. exists o. apply Hho; try apply Hh.
+        exists omga. split; try (apply Homga, Zero_NaturalNumber, Ho); apply Hh.
+      - intros b H. apply HUC2 in H. destruct H as [Y [H I]].
+        apply Hranh in I. destruct I as [X [XY [HXY I]]].
+        destruct Hh as [Hh [Hdomh [ranh [Hranh' Hsub]]]].
+        assert (T : In Y PB).
+        { apply Hsub. apply Hranh'. exists X, XY. split; assumption. }
+        apply HPB in T. apply T. assumption.
+      - intros fX HfX. replace fX with fUC2; try assumption.
+        apply (Image_Unique UC2 f); try assumption. }
+    intros x H. assert (R : forall X, In X C1 -> In x X).
+    { apply HNC1; try assumption. }
+    apply R, Q.
+  - intros y H. apply HUC2 in H. destruct H as [Y [H I]].
+    destruct HC2 as [PB [F [h [HF [HPB [Hh HC2]]]]]]; try assumption.
+    destruct Hh as [omga [o [Homga [Ho [Hh [Hho Hhn']]]]]].
+    build_set set
+      (fun (t c x : set) => forall hx, FunVal t x hx -> Subset hx NC1) h omga.
+    rename x into T. rename H0 into HT.
+    apply HC2 in I. destruct I as [n [nY [HnY I]]].
+    assert (P : In n omga).
+    { destruct Hh as [Hh [Hdomh _]]. apply Hdomh.
+      exists Y, nY. split; assumption. }
+    replace omga with T in P.
+    { apply HT in P. destruct P as [_ P]. apply (P Y); try assumption.
+      intros _ _. exists nY. split; assumption. }
+    apply Induction_Principle_for_Omega; try assumption; try split.
+    + exists o. split; try assumption. apply HT.
+      split; try apply Homga, Zero_NaturalNumber, Ho.
+      intros A' HA' a J. apply HNC1; try assumption.
+      intros X HX. apply HC1 in HX. destruct HX as [HX _].
+      apply HX. replace A with A'; try assumption.
+      apply (FunVal_Unique h o A' A); try assumption; try apply Hh.
+      exists omga. split. apply Hh. apply Homga, Zero_NaturalNumber, Ho.
+    + intros m m' Hm' Hm. apply HT in Hm. destruct Hm as [Hm IH].
+      apply HT. apply Homga in Hm.
+      split; try (apply Homga, (Succ_NaturalNumber m m'); try assumption).
+      intros X HX. destruct (GivenByImageClosure_Into f B PB F); try assumption.
+      destruct Hh as [Hh [Hdomh [ranh [Hranh Hsub]]]].
+      assert (H3 : exists domh, Domain h domh /\ In m domh).
+      { exists omga. split; try assumption. apply Homga. assumption. }
+      funval Hh H3 h m. rename H2 into Hhm. rename x into hm.
+      assert (H2 : exists domF, Domain F domF /\ In hm domF).
+      { exists PB; split. try apply H1. apply Hsub. apply Hranh.
+        exists m. apply Hhm; try assumption. }
+      funval H0 H2 F hm. rename x into Fhm. rename H4 into HFhm.
+      destruct HFhm as [hmFhm [HhmFhm HhmFhm']]; try assumption.
+      apply HF in HhmFhm' as [hm' [Fhm' [fhm [HhmFhm' [HhmB [HFhmB [Hfhm Q]]]]]]].
+      intros x J. replace X with Fhm' in J. apply Q in J.
+      assert (T0 : hm = hm' /\ Fhm = Fhm').
+      { apply (Enderton3A hm Fhm hm' Fhm' hmFhm hmFhm HhmFhm HhmFhm'). trivial. }
+      replace hm' with hm in *; replace Fhm' with Fhm in *; try apply T0.
+      clear T0 hm' Fhm' HhmFhm'. destruct J as [J | J]; 
+      try (apply (IH hm); assumption). apply Hfhm in J.
+      destruct J as [w [wx [Hwx [J K]]]]. apply HNC1; try assumption.
+      intros W HW. apply HC1 in HW.
+      image W f. rename x0 into fW. rename H4 into HfW.
+      destruct HW as [HW1 [HW2 HW]]. apply (HW fW); try assumption.
+      apply HfW. exists w, wx. repeat (split; try assumption).
+      apply IH in J; try assumption. assert (J' : forall y, In y C1 -> In w y).
+      { apply HNC1; try assumption. }
+      apply J'. apply HC1. repeat (split; try assumption).
+      { transitivity Fhm.
+        - apply (Enderton3A hm' Fhm' hm Fhm hmFhm hmFhm); try assumption. trivial.
+        - symmetry. apply (Hhn' m m' hm X Fhm); try assumption.
+          + apply Homga; try assumption.
+          + intros _ _. exists hmFhm. split; try assumption.
+            apply HF. exists hm', Fhm', fhm. repeat (split; try assumption). }
+    + intros t J. apply HT in J. apply J.
+Qed.
 
 (** Exercise 4-10 : In exercise 9, assume that B is the set of real numbers,
     f(x) = x^2, and A is the closed interval [0.5, 1]. What is the set called
@@ -1121,48 +1474,104 @@ Admitted.
     Postulates, we now turn our attention to the familiar arithmetic operations
     on the natural numbers. We will given a set-theoretic definition of the
     operations addition (+ : omega x omega -> omega), multiplication
-    ( * : omega x omega -> omega), and exponentiation (^ : omega x omega -> omega).
-    We also prove some familiar algebraic properties of these operations. *)
+    ( * : omega x omega -> omega), and exponentiation (^ : omega x omega -> omega)
+    using the recursion theorem. We also prove some familiar algebraic
+    properties of these operations, which follow from Peano's postulates. *)
 
 Definition Addn (n An : set) : Prop :=
   NaturalNumber n -> exists omga sigma, Nats omga /\ SuccessorFunc sigma /\
   RecursiveFunction omga n sigma An.
 
-Theorem Addn_Exists : forall n, exists An, Addn n An.
-Admitted.
+Theorem Addn_Exists : forall n, NaturalNumber n -> exists An, Addn n An.
+Proof.
+  intros n Hn. omga. sigma. apply Homga in Hn.
+  recursion omga n sigma Hn (SuccessorFunc_Into sigma omga Hsigma Homga).
+  rename x into An. rename H into HAn. exists An. intros _.
+  exists omga, sigma. repeat (split; try assumption).
+Qed.
 
-Theorem Addn_Unique : forall n An Bn, Addn n An -> Addn n Bn -> An = Bn.
-Admitted.
+Theorem Addn_Unique : forall n An Bn, NaturalNumber n -> Addn n An ->
+  Addn n Bn -> An = Bn.
+Proof.
+  intros n An Bn Hn HAn HBn.
+  destruct HAn as [omga [sigma [Homga [Hsigma HAn]]]]; try assumption.
+  destruct HBn as [omga' [sigma' [Homga' [Hsigma' HBn]]]]; try assumption.
+  apply (RecursiveFunction_Unique omga n sigma); try assumption.
+  - apply Homga, Hn.
+  - apply SuccessorFunc_Into; try assumption.
+  - replace omga with omga'. replace sigma with sigma'; try assumption.
+    apply (SuccessorFunc_Unique); try assumption.
+    apply Nats_Unique; try assumption.
+Qed.
 
 Definition BinaryOperator (op A : set) : Prop :=
   exists AxA, Prod A A AxA /\ FuncFromInto op AxA A.
 
-Definition Addition (add : set) : Prop :=
-  forall mnp, In mnp add <-> exists mn p m n omga Am, OrdPair mn p mnp /\
-  OrdPair m n mn /\ Nats omga /\ In m omga /\ In n omga /\ Addn m Am /\
+Definition Addition_w (add : set) : Prop :=
+  forall mnp, In mnp add <-> exists mn p m n Am, OrdPair mn p mnp /\
+  OrdPair m n mn /\ NaturalNumber m /\ NaturalNumber n /\ Addn m Am /\
   FunVal Am n p.
 
-Theorem Addition_Exists : exists add, Addition add.
-Admitted.
+Theorem Addition_w_Exists : exists add, Addition_w add.
+Proof.
+  omga. prod omga omga. rename x into wxw. rename H into Hwxw.
+  prod wxw omga. rename x into wxwxw. rename H into Hwxwxw.
+  build_set
+    set
+    (fun (t c x : set) => exists mn p m n Am, OrdPair mn p x /\
+      OrdPair m n mn /\ NaturalNumber m /\ NaturalNumber n /\ Addn m Am /\
+      FunVal Am n p)
+    omga
+    wxwxw.
+  rename x into add. rename H into Hadd. exists add.
+  intros mnp. split; intros H; try apply Hadd, H.
+  apply Hadd. split; try assumption.
+  apply Hwxwxw. destruct H as [mn [p [m [n [Am [Hmnp [Hmn [Hm [Hn [HAm Hp]]]]]]]]]].
+  exists mn, p. split; try split; try assumption.
+  - apply Hwxw. exists m, n.
+    repeat (split; try assumption); try apply Homga; assumption.
+  - destruct HAm as [omga' [sigma [Homga' [Hsigma HAm]]]]; try apply Hm.
+    replace omga' with omga in *; try (apply Nats_Unique; assumption).
+    clear omga' Homga'.
+    destruct HAm as [omga' [o [Homga' [Ho [HAm [HAmo HAmn']]]]]].
+    replace omga' with omga in *; try (apply Nats_Unique; assumption).
+    clear omga' Homga'. destruct HAm as [HAm [HdomAm [ranAm [HranAm Hsub]]]].
+    apply Hsub. apply HranAm. exists n. apply Hp; try assumption.
+    exists omga. split; try assumption. apply Homga; assumption.
+Qed. 
 
-Theorem Addition_Unique : forall add add', Addition add -> Addition add' ->
+Theorem Addition_w_Unique : forall add add', Addition_w add -> Addition_w add' ->
   add = add'.
-Admitted.
+Proof.
+  intros add add' H H'. apply Extensionality_Axiom. intros x. split; intros I.
+  - apply H', H, I.
+  - apply H, H', I.
+Qed.
 
-Lemma Addition_BinaryOperation : forall add omga, Addition add -> Nats omga ->
+Lemma Addition_w_BinaryOperation : forall add omga, Addition_w add -> Nats omga ->
   BinaryOperator add omga.
-Admitted.
+Admitted. 
 
-Ltac add_omega := destruct (Addition_Exists) as [add Hadd].
+Ltac add_w := destruct (Addition_w_Exists) as [add Hadd].
 
-Definition Add (m n p : set) : Prop := NaturalNumber m -> NaturalNumber n ->
-  NaturalNumber p -> exists add mn mnp, Addition add /\ OrdPair m n mn
+Definition Sum_w (m n p : set) : Prop := NaturalNumber m -> NaturalNumber n ->
+  NaturalNumber p -> exists add mn mnp, Addition_w add /\ OrdPair m n mn
   /\ OrdPair mn p mnp /\ In mnp add.
 
-Definition A1 : Prop := forall m o, NaturalNumber m -> Empty o -> Add m o m.
+Theorem Sum_w_Exists : forall m n, NaturalNumber m -> NaturalNumber n ->
+  exists p, Sum_w m n p.
+Admitted.
+
+Theorem Sum_w_Unique : forall m n p q, NaturalNumber m -> NaturalNumber n ->
+  Sum_w m n p -> Sum_w m n q -> p = q.
+Admitted.
+
+Ltac sum_w m n Hm Hn := destruct (Sum_w_Exists m n Hn Hm).
+
+Definition A1 : Prop := forall m o, NaturalNumber m -> Empty o -> Sum_w m o m.
 
 Definition A2 : Prop := forall m n n' mn mn' mn'', NaturalNumber m ->
-  NaturalNumber n -> Succ n n' -> Add m n mn -> Add m n' mn' -> Succ mn mn'' ->
+  NaturalNumber n -> Succ n n' -> Sum_w m n mn -> Sum_w m n' mn' -> Succ mn mn'' ->
   mn' = mn''.
 
 Theorem Enderton4I : A1 /\ A2.
@@ -1179,32 +1588,42 @@ Theorem Multn_Unique : forall n Mn Nn, NaturalNumber n ->
   Multn n Mn -> Multn n Nn -> Mn = Nn.
 Admitted.
 
-Definition Multiplication (mult : set) : Prop :=
+Definition Multiplication_w (mult : set) : Prop :=
   forall mnp, In mnp mult <-> exists mn p m n omga Mm, OrdPair mn p mnp /\
   OrdPair m n mn /\ Nats omga /\ In m omga /\ In n omga /\ Multn m Mm /\
   FunVal Mm n p.
 
-Theorem Multiplication_Exists : exists mult, Multiplication mult.
+Theorem Multiplication_w_Exists : exists mult, Multiplication_w mult.
 Admitted.
 
-Theorem Multiplication_Unique : forall mult mult',
-  Multiplication mult -> Multiplication mult' -> mult = mult'.
+Theorem Multiplication_w_Unique : forall mult mult',
+  Multiplication_w mult -> Multiplication_w mult' -> mult = mult'.
 Admitted.
 
-Lemma Multiplication_BinaryOperation : forall mult omga,
-  Multiplication mult -> Nats omga -> BinaryOperator mult omga.
+Lemma Multiplication_W_BinaryOperation : forall mult omga,
+  Multiplication_w mult -> Nats omga -> BinaryOperator mult omga.
 Admitted.
 
-Ltac mult_omega := destruct (Multiplication_Exists) as [mult Hmult].
+Ltac mult_w := destruct (Multiplication_w_Exists) as [mult Hmult].
 
-Definition Mult (m n p : set) : Prop := NaturalNumber m -> NaturalNumber n ->
-  NaturalNumber p -> exists mult mn mnp, Multiplication mult /\ OrdPair m n mn
+Definition Prod_w (m n p : set) : Prop := NaturalNumber m -> NaturalNumber n ->
+  NaturalNumber p -> exists mult mn mnp, Multiplication_w mult /\ OrdPair m n mn
   /\ OrdPair mn p mnp /\ In mnp mult.
 
-Definition M1 : Prop := forall m o, NaturalNumber m -> Empty o -> Mult m o o.
+Theorem Prod_w_Exists : forall m n, NaturalNumber m -> NaturalNumber n ->
+  exists p, Prod_w m n p.
+Admitted.
+
+Theorem Prod_w_Unique : forall m n p q, NaturalNumber m -> NaturalNumber n ->
+  Prod_w m n p -> Prod_w m n q -> p = q.
+Admitted.
+
+Ltac prod_w m n Hm Hn := destruct (Prod_w_Exists m n Hm Hn).
+
+Definition M1 : Prop := forall m o, NaturalNumber m -> Empty o -> Prod_w m o o.
 
 Definition M2 : Prop := forall m n mn n' mn' mnm, NaturalNumber m ->
-  NaturalNumber n -> Mult m n mn -> Succ n n' -> Mult m n' mn' -> Add mn m mnm ->
+  NaturalNumber n -> Prod_w m n mn -> Succ n n' -> Prod_w m n' mn' -> Sum_w mn m mnm ->
   mn' = mnm.
 
 Theorem Enderton4J : M1 /\ M2.
@@ -1221,33 +1640,43 @@ Theorem Expn_Unique : forall n En Fn, NaturalNumber n ->
   Expn n En -> Expn n Fn -> En = Fn.
 Admitted.
 
-Definition Exponentiation (exp : set) : Prop :=
+Definition Exponentiation_w (exp : set) : Prop :=
   forall mnp, In mnp exp <-> exists mn p m n omga En, OrdPair mn p mnp /\
   OrdPair m n mn /\ Nats omga /\ In m omga /\ In n omga /\ Expn n En /\
   FunVal En m p.
 
-Theorem Exponentiation_Exists : exists exp, Exponentiation exp.
+Theorem Exponentiation_w_Exists : exists exp, Exponentiation_w exp.
 Admitted.
 
-Theorem Exponentiation_Unique : forall exp exp',
-  Multiplication exp -> Multiplication exp' -> exp = exp'.
+Theorem Exponentiation_w_Unique : forall exp exp',
+  Multiplication_w exp -> Multiplication_w exp' -> exp = exp'.
 Admitted.
 
 Lemma Exponentiation_BinaryOperation : forall exp omga,
-  Multiplication exp -> Nats omga -> BinaryOperator exp omga.
+  Multiplication_w exp -> Nats omga -> BinaryOperator exp omga.
 Admitted.
 
-Ltac exp_omega := destruct (Exponentiation_Exists) as [exp Hexp].
+Ltac exp_w := destruct (Exponentiation_w_Exists) as [exp Hexp].
 
-Definition Exp (m n p : set) : Prop := NaturalNumber m -> NaturalNumber n ->
-  NaturalNumber p -> exists exp mn mnp, Exponentiation exp /\ OrdPair m n mn
+Definition Pow_w (m n p : set) : Prop := NaturalNumber m -> NaturalNumber n ->
+  NaturalNumber p -> exists exp mn mnp, Exponentiation_w exp /\ OrdPair m n mn
   /\ OrdPair mn p mnp /\ In mnp exp.
 
+Theorem Pow_w_Exists : forall m n, NaturalNumber m -> NaturalNumber n ->
+  exists p, Pow_w m n p.
+Admitted.
+
+Theorem Pow_w_Unique : forall m n p q, NaturalNumber m -> NaturalNumber n ->
+  Pow_w m n p -> Pow_w m n q -> p = q.
+Admitted.
+
+Ltac pow_w m n Hm Hn := destruct (Pow_w_Exists m n Hm Hn).
+
 Definition E1 : Prop := forall m o o', NaturalNumber m -> Empty o ->
-  Succ o o' -> Exp m o o'.
+  Succ o o' -> Pow_w m o o'.
 
 Definition E2 : Prop := forall m n mn n' mn' mnm, NaturalNumber m ->
-  NaturalNumber n -> Exp m n mn -> Succ n n' -> Exp m n' mn' -> Mult mn m mnm ->
+  NaturalNumber n -> Pow_w m n mn -> Succ n n' -> Pow_w m n' mn' -> Prod_w mn m mnm ->
   mn' = mnm.
 
 Theorem Enderton4J' : E1 /\ E2.
@@ -1255,24 +1684,24 @@ Admitted.
 
 Definition Omega_Addition_Associative : Prop :=
   forall m n p np mn r l, NaturalNumber m -> NaturalNumber n -> NaturalNumber p ->
-  Add n p np -> Add m n mn -> Add m np r -> Add mn p l -> r = l.
+  Sum_w n p np -> Sum_w m n mn -> Sum_w m np r -> Sum_w mn p l -> r = l.
 
 Definition Omega_Addition_Commutative : Prop :=
-  forall m n mn nm, NaturalNumber m -> NaturalNumber n -> Add m n mn ->
-  Add n m nm -> mn = nm.
+  forall m n mn nm, NaturalNumber m -> NaturalNumber n -> Sum_w m n mn ->
+  Sum_w n m nm -> mn = nm.
 
 Definition Omega_Distributive : Prop :=
   forall m n p np mnp mn mp mnmp, NaturalNumber m ->  NaturalNumber n ->
-  NaturalNumber p -> Add n p np -> Mult m np mnp -> Mult m n mn -> Mult m p mp ->
-  Add mn mp mnmp -> mnp = mnmp.
+  NaturalNumber p -> Sum_w n p np -> Prod_w m np mnp -> Prod_w m n mn -> Prod_w m p mp ->
+  Sum_w mn mp mnmp -> mnp = mnmp.
 
 Definition Omega_Multiplication_Associative : Prop :=
   forall m n p np mn r l, NaturalNumber m -> NaturalNumber n -> NaturalNumber p ->
-  Mult n p np -> Mult m n mn -> Mult m np r -> Mult mn p l -> r = l.
+  Prod n p np -> Prod_w m n mn -> Prod_w m np r -> Prod_w mn p l -> r = l.
 
 Definition Omega_Multiplication_Commutative : Prop :=
-  forall m n mn nm, NaturalNumber m -> NaturalNumber n -> Mult m n mn ->
-  Mult n m nm -> mn = nm.
+  forall m n mn nm, NaturalNumber m -> NaturalNumber n -> Prod m n mn ->
+  Prod_w n m nm -> mn = nm.
 
 Theorem Enderton4K1 : Omega_Addition_Associative.
 Admitted.
@@ -1290,16 +1719,16 @@ Theorem Enderton4K5 : Omega_Multiplication_Commutative.
 Admitted.
 
 Theorem Exercise4_13 : forall m n o, NaturalNumber m -> NaturalNumber n ->
-  Empty o -> Mult m n o -> m = o \/ n = o.
+  Empty o -> Prod_w m n o -> m = o \/ n = o.
 Admitted.
 
 Definition Omega_Even (n : set) : Prop :=
   exists p o o' o'', NaturalNumber p /\ Empty o /\ Succ o o' /\ Succ o' o'' /\
-  Mult o'' p n.
+  Prod_w o'' p n.
 
 Definition Omega_Odd (n : set) : Prop :=
   exists p o o' o'' tp, NaturalNumber p /\ Empty o /\ Succ o o' /\ Succ o' o'' /\
-  Mult o'' p tp /\ Add tp o' n.
+  Prod o'' p tp /\ Prod tp o' n.
 
 Theorem Exercise4_14 : forall n, NaturalNumber n -> Omega_Odd n \/ Omega_Even n.
 Admitted.
@@ -1312,8 +1741,8 @@ Admitted.
 (** Exercise 4-16 : Prove part 5 of 4K. *)
 
 Theorem Exercise4_17 : forall m n p np mnp mn mp mnmp,
-  NaturalNumber m -> NaturalNumber n -> NaturalNumber p -> Add n p np ->
-  Exp m np mnp -> Exp m n mn -> Exp m p mp -> Mult mn mp mnmp ->
+  NaturalNumber m -> NaturalNumber n -> NaturalNumber p -> Sum_w n p np ->
+  Pow_w m np mnp -> Pow_w m n mn -> Pow_w m p mp -> Prod mn mp mnmp ->
   mnp = mnmp.
 Admitted.
 
@@ -1400,20 +1829,20 @@ Corollary Enderton4M' : forall m n, NaturalNumber m -> NaturalNumber n ->
 Admitted.
 
 Theorem Enderton4N : forall m n p mp np, NaturalNumber m -> NaturalNumber n ->
-  NaturalNumber p -> Add m p mp -> Add n p np -> In m n <-> In mp np.
+  NaturalNumber p -> Sum_w m p mp -> Sum_w n p np -> In m n <-> In mp np.
 Admitted.
 
 Theorem Enderton4N' : forall m n p mp np, NaturalNumber m -> NaturalNumber n ->
-  NaturalNumber p -> ~Empty p -> Mult m p mp -> Mult n p np ->
+  NaturalNumber p -> ~Empty p -> Prod_w m p mp -> Prod_w n p np ->
   In m n <-> In mp np.
 Admitted.
 
 Corollary Enderton4P : forall m n p mp np, NaturalNumber m -> NaturalNumber n ->
-  NaturalNumber p -> Add m p mp -> Add n p np -> mp = np -> m = n.
+  NaturalNumber p -> Sum_w m p mp -> Sum_w n p np -> mp = np -> m = n.
 Admitted.
 
 Corollary Enderton4P' : forall m n p mp np, NaturalNumber m -> NaturalNumber n ->
-  NaturalNumber p -> Mult m p mp -> Mult n p np -> mp = np -> ~Empty p -> m = n.
+  NaturalNumber p -> Prod_w m p mp -> Prod_w n p np -> mp = np -> ~Empty p -> m = n.
 Admitted.
 
 Theorem Well_Ordering_of_Omega : forall A omga, Nats omga -> Subset A omga ->
@@ -1436,7 +1865,7 @@ Admitted.
 
 Theorem Exercise4_19 : forall m d, NaturalNumber m -> NaturalNumber d ->
   ~ Empty d -> exists q r dq dqr, NaturalNumber q /\ NaturalNumber r /\
-  Mult d q dq /\ Add dq r dqr /\ m = dqr /\ Lt r d.
+  Prod_w d q dq /\ Sum_w dq r dqr /\ m = dqr /\ Lt r d.
 Admitted.
 
 Theorem Exercise4_20 : forall A UA omga, ~ Empty A -> Union A UA -> Nats omga ->
@@ -1447,23 +1876,23 @@ Theorem Exercise4_21 : forall n x, NaturalNumber n -> In x n -> ~ Subset n x.
 Admitted.
 
 Theorem Exercise4_22 : forall m p p' mp', NaturalNumber m -> NaturalNumber p ->
-  Succ p p' -> Add m p' mp' -> In m mp'.
+  Succ p p' -> Sum_w m p' mp' -> In m mp'.
 Admitted.
 
 Theorem Exercise4_23 : forall m n, NaturalNumber m -> NaturalNumber n ->
-  Lt m n -> exists p p' mp', NaturalNumber p /\ Succ p p' /\ Add m p' mp' /\
+  Lt m n -> exists p p' mp', NaturalNumber p /\ Succ p p' /\ Sum_w m p' mp' /\
   mp' = n.
 Admitted.
 
 Theorem Exercise4_24 : forall m n p q mn pq, NaturalNumber m ->
-  NaturalNumber n -> NaturalNumber p -> NaturalNumber q -> Add m n mn ->
-  Add p q pq -> In m p <-> In q n.
+  NaturalNumber n -> NaturalNumber p -> NaturalNumber q -> Sum_w m n mn ->
+  Sum_w p q pq -> In m p <-> In q n.
 Admitted.
 
 Theorem Exercise4_25 : forall m n p q mq np mp nq mqnp mpnq,
   NaturalNumber m -> NaturalNumber n -> NaturalNumber p -> NaturalNumber q ->
-  Mult m q mq -> Mult n p np -> Mult m p mp -> Mult n q nq -> Add mq np mqnp ->
-  Add mp nq mpnq -> In mqnp mpnq.
+  Prod_w m q mq -> Prod_w n p np -> Prod_w m p mp -> Prod_w n q nq -> Sum_w mq np mqnp ->
+  Sum_w mp nq mpnq -> In mqnp mpnq.
 Admitted.
 
 Theorem Exercise4_26 : forall n n' omga f ranf, NaturalNumber n -> Succ n n' ->
@@ -1525,12 +1954,12 @@ Definition Disjoint (A B : set) : Prop :=
 
 Theorem Exercise4_36a : forall A B m n AuB mn, NaturalNumber m ->
   NaturalNumber n -> Has_n_Elts A m -> Has_n_Elts B n -> BinaryUnion A B AuB ->
-  Add m n mn -> Disjoint A B -> Has_n_Elts AuB mn.
+  Sum_w m n mn -> Disjoint A B -> Has_n_Elts AuB mn.
 Admitted.
 
 Theorem Exercise4_37b : forall A B m n AxB mn, NaturalNumber m ->
   NaturalNumber n -> Has_n_Elts A m -> Has_n_Elts B n -> Prod A B AxB ->
-  Mult m n mn -> Has_n_Elts AxB mn.
+  Prod_w m n mn -> Has_n_Elts AxB mn.
 Admitted.
 
 (** Exercise 4-38 : Assume that h is the function from omega into omega for which
