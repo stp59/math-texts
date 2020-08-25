@@ -1742,52 +1742,255 @@ Definition Multn (n Mn : set) : Prop :=
   RecursiveFunction omga o An Mn.
 
 Theorem Multn_Exists : forall n, NaturalNumber n -> exists Mn, Multn n Mn.
-Admitted.
+Proof.
+  intros n Hn. destruct (Addn_Exists n Hn) as [An HAn].
+  destruct (HAn Hn) as [omga [sigma [Homga [Hsigma HAn']]]].
+  destruct HAn' as [omga' [o [Homga' [Ho [HAn' [HAno HAnn']]]]]].
+  replace omga' with omga in *; try (apply Nats_Unique; assumption).
+  assert (T : In o omga). { apply Homga, Zero_NaturalNumber, Ho. }
+  recursion omga o An T HAn'. rename x into Mn. rename H into HMn.
+  exists Mn. intros _. exists omga, An, o. repeat (split; try assumption).
+Qed.
 
 Theorem Multn_Unique : forall n Mn Nn, NaturalNumber n ->
   Multn n Mn -> Multn n Nn -> Mn = Nn.
-Admitted.
+Proof.
+  intros n Mn Nn Hn HMn HNn.
+  destruct (HMn Hn) as [omga [An [o [Homga [HAn [Ho HMn']]]]]].
+  destruct (HNn Hn) as [omga' [Bn [o' [Homga' [HBn [Ho' HNn']]]]]].
+  replace o' with o in *; try (apply Empty_Unique; assumption).
+  replace omga' with omga in *; try (apply Nats_Unique; assumption).
+  clear omga' Homga' o' Ho'.
+  replace Bn with An in *; try
+    (apply (RecursiveFunction_Unique omga o An Mn);
+    try assumption;
+    try apply Homga, Zero_NaturalNumber, Ho).
+  - destruct (HAn Hn) as [omga' [sigma [Homga' [Hsigma HAn']]]].
+    replace omga' with omga in *; try (apply Nats_Unique; assumption).
+    clear omga' Homga'. destruct HAn' as [omga' [o' [Homga' [Ho' [HAn' _]]]]].
+    replace omga' with omga in *; try (apply Nats_Unique; assumption).
+    assumption.
+  - apply (Addn_Unique n An Bn Hn); assumption.
+Qed.
 
 Definition Multiplication_w (mult : set) : Prop :=
-  forall mnp, In mnp mult <-> exists mn p m n omga Mm, OrdPair mn p mnp /\
-  OrdPair m n mn /\ Nats omga /\ In m omga /\ In n omga /\ Multn m Mm /\
+  forall mnp, In mnp mult <-> exists mn p m n Mm, OrdPair mn p mnp /\
+  OrdPair m n mn /\ NaturalNumber m /\ NaturalNumber n /\ Multn m Mm /\
   FunVal Mm n p.
 
 Theorem Multiplication_w_Exists : exists mult, Multiplication_w mult.
-Admitted.
+Proof.
+  omga. prod omga omga. rename x into wxw. rename H into Hwxw.
+  prod wxw omga. rename x into wxwxw. rename H into Hwxwxw.
+  build_set
+    set
+    (fun (t c x : set) => exists mn p m n Mm, OrdPair mn p x /\
+      OrdPair m n mn /\ NaturalNumber m /\ NaturalNumber n /\ Multn m Mm /\
+      FunVal Mm n p)
+    omga
+    wxwxw.
+  rename x into mult. rename H into Hmult. exists mult.
+  intros mnp. split; intros H; try apply Hmult; try assumption.
+  split; try apply H.
+  destruct H as [mn [p [m [n [Mm [Hmnp [Hmn [Hm [Hn [HMm H]]]]]]]]]].
+  apply Hwxwxw. exists mn, p. repeat (split; try assumption).
+  - apply Hwxw. exists m, n. repeat (split; try apply Homga; try assumption).
+  - destruct (HMm Hm) as [omga' [Am [o [Homga' [HAm [Ho HMm']]]]]].
+    replace omga' with omga in *; try (apply Nats_Unique; assumption).
+    clear omga' Homga'. destruct HMm' as [omga' [o' [Homga' [Ho' [HMm' _]]]]].
+    replace omga' with omga in *; try (apply Nats_Unique; assumption).
+    destruct HMm' as [HMm' [HdomMm [ranMm [HranMm Hsub]]]].
+    apply Hsub. apply HranMm. exists n. apply H; try assumption.
+    exists omga. split; try assumption. apply Homga, Hn.
+Qed.
 
 Theorem Multiplication_w_Unique : forall mult mult',
   Multiplication_w mult -> Multiplication_w mult' -> mult = mult'.
-Admitted.
+Proof.
+  intros mult mult' Hmult Hmult'.
+  apply Extensionality_Axiom. intros mnp. split; intros H.
+  - apply Hmult', Hmult, H.
+  - apply Hmult, Hmult', H.
+Qed.
 
-Lemma Multiplication_W_BinaryOperation : forall mult omga,
+Lemma Multiplication_w_BinaryOperation : forall mult omga,
   Multiplication_w mult -> Nats omga -> BinaryOperator mult omga.
-Admitted.
+Proof.
+  intros mult omga Hmult Homga.
+  prod omga omga. rename x into wxw. rename H into Hwxw.
+  exists wxw. split; try assumption. split; split.
+  - intros mnp Hmnp. apply Hmult in Hmnp.
+    destruct Hmnp as [mn [p [m [n [Mm [Hmnp [Hmn [Hm [Hn [HMm Hp]]]]]]]]]].
+    exists mn, p. assumption.
+  - intros mn p q mnp mnq Hmnp Hmnq H I.
+    apply Hmult in H.
+    destruct H as [mn' [p' [m [n [Mm [Hmnp' [Hmn [Hm [Hn [HMm Hp]]]]]]]]]].
+    assert (T : mn = mn' /\ p = p').
+    { apply (Enderton3A mn p mn' p' mnp mnp Hmnp Hmnp'). trivial. }
+    replace mn' with mn in *; replace p' with p in *; try apply T.
+    clear mn' Hmnp' p' T. apply Hmult in I.
+    destruct I as [mn' [q' [m' [n' [Mm' [Hmnq' [Hmn' [_ [_ [HMm' Hq]]]]]]]]]].
+    assert (T : mn = mn' /\ q = q').
+    { apply (Enderton3A mn q mn' q' mnq mnq Hmnq Hmnq'). trivial. }
+    replace mn' with mn in *; replace q' with q in *; try apply T.
+    clear mn' q' Hmnq' T.
+    assert (T : m = m' /\ n = n').
+    { apply (Enderton3A m n m' n' mn mn Hmn Hmn'). trivial. }
+    replace m' with m in *; replace n' with n in *; try apply T.
+    clear m' n' T Hmn'.
+    replace Mm' with Mm in *; try (apply (Multn_Unique m Mm Mm'); assumption).
+    clear Mm' HMm'.
+    destruct (HMm Hm) as [omga' [Am [o [Homga' [HAm [Ho HMm']]]]]].
+    replace omga' with omga in *; try (apply Nats_Unique; assumption).
+    clear omga' Homga'. destruct HMm' as [omga' [o' [Homga' [Ho' [HMm' _]]]]].
+    apply (FunVal_Unique Mm n p q); try assumption; try apply HMm'.
+    exists omga'. split. apply HMm'. apply Homga'. apply Hn.
+  - intros mn. split; intros H.
+    + apply Hwxw in H. destruct H as [m [n [Hm [Hn Hmn]]]].
+      apply Homga in Hm. destruct (Multn_Exists m Hm).
+      rename x into Mm. rename H into HMm.
+      destruct (HMm Hm) as [omga' [Am [o [Homga' [HAm [Ho HMm']]]]]].
+      replace omga' with omga in *; try (apply Nats_Unique; assumption).
+      clear omga' Homga'. destruct HMm' as [omga' [o' [Homga' [Ho' [HMm' _]]]]].
+      replace omga' with omga in *; try (apply Nats_Unique; assumption).
+      clear omga' Homga'. destruct HMm' as [HMm' [domMm' [ranMm' [HranMm' Hsub]]]].
+      replace o' with o in *; try (apply Empty_Unique; assumption).
+      clear o' Ho'. assert (P : exists domMm, Domain Mm domMm /\ In n domMm).
+      { exists omga. split; try assumption. }
+      funval HMm' P Mm n. rename x into p. rename H into Hp.
+      destruct (Hp HMm' P) as [np [Hnp Hnp']].
+      ordpair mn p. rename x into mnp. rename H into Hmnp.
+      exists p, mnp. split; try assumption. apply Hmult.
+      exists mn, p, m, n, Mm. repeat (split; try assumption).
+      apply Homga; try assumption.
+    + destruct H as [p [mnp [Hmnp H]]]. apply Hmult in H.
+      destruct H as [mn' [p' [m [n [Mm [Hmnp' [Hmn [Hm [Hn [HMm Hp]]]]]]]]]].
+      assert (T : mn = mn' /\ p = p').
+      { apply (Enderton3A mn p mn' p' mnp mnp Hmnp Hmnp'). trivial. }
+      replace mn' with mn in *; replace p' with p in *; try apply T.
+      clear mn' p' Hmnp' T. apply Hwxw. exists m, n.
+      repeat (split; try apply Homga; try assumption).
+  - range mult. rename x into ranmult. rename H into Hranmult.
+    exists ranmult. split; try assumption. intros p Hp.
+    apply Hranmult in Hp. destruct Hp as [mn [mnp [Hmnp H]]]. apply Hmult in H.
+    destruct H as [mn' [p' [m [n [Mm [Hmnp' [Hmn [Hm [Hn [HMm Hp]]]]]]]]]].
+    assert (T : mn = mn' /\ p = p').
+    { apply (Enderton3A mn p mn' p' mnp mnp Hmnp Hmnp'). trivial. }
+    replace mn' with mn in *; replace p' with p in *; try apply T.
+    clear mn' p' Hmnp' T.
+    destruct (HMm Hm) as [omga' [Am [o [Homga' [HAm [Ho HMm']]]]]].
+    replace omga' with omga in *; try (apply Nats_Unique; assumption).
+    clear omga' Homga'. destruct HMm' as [omga' [o' [Homga' [Ho' [HMm' _]]]]].
+    replace omga' with omga in *; try (apply Nats_Unique; assumption).
+    clear omga' Homga'. destruct HMm' as [HMm' [HdomMm [ranMm [HranMm Hsub]]]].
+    apply Hsub. apply HranMm. exists n. apply Hp; try assumption.
+    exists omga. split; try assumption. apply Homga. assumption.
+Qed.
 
 Ltac mult_w := destruct (Multiplication_w_Exists) as [mult Hmult].
 
 Definition Prod_w (m n p : set) : Prop := NaturalNumber m -> NaturalNumber n ->
-  NaturalNumber p -> exists mult mn mnp, Multiplication_w mult /\ OrdPair m n mn
+  exists mult mn mnp, Multiplication_w mult /\ OrdPair m n mn
   /\ OrdPair mn p mnp /\ In mnp mult.
 
 Theorem Prod_w_Exists : forall m n, NaturalNumber m -> NaturalNumber n ->
   exists p, Prod_w m n p.
-Admitted.
+Proof.
+  intros m n Hm Hn. mult_w. omga.
+  destruct (Multiplication_w_BinaryOperation mult omga Hmult Homga) as [wxw [Hwxw H]].
+  destruct H as [Hmultf [Hdommult [ranmult [Hranmult Hsub]]]].
+  ordpair m n. rename x into mn. rename H into Hmn.
+  assert (P : In mn wxw).
+  { apply Hwxw. exists m, n. repeat (split; try apply Homga; try assumption). }
+  apply Hdommult in P. destruct P as [p [mnp [Hmnp P]]].
+  exists p. intros _ _. exists mult, mn, mnp. repeat (split; try assumption).
+Qed.
 
 Theorem Prod_w_Unique : forall m n p q, NaturalNumber m -> NaturalNumber n ->
   Prod_w m n p -> Prod_w m n q -> p = q.
-Admitted.
+Proof.
+  intros m n p q Hm Hn Hp Hq. omga.
+  destruct (Hp Hm Hn) as [mult [mn [mnp [Hmult [Hmn [Hmnp H]]]]]].
+  destruct (Hq Hm Hn) as [mult' [mn' [mnq [Hmult' [Hmn' [Hmnq I]]]]]].
+  replace mult' with mult in *;
+    try (apply (Multiplication_w_Unique mult mult'); assumption).
+  replace mn' with mn in *; try (apply (OrdPair_Unique m n mn mn'); assumption).
+  clear mn' Hmult' Hmn' mult'.
+  destruct (Multiplication_w_BinaryOperation mult omga Hmult Homga) as [wxw [Hwxw P]].
+  destruct P as [Hmultf [Hdommult [ranmult [Hranmult Hsub]]]].
+  destruct Hmultf as [_ Hmultf].
+  apply (Hmultf mn p q mnp mnq Hmnp Hmnq H I).
+Qed.
 
 Ltac prod_w m n Hm Hn := destruct (Prod_w_Exists m n Hm Hn).
 
 Definition M1 : Prop := forall m o, NaturalNumber m -> Empty o -> Prod_w m o o.
 
-Definition M2 : Prop := forall m n mn n' mn' mnm, NaturalNumber m ->
-  NaturalNumber n -> Prod_w m n mn -> Succ n n' -> Prod_w m n' mn' -> Sum_w mn m mnm ->
-  mn' = mnm.
+Definition M2 : Prop := forall m n mtn n' mtn' mpmtn, NaturalNumber m ->
+  NaturalNumber n -> Prod_w m n mtn -> Succ n n' -> Prod_w m n' mtn' -> Sum_w m mtn mpmtn ->
+  mtn' = mpmtn.
 
 Theorem Enderton4J : M1 /\ M2.
-Admitted.
+Proof.
+  split.
+  - intros m o Hm Ho _ _. mult_w.
+    ordpair m o. rename x into mo. rename H into Hmo. exists mult, mo.
+    ordpair mo o. rename x into moo. rename H into Hmoo. exists moo.
+    repeat (split; try assumption).
+    destruct (Multn_Exists m Hm). rename x into Mm. rename H into HMm.
+    apply Hmult. exists mo, o, m, o, Mm. repeat (split; try assumption).
+    + apply (Zero_NaturalNumber). assumption.
+    + destruct (HMm Hm) as [omga [Am [o' [Homga [HAm [Ho' HMm']]]]]].
+      replace o' with o in *; try (apply Empty_Unique; assumption).
+      clear o' Ho'. destruct HMm' as [omga' [o' [Homga' [Ho' [HMm' [HMmo _]]]]]].
+      replace o' with o in *; try (apply Empty_Unique; assumption).
+      clear o' Ho'. assumption.
+  - intros m n mtn n' mtn' mpmtn Hm Hn Hmtn Hn' Hmtn' Hmpmtn.
+    destruct (Hmtn Hm Hn) as [mult [mn [mnp [Hmult [Hmn [Hmnp H]]]]]].
+    apply Hmult in H.
+    destruct H as [mn' [mtn0 [m0 [n0 [Mm [Hmnp' [Hmn' [_ [_ [HMm Hp]]]]]]]]]].
+    assert (T : mn = mn' /\ mtn = mtn0).
+    { apply (Enderton3A mn mtn mn' mtn0 mnp mnp); try assumption. trivial. }
+    replace mn' with mn in *; replace mtn0 with mtn in *; try apply T.
+    clear T mn' mtn0 Hmnp'. assert (T : m = m0 /\ n = n0).
+    { apply (Enderton3A m n m0 n0 mn mn Hmn Hmn'). trivial. }
+    replace m0 with m in *; replace n0 with n in *; try apply T.
+    clear T m0 n0 Hmn'. destruct (HMm Hm) as [omga [Am [o [Homga [HAm [Ho HMm']]]]]].
+    destruct HMm' as [omga' [o' [Homga' [Ho' [HMm' [_ HMmn']]]]]].
+    replace o' with o in *; try (apply Empty_Unique; assumption).
+    clear o' Ho'.
+    replace omga' with omga in *; try (apply Nats_Unique; assumption).
+    clear omga' Homga'.
+    apply (HMmn' n n' mtn mtn' mpmtn); try assumption; try apply Homga, Hn.
+    + destruct (Hmtn' Hm) as [mult' [mn' [mn'p [Hmult' [Hmn' [Hmn'p I]]]]]];
+        try (apply (Succ_NaturalNumber n n'); assumption).
+      replace mult' with mult in *; try (apply Multiplication_w_Unique; assumption).
+      clear mult' Hmult'. apply Hmult in I.
+      destruct I as [mn'0 [mtn'0 [m0 [n'0 [Mm0 [Hmn'p' [Hmn'0 [_ [_ [HMm0 Hp']]]]]]]]]].
+      assert (T : mn' = mn'0 /\ mtn' = mtn'0).
+      { apply (Enderton3A mn' mtn' mn'0 mtn'0 mn'p mn'p); try assumption. trivial. }
+      replace mn'0 with mn' in *; replace mtn'0 with mtn' in *; try apply T.
+      clear mn'0 mtn'0 T Hmn'p'. assert (T : m = m0 /\ n' = n'0).
+      { apply (Enderton3A m n' m0 n'0 mn' mn' Hmn' Hmn'0). trivial. }
+      replace m0 with m in *; replace n'0 with n' in *; try apply T.
+      clear m0 n'0 T Hmn'0. replace Mm with Mm0; try assumption.
+      apply (Multn_Unique m); try assumption.
+    + destruct Hmpmtn as [add [mp [mpq [Hadd [Hmp [Hmpq I]]]]]]; try assumption.
+      { destruct HMm' as [HMm' [HdomMm [ranMm [HranMm Hsub]]]].
+        apply Homga. apply Hsub. apply HranMm. exists n.
+        apply Hp; try assumption. exists omga. split; try assumption.
+        apply Homga. assumption. }
+      apply Hadd in I.
+      destruct I as [mp' [mpmtn0 [m0 [mtn0 [Am' [Hmpq' [Hmn0 [_ [_ [HMm0 Hq]]]]]]]]]].
+      assert (T : mp = mp' /\ mpmtn = mpmtn0).
+      { apply (Enderton3A mp mpmtn mp' mpmtn0 mpq mpq); try assumption. trivial. }
+      replace mp' with mp in *; replace mpmtn0 with mpmtn in *; try apply T.
+      clear mp' mpmtn0 T Hmpq'. assert (T : m = m0 /\ mtn = mtn0).
+      { apply (Enderton3A m mtn m0 mtn0 mp mp); try assumption. trivial. }
+      replace mtn0 with mtn in *; replace m0 with m in *; try apply T.
+      clear mtn0 m0 T Hmn0. replace Am with Am'; try assumption.
+      apply (Addn_Unique m); try assumption.
+Qed.
 
 Definition Expn (n En : set) : Prop :=
   NaturalNumber n -> exists omga Mn o o', Nats omga /\ Multn n Mn /\ Empty o /\
