@@ -1674,7 +1674,7 @@ Proof.
   destruct H as [[_ Haddf] _]. apply (Haddf mn p q mnp mnq); try assumption.
 Qed.
 
-Ltac sum_w m n Hm Hn := destruct (Sum_w_Exists m n Hn Hm).
+Ltac sum_w m n Hm Hn := destruct (Sum_w_Exists m n Hm Hn).
 
 Definition A1 : Prop := forall m o, NaturalNumber m -> Empty o -> Sum_w m o m.
 
@@ -2264,58 +2264,124 @@ Proof.
     apply (Multn_Unique m); assumption.
 Qed.
 
-Definition Omega_Addition_Associative : Prop :=
+Definition Addition_Associative_w : Prop :=
   forall m n p np mn r l, NaturalNumber m -> NaturalNumber n -> NaturalNumber p ->
   Sum_w n p np -> Sum_w m n mn -> Sum_w m np r -> Sum_w mn p l -> r = l.
 
-Definition Omega_Addition_Commutative : Prop :=
+Definition Addition_Commutative_w : Prop :=
   forall m n mn nm, NaturalNumber m -> NaturalNumber n -> Sum_w m n mn ->
   Sum_w n m nm -> mn = nm.
 
-Definition Omega_Distributive : Prop :=
+Definition Distributive_w : Prop :=
   forall m n p np mnp mn mp mnmp, NaturalNumber m ->  NaturalNumber n ->
   NaturalNumber p -> Sum_w n p np -> Prod_w m np mnp -> Prod_w m n mn -> Prod_w m p mp ->
   Sum_w mn mp mnmp -> mnp = mnmp.
 
-Definition Omega_Multiplication_Associative : Prop :=
+Definition Multiplication_Associative_w : Prop :=
   forall m n p np mn r l, NaturalNumber m -> NaturalNumber n -> NaturalNumber p ->
   Prod n p np -> Prod_w m n mn -> Prod_w m np r -> Prod_w mn p l -> r = l.
 
-Definition Omega_Multiplication_Commutative : Prop :=
+Definition Multiplication_Commutative_w : Prop :=
   forall m n mn nm, NaturalNumber m -> NaturalNumber n -> Prod m n mn ->
   Prod_w n m nm -> mn = nm.
 
-Theorem Enderton4K1 : Omega_Addition_Associative.
+Theorem Enderton4K1 : Addition_Associative_w.
+Proof.
+  intros m n p np mn r l Hm Hn Hp. generalize dependent l. generalize dependent r.
+  generalize dependent mn. generalize dependent np. omga.
+  build_set (prod set set)
+    (fun (t : set * set) (c p : set) => forall np mn r l, Sum_w (snd t) p np ->
+      Sum_w (fst t) (snd t) mn -> Sum_w (fst t) np r -> Sum_w mn p l -> r = l)
+    (m, n) omga.
+  rename x into A. rename H into HA. apply HA.
+  replace A with omga; try (apply Homga; assumption).
+  symmetry. apply Induction_Principle_for_Omega; try assumption; try split.
+  - empty. rename x into e. rename H into He.
+    exists e. split; try assumption. apply HA. split.
+    + apply Homga, Zero_NaturalNumber, He.
+    + intros np mn r l Hnp Hmn Hr Hl. simpl in *.
+      destruct (Enderton4I) as [A1 A2]. replace l with mn in *.
+      replace np with n in *. apply (Sum_w_Unique m n r mn); try assumption.
+      * apply (Sum_w_Unique n e n np); try assumption;
+        try apply Zero_NaturalNumber, He. apply (A1 n e); assumption.
+      * destruct Hmn as [add [Pmn [Pmnp [Hadd [HPmn [HPmnp H]]]]]]; try assumption.
+        destruct (Addition_w_BinaryOperation add omga) as [wxw [Hwxw Haddf]];
+        try assumption.
+        destruct Haddf as [Haddf [Hdomadd [ranadd [Hranadd Hsub]]]].
+        apply (Sum_w_Unique mn e mn l); try assumption;
+        try apply Zero_NaturalNumber, He.
+        apply Homga, Hsub. apply Hranadd. exists Pmn, Pmnp. split; try assumption.
+        apply (A1 mn e); try assumption.
+        apply Homga, Hsub, Hranadd. exists Pmn, Pmnp. split; try assumption.
+  - intros a a' Ha' Ha. apply HA in Ha. destruct Ha as [Ha0 Ha1].
+    apply Homga in Ha0. apply HA.
+    split; try (apply Homga, (Succ_NaturalNumber a a'); assumption).
+    intros np mn r l Hnp Hmn Hr Hl. simpl in *.
+    sum_w n a Hn Ha0. rename x into na. rename H into Hna.
+    assert (P : NaturalNumber na).
+    { apply Homga.
+      destruct Hna as [add [Pmn [Pmnp [Hadd [HPmn [HPmnp H]]]]]]; try assumption.
+      destruct (Addition_w_BinaryOperation add omga) as [wxw [Hwxw Haddf]]; try assumption.
+      destruct Haddf as [Haddf [Hdomadd [ranadd [Hranadd Hsub]]]].
+      apply Hsub. apply Hranadd. exists Pmn, Pmnp. split; try assumption. }
+    sum_w m na Hm P. rename x into mna. rename H into Hmna.
+    succ mna. rename x into Smna. rename H into HSmna. transitivity Smna.
+    + succ na. rename x into Sna. rename H into HSna.
+      assert (Q : NaturalNumber Sna).
+      { apply (Succ_NaturalNumber na Sna); try assumption. }
+      sum_w m Sna Hm Q. rename x into mSna. rename H into HmSna.
+      transitivity mSna.
+      * apply (Sum_w_Unique m Sna r mSna); try assumption.
+        replace Sna with np; try assumption.
+        destruct (Enderton4I) as [_ R].
+        apply (R n a a' na np Sna); try assumption.
+      * destruct Enderton4I as [_ R].
+        apply (R m na Sna mna mSna Smna); try assumption.
+    + assert (Q : NaturalNumber mn).
+      { apply Homga.
+        destruct Hmn as [add [Pmn [Pmnp [Hadd [HPmn [HPmnp H]]]]]]; try assumption.
+        destruct (Addition_w_BinaryOperation add omga) as [wxw [Hwxw Haddf]]; try assumption.
+        destruct Haddf as [Haddf [Hdomadd [ranadd [Hranadd Hsub]]]].
+        apply Hsub. apply Hranadd. exists Pmn, Pmnp. split; try assumption. }
+      sum_w mn a Q Ha0. rename x into mna0. rename H into Hmna0.
+      succ mna0. rename x into Smna0. rename H into HSmna0.
+      transitivity Smna0.
+      * apply (Succ_Unique mna Smna Smna0); try assumption.
+        replace mna with mna0; try assumption. symmetry.
+        apply (Ha1 na mn mna mna0); try assumption.
+      * destruct Enderton4I as [_ R]. symmetry.
+        apply (R mn a a' mna0); try assumption.
+  - intros a Ha. apply HA; assumption.
+Qed.
+
+Theorem Enderton4K2 : Addition_Commutative_w.
 Admitted.
 
-Theorem Enderton4K2 : Omega_Addition_Commutative.
+Theorem Enderton4K3 : Distributive_w.
 Admitted.
 
-Theorem Enderton4K3 : Omega_Distributive.
+Theorem Enderton4K4 : Multiplication_Associative_w.
 Admitted.
 
-Theorem Enderton4K4 : Omega_Multiplication_Associative.
-Admitted.
-
-Theorem Enderton4K5 : Omega_Multiplication_Commutative.
+Theorem Enderton4K5 : Multiplication_Commutative_w.
 Admitted.
 
 Theorem Exercise4_13 : forall m n o, NaturalNumber m -> NaturalNumber n ->
   Empty o -> Prod_w m n o -> m = o \/ n = o.
 Admitted.
 
-Definition Omega_Even (n : set) : Prop :=
+Definition Even_w (n : set) : Prop :=
   exists p o o' o'', NaturalNumber p /\ Empty o /\ Succ o o' /\ Succ o' o'' /\
   Prod_w o'' p n.
 
-Definition Omega_Odd (n : set) : Prop :=
+Definition Odd_w (n : set) : Prop :=
   exists p o o' o'' tp, NaturalNumber p /\ Empty o /\ Succ o o' /\ Succ o' o'' /\
   Prod o'' p tp /\ Prod tp o' n.
 
-Theorem Exercise4_14 : forall n, NaturalNumber n -> Omega_Odd n \/ Omega_Even n.
+Theorem Exercise4_14 : forall n, NaturalNumber n -> Odd_w n \/ Even_w n.
 Admitted.
 
-Theorem Exercise4_14' : forall n, NaturalNumber n -> ~ (Omega_Odd n /\ Omega_Even n).
+Theorem Exercise4_14' : forall n, NaturalNumber n -> ~ (Odd_w n /\ Even_w n).
 Admitted.
 
 (** Exercise 4-15 : Prove part 1 of 4K. *)
