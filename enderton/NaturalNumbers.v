@@ -2354,8 +2354,126 @@ Proof.
   - intros a Ha. apply HA; assumption.
 Qed.
 
+Lemma A1_Commutative : forall o n, Empty o -> NaturalNumber n ->
+  Sum_w o n n.
+Proof.
+  intros o n Ho Hn. generalize dependent n. omga.
+  build_set
+    set
+    (fun (o c n : set) => NaturalNumber n -> Sum_w o n n)
+    o
+    omga.
+  rename x into A. rename H into HA. intros n Hn. apply HA; try assumption.
+  replace A with omga; try apply Homga, Hn; try assumption.
+  symmetry. apply Induction_Principle_for_Omega; try assumption; try split.
+  - exists o. split; try assumption. apply HA.
+    split; try apply Homga, Zero_NaturalNumber, Ho.
+    intros Ho'. destruct Enderton4I as [A1 _].
+    apply A1; try assumption.
+  - intros a a' Ha' Ha. apply HA. apply HA in Ha. destruct Ha as [Ha IH].
+    apply Homga in Ha.
+    split; try (apply Homga, (Succ_NaturalNumber a a'); try assumption).
+    intros Ha'0. sum_w o a (Zero_NaturalNumber o Ho) Ha.
+    rename x into oa. rename H into Hoa.
+    succ oa. rename x into Soa. rename H into HSoa.
+    sum_w o a' (Zero_NaturalNumber o Ho) Ha'0. rename x into oa'. rename H into Hoa'.
+    replace oa' with a' in Hoa'; try assumption. transitivity Soa.
+    + apply (Succ_Unique a a' Soa); try assumption.
+      replace a with oa; try assumption.
+      apply (Sum_w_Unique o a oa a); try apply (Zero_NaturalNumber o); try assumption.
+      apply IH; assumption.
+    + destruct Enderton4I as [_ P]. symmetry.
+      apply (P o a a' oa oa' Soa); try assumption.
+      apply Zero_NaturalNumber. assumption.
+  - intros a Ha. apply HA, Ha.
+Qed.
+
+Lemma A2_Commutative : forall m n m' mn m'n mn', NaturalNumber m ->
+  NaturalNumber n -> Succ m m' -> Sum_w m n mn -> Sum_w m' n m'n -> Succ mn mn' ->
+  m'n = mn'.
+Proof.
+  intros m n m' mn m'n mn' Hm Hn. omga. generalize dependent mn'.
+  generalize dependent m'n. generalize dependent mn. generalize dependent m'.
+  build_set set
+    (fun (m c n : set) => forall m' mn m'n mn',
+      Succ m m' -> Sum_w m n mn -> Sum_w m' n m'n -> Succ mn mn' -> m'n = mn')
+    m omga.
+  rename x into A. rename H into HA. apply HA.
+  replace A with omga; try apply Homga, Hn. symmetry.
+  apply Induction_Principle_for_Omega; try assumption; try split.
+  - empty. exists x. split; try assumption. rename x into o. rename H into Ho.
+    apply HA. split; try (apply Homga; apply Zero_NaturalNumber; assumption).
+    intros m' mn m'n mn' Hm' Hmn Hm'n Hmn'.
+    replace mn with m in *. replace m'n with m' in *.
+    apply (Succ_Unique m m' mn'); try assumption.
+    + apply (Sum_w_Unique m' o m' m'n); try assumption;
+      try (apply Zero_NaturalNumber; assumption);
+      try (apply (Succ_NaturalNumber m m'); assumption).
+      destruct Enderton4I as [A1 _]. apply A1; try assumption;
+      try (apply (Succ_NaturalNumber m m'); assumption).
+    + apply (Sum_w_Unique m o m mn); try assumption;
+      try (apply Zero_NaturalNumber; assumption).
+      destruct Enderton4I as [A1 _]. apply A1; assumption.
+  - intros a a' Ha' Ha. apply HA in Ha. destruct Ha as [Ha IH]. apply Homga in Ha.
+    apply HA. split; try (apply Homga, (Succ_NaturalNumber a a'); assumption).
+    intros m' mn m'n mn' Hm' Hmn Hm'n Hmn'.
+    assert (P : NaturalNumber m').
+    { apply (Succ_NaturalNumber m m'); try assumption. }
+    sum_w m' a P Ha. rename x into m'a. rename H into Hm'a.
+    succ m'a. rename x into Sm'a. rename H into HSm'a.
+    transitivity Sm'a.
+    + destruct Enderton4I as [_ A2].
+      apply (A2 m' a a' m'a m'n Sm'a); try assumption.
+    + sum_w m a Hm Ha. rename x into ma. rename H into Hma.
+      succ ma. rename x into Sma. rename H into HSma.
+      succ Sma. rename x into SSma. rename H into HSSma. transitivity SSma.
+      * apply (Succ_Unique m'a Sm'a SSma); try assumption.
+        replace m'a with Sma; try assumption.
+        symmetry. apply (IH m' ma m'a Sma); try assumption.
+      * apply (Succ_Unique mn SSma mn'); try assumption.
+        replace mn with Sma; try assumption.
+        destruct Enderton4I as [_ A2]. symmetry.
+        apply (A2 m a a' ma); try assumption.
+  - intros a Ha. apply HA, Ha.
+Qed.
+
 Theorem Enderton4K2 : Addition_Commutative_w.
-Admitted.
+Proof.
+  intros m n mn nm Hm Hn. omga. generalize dependent nm. generalize dependent mn.
+  build_set set
+    (fun (m c n : set) => forall mn nm, Sum_w m n mn -> Sum_w n m nm -> mn = nm)
+    m omga.
+  rename x into A. rename H into HA. apply HA.
+  replace A with omga; try apply Homga, Hn. symmetry.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros a Ha; apply HA, Ha).
+  - empty. rename x into o. rename H into Ho. exists o. split; try assumption.
+    apply HA. split; try (apply Homga, Zero_NaturalNumber; assumption).
+    intros mn nm Hmn Hnm. replace mn with m in *. replace nm with m in *.
+    trivial.
+    + apply (Sum_w_Unique o m m nm); try assumption;
+      try (apply Zero_NaturalNumber, Ho).
+      apply (A1_Commutative); assumption.
+    + apply (Sum_w_Unique m o m mn); try assumption;
+      try (apply Zero_NaturalNumber, Ho).
+      destruct Enderton4I as [A1 _].
+      apply A1; assumption.
+  - intros a a' Ha' Ha. apply HA in Ha. destruct Ha as [Ha IH]. apply Homga in Ha.
+    apply HA. split; try (apply Homga, (Succ_NaturalNumber a a'); assumption).
+    intros mn nm Hmn Hnm.
+    sum_w a m Ha Hm. rename x into am. rename H into Ham.
+    sum_w m a Hm Ha. rename x into ma. rename H into Hma.
+    succ am. rename x into Sam. rename H into HSam.
+    succ ma. rename x into Sma. rename H into HSma.
+    transitivity Sma.
+    + destruct Enderton4I as [_ A2].
+      apply (A2 m a a' ma mn Sma); try assumption.
+    + transitivity Sam.
+      * apply (Succ_Unique ma Sma Sam); try assumption.
+        replace ma with am; try assumption.
+        symmetry. apply IH; try assumption.
+      * symmetry. apply (A2_Commutative a m a' am nm Sam); try assumption.
+Qed.
 
 Theorem Enderton4K3 : Distributive_w.
 Admitted.
