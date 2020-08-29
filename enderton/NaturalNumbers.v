@@ -2279,7 +2279,7 @@ Definition Distributive_w : Prop :=
 
 Definition Multiplication_Associative_w : Prop :=
   forall m n p np mn r l, NaturalNumber m -> NaturalNumber n -> NaturalNumber p ->
-  Prod n p np -> Prod_w m n mn -> Prod_w m np r -> Prod_w mn p l -> r = l.
+  Prod_w n p np -> Prod_w m n mn -> Prod_w m np r -> Prod_w mn p l -> r = l.
 
 Definition Multiplication_Commutative_w : Prop :=
   forall m n mn nm, NaturalNumber m -> NaturalNumber n -> Prod m n mn ->
@@ -2600,7 +2600,71 @@ Proof.
 Qed.
 
 Theorem Enderton4K4 : Multiplication_Associative_w.
-Admitted.
+Proof.
+  intros m n p np mn r l Hm Hn Hp. omga.
+  generalize dependent l. generalize dependent r. generalize dependent mn.
+  generalize dependent np. build_set (prod set set)
+    (fun (t : set * set) (c p : set) => forall np mn r l, Prod_w (snd t) p np ->
+      Prod_w (fst t) (snd t) mn -> Prod_w (fst t) np r -> Prod_w mn p l -> r = l)
+    (m,n) omga.
+  rename x into T. rename H into HT. apply HT.
+  replace T with omga; try (apply Homga, Hp). symmetry. clear p Hp.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros a Ha; apply HT, Ha).
+  - zero. rename x into o. rename H into Ho. exists o. split; try assumption.
+    apply HT. split; try (apply Homga, Zero_NaturalNumber, Ho).
+    intros np mn r l Hnp Hmn Hr Hl. simpl in *.
+    destruct (Enderton4J) as [M1 M2].
+    replace np with o in *. replace l with o in *.
+    replace r with o in *. trivial.
+    + apply (Prod_w_Unique m o o r); try assumption;
+      try apply (Zero_NaturalNumber), Ho.
+      apply M1; try assumption.
+    + apply (Prod_w_Unique mn o o l); try apply (Zero_NaturalNumber), Ho;
+      try apply (Prod_NaturalNumber m n); try assumption.
+      apply M1; try assumption.
+      apply (Prod_NaturalNumber m n); try assumption.
+    + apply (Prod_w_Unique n o o np); try assumption;
+      try apply Zero_NaturalNumber; try assumption.
+      apply M1; assumption.
+  - intros p p' Hp' Hp. apply HT in Hp. destruct Hp as [Hp IH].
+    apply HT. apply Homga in Hp.
+    split; try (apply Homga, (Succ_NaturalNumber p p'); assumption).
+    intros np' mn r l Hnp' Hmn Hr Hl. simpl in *.
+    prod_w n p Hn Hp. rename x into np. rename H into Hnp.
+    prod_w m np Hm (Prod_NaturalNumber n p np Hn Hp Hnp).
+    rename x into mnp. rename H into Hmnp.
+    sum_w mn mnp (Prod_NaturalNumber m n mn Hm Hn Hmn)
+      (Prod_NaturalNumber m np mnp Hm (Prod_NaturalNumber n p np Hn Hp Hnp) Hmnp).
+    rename x into mnmnp. rename H into Hmnmnp. transitivity mnmnp.
+    + sum_w n np Hn (Prod_NaturalNumber n p np Hn Hp Hnp).
+      rename x into nnp. rename H into Hnnp.
+      prod_w m nnp Hm (Sum_NaturalNumber n np nnp Hn
+        (Prod_NaturalNumber n p np Hn Hp Hnp) Hnnp).
+      rename x into mnnp. rename H into Hmnnp. transitivity mnnp.
+      * destruct Enderton4J as [M1 M2].
+        apply (Prod_w_Unique m np' r mnnp); try assumption.
+        { apply (Prod_NaturalNumber n p'); try assumption.
+          apply (Succ_NaturalNumber p p'); try assumption. }
+        replace np' with nnp; try assumption.
+        symmetry. apply (M2 n p np p' np'); try assumption.
+      * apply (Enderton4K3 m n np nnp mnnp mn mnp mnmnp); try assumption.
+        apply (Prod_NaturalNumber n p); try assumption.
+    + prod_w mn p (Prod_NaturalNumber m n mn Hm Hn Hmn) Hp.
+      rename x into mnp0. rename H into Hmnp0.
+      sum_w mn mnp0 (Prod_NaturalNumber m n mn Hm Hn Hmn)
+        (Prod_NaturalNumber mn p mnp0 (Prod_NaturalNumber m n mn Hm Hn Hmn) Hp Hmnp0).
+      rename x into mnmnp0. rename H into Hmnmnp0. transitivity mnmnp0.
+      * apply (Sum_w_Unique mn mnp mnmnp mnmnp0); try assumption.
+        { apply (Prod_NaturalNumber m n); try assumption. }
+        { apply (Prod_NaturalNumber m np); try assumption.
+          apply (Prod_NaturalNumber n p); try assumption. }
+        replace mnp with mnp0; try assumption.
+        symmetry. apply (IH np mn mnp mnp0); try assumption.
+      * destruct Enderton4J as [M1 M2]. symmetry.
+        apply (M2 mn p mnp0 p'); try assumption.
+        apply (Prod_NaturalNumber m n); assumption.
+Qed.
 
 Theorem Enderton4K5 : Multiplication_Commutative_w.
 Admitted.
