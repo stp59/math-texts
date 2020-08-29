@@ -2475,8 +2475,129 @@ Proof.
       * symmetry. apply (A2_Commutative a m a' am nm Sam); try assumption.
 Qed.
 
+Lemma Sum_NaturalNumber : forall n m p, NaturalNumber n -> NaturalNumber m ->
+  Sum_w n m p -> NaturalNumber p.
+Proof.
+  intros n m p Hn Hm Hp. omga.
+  destruct (Hp Hn Hm) as [add [mn [mnp [Hadd [Hmn [Hmnp H]]]]]].
+  destruct (Addition_w_BinaryOperation add omga) as [wxw [Hwxw Hfadd]]; try assumption.
+  destruct Hfadd as [Hfadd [Hdomadd [ranadd [Hranadd Hsub]]]].
+  apply Homga, Hsub, Hranadd. exists mn, mnp. split; assumption.
+Qed.
+
+Lemma Prod_NaturalNumber : forall n m p, NaturalNumber n -> NaturalNumber m ->
+  Prod_w n m p -> NaturalNumber p.
+Proof.
+  intros n m p Hn Hm Hp. omga.
+  destruct (Hp Hn Hm) as [mult [mn [mnp [Hadd [Hmn [Hmnp H]]]]]].
+  destruct (Multiplication_w_BinaryOperation mult omga) as [wxw [Hwxw Hfmult]]; try assumption.
+  destruct Hfmult as [Hfmult [Hdommult [ranmult [Hranmult Hsub]]]].
+  apply Homga, Hsub, Hranmult. exists mn, mnp. split; assumption.
+Qed.
+
 Theorem Enderton4K3 : Distributive_w.
-Admitted.
+Proof.
+  intros m n p np mnp mn mp mnmp Hm Hn Hp. omga.
+  generalize dependent mnmp. generalize dependent mp. generalize dependent mn.
+  generalize dependent mnp. generalize dependent np.
+  build_set (prod set set)
+    (fun (t : set * set) (c p : set) => forall np mnp mn mp mnmp,
+      Sum_w (snd t) p np -> Prod_w (fst t) np mnp -> Prod_w (fst t) (snd t) mn ->
+      Prod_w (fst t) p mp -> Sum_w mn mp mnmp -> mnp = mnmp)
+    (m, n) omga.
+  rename x into T. rename H into HT. apply HT.
+  replace T with omga; try (apply Homga, Hp). symmetry.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros a Ha; apply HT, Ha).
+  - zero. rename x into o. rename H into Ho. exists o. split; try assumption.
+    apply HT. split; try (apply Homga, Zero_NaturalNumber, Ho).
+    intros np mnp mn mp mnmp Hnp Hmnp Hmn Hmp Hmnmp. simpl in *.
+    replace np with n in *. replace mp with o in *. replace mnmp with mn in *.
+    apply (Prod_w_Unique m n mnp mn); try assumption.
+    + destruct Enderton4I as [A1 A2].
+      apply (Sum_w_Unique mn o mn mnmp); try assumption.
+      * destruct (Hmn Hm Hn) as [mult [Pmn [Pmnp [Hmult [HPmn [HPmnp H]]]]]].
+        destruct (Multiplication_w_BinaryOperation mult omga) as [wxw [Hwxw Hfmult]];
+        try assumption.
+        destruct Hfmult as [Hfmult [Hdommult [ranmult [Hranmult Hsub]]]].
+        apply Homga, Hsub, Hranmult. exists Pmn, Pmnp. split; assumption.
+      * apply Zero_NaturalNumber, Ho.
+      * apply A1; try assumption.
+        destruct (Hmn Hm Hn) as [mult [Pmn [Pmnp [Hmult [HPmn [HPmnp H]]]]]].
+        destruct (Multiplication_w_BinaryOperation mult omga) as [wxw [Hwxw Hfmult]];
+        try assumption.
+        destruct Hfmult as [Hfmult [Hdommult [ranmult [Hranmult Hsub]]]].
+        apply Homga, Hsub, Hranmult. exists Pmn, Pmnp. split; assumption.
+    + apply (Prod_w_Unique m o o mp); try assumption; try (apply Zero_NaturalNumber, Ho).
+      destruct Enderton4J as [M1 M2]. apply M1; assumption.
+    + destruct (Sum_w_Unique n o n np); try assumption; try trivial;
+      try (apply Zero_NaturalNumber, Ho).
+      destruct Enderton4I as [A1 A2]. apply A1; assumption.
+  - clear p Hp. intros p p' Hp' Hp. apply HT in Hp. destruct Hp as [Hp IH].
+    apply HT. apply Homga in Hp.
+    split; try (apply Homga, (Succ_NaturalNumber p p'); assumption).
+    intros np' mnp' mn mp' mnmp' Hnp' Hmnp' Hmn Hmp' Hmnmp'. simpl in *.
+    prod_w m p Hm Hp. rename H into Hmp. rename x into mp.
+    sum_w mn mp (Prod_NaturalNumber m n mn Hm Hn Hmn)
+      (Prod_NaturalNumber m p mp Hm Hp Hmp).
+    rename H into Hmnmp. rename x into mnmp.
+    sum_w m mnmp Hm (Sum_NaturalNumber mn mp mnmp
+      (Prod_NaturalNumber m n mn Hm Hn Hmn)
+      (Prod_NaturalNumber m p mp Hm Hp Hmp) Hmnmp).
+    rename x into mmnmp. rename H into Hmmnmp. transitivity mmnmp.
+    + sum_w n p Hn Hp. rename x into np. rename H into Hnp.
+      prod_w m np Hm (Sum_NaturalNumber n p np Hn Hp Hnp).
+      rename x into mnp. rename H into Hmnp.
+      sum_w m mnp Hm
+        (Prod_NaturalNumber m np mnp Hm (Sum_NaturalNumber n p np Hn Hp Hnp) Hmnp).
+      rename x into mmnp. rename H into Hmmnp. transitivity mmnp.
+      * succ np. rename x into Snp. rename H into HSnp.
+        prod_w m Snp Hm (Succ_NaturalNumber np Snp (Sum_NaturalNumber n p np Hn Hp Hnp) HSnp).
+        rename x into mSnp. rename H into HmSnp. transitivity mSnp.
+        { apply (Prod_w_Unique m np' mnp' mSnp); try assumption;
+          try apply (Sum_NaturalNumber n p' np' Hn (Succ_NaturalNumber p p' Hp Hp') Hnp').
+          replace np' with Snp; try assumption.
+          destruct Enderton4I as [A1 A2]. symmetry.
+          apply (A2 n p p' np); assumption. }
+        { destruct Enderton4J as [M1 M2]. apply (M2 m np mnp Snp); try assumption.
+          apply (Sum_NaturalNumber n p np Hn Hp Hnp). }
+      * apply (Sum_w_Unique m mnp mmnp mmnmp); try assumption;
+        try apply (Prod_NaturalNumber m np mnp Hm 
+          (Sum_NaturalNumber n p np Hn Hp Hnp) Hmnp).
+        replace mnp with mnmp; try assumption.
+        symmetry; apply (IH np mnp mn mp mnmp); assumption.
+    + sum_w mnmp m (Sum_NaturalNumber mn mp mnmp
+        (Prod_NaturalNumber m n mn Hm Hn Hmn)
+        (Prod_NaturalNumber m p mp Hm Hp Hmp) Hmnmp) Hm.
+      rename x into mnmpm. rename H into Hmnmpm. transitivity mnmpm.
+      * apply (Sum_w_Unique m mnmp mmnmp mnmpm); try assumption.
+        { apply (Sum_NaturalNumber mn mp); try assumption.
+          - apply (Prod_NaturalNumber m n); try assumption.
+          - apply (Prod_NaturalNumber m p); try assumption. }
+        replace mnmpm with mmnmp; try assumption.
+        apply (Enderton4K2 m mnmp mmnmp mnmpm); try assumption.
+        apply (Sum_NaturalNumber mn mp); try assumption.
+        apply (Prod_NaturalNumber m n); try assumption.
+        apply (Prod_NaturalNumber m p); try assumption.
+      * sum_w mp m (Prod_NaturalNumber m p mp Hm Hp Hmp) Hm.
+        rename x into mpm. rename H into Hmpm.
+        sum_w mn mpm (Prod_NaturalNumber m n mn Hm Hn Hmn)
+          (Sum_NaturalNumber mp m mpm (Prod_NaturalNumber m p mp Hm Hp Hmp) Hm Hmpm).
+        rename x into mnmpm'. rename H into Hmnmpm'. transitivity mnmpm'.
+        { symmetry. apply (Enderton4K1 mn mp m mpm mnmp); try assumption.
+          - apply (Prod_NaturalNumber m n mn Hm Hn Hmn).
+          - apply (Prod_NaturalNumber m p mp Hm Hp Hmp). }
+        { apply (Sum_w_Unique mn mpm mnmpm' mnmp'); try assumption.
+          - apply (Prod_NaturalNumber m n mn Hm Hn Hmn).
+          - apply (Sum_NaturalNumber mp m); try assumption.
+            apply (Prod_NaturalNumber m p); try assumption.
+          - replace mpm with mp'; try assumption.
+            sum_w m mp Hm (Prod_NaturalNumber m p mp Hm Hp Hmp).
+            rename x into mmp. rename H into Hmmp. transitivity mmp.
+            + destruct Enderton4J as [M1 M2]. apply (M2 m p mp p'); try assumption.
+            + apply (Enderton4K2 m mp mmp mpm);  try assumption.
+              apply (Prod_NaturalNumber m p); try assumption. }
+Qed.
 
 Theorem Enderton4K4 : Multiplication_Associative_w.
 Admitted.
