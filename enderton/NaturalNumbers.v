@@ -2854,9 +2854,74 @@ Proof.
       * symmetry. apply (M2_Commutative n m nm n'); try assumption.
 Qed.
 
+Lemma SumZero_implies_BothZero : forall m n o, NaturalNumber m ->
+  NaturalNumber n -> Empty o -> Sum_w m n o -> Empty m /\ Empty n.
+Proof.
+  intros m n o Hm Hn Ho. omga. generalize dependent n. build_set set
+    (fun (o c m : set) => forall n, NaturalNumber n -> Sum_w m n o ->
+      Empty m /\ Empty n)
+    o omga.
+  rename x into T. rename H into HT. apply HT.
+  replace T with omga; try (apply Homga, Hm). symmetry. clear m Hm.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros t Ht; apply HT, Ht).
+  - exists o. split; try assumption. apply HT.
+    split; try (apply Homga, Zero_NaturalNumber, Ho).
+    intros n Hn H. split; try assumption. replace n with o; try assumption.
+    apply (Sum_w_Unique o n o n); try assumption;
+    try (apply Zero_NaturalNumber, Ho).
+    apply A1_Commutative; try assumption.
+  - intros m m' Hm' Hm. apply HT in Hm. destruct Hm as [Hm IH].
+    apply HT. apply Homga in Hm.
+    split; try (apply Homga, (Succ_NaturalNumber m m' Hm Hm')).
+    intros n Hn Hm'n. succ n. rename x into n'. rename H into Hn'.
+    sum_w m n Hm Hn. rename x into mn. rename H into Hmn.
+    sum_w m n' Hm (Succ_NaturalNumber n n' Hn Hn').
+    rename x into mn'. rename H into Hmn'.
+    sum_w m' n (Succ_NaturalNumber m m' Hm Hm') Hn.
+    rename x into m'n. rename H into Hm'n0.
+    assert (P : Sum_w m n' o).
+    { replace o with mn'; try assumption. transitivity m'n.
+      - succ mn. rename x into Smn. transitivity Smn.
+        + destruct Enderton4I as [A1 A2]. apply (A2 m n n' mn); assumption.
+        + symmetry. apply (A2_Commutative m n m' mn); try assumption.
+      - apply (Sum_w_Unique m' n m'n o); try assumption.
+        apply (Succ_NaturalNumber m m'); assumption. }
+    destruct (IH n' (Succ_NaturalNumber n n' Hn Hn') P) as [IH1 IH2].
+    destruct (IH2 n). destruct Hn' as [Sn [HSn Hn']]. apply Hn'. right.
+    apply HSn. trivial.
+Qed.
+
 Theorem Exercise4_13 : forall m n o, NaturalNumber m -> NaturalNumber n ->
   Empty o -> Prod_w m n o -> m = o \/ n = o.
-Admitted.
+Proof.
+  intros m n o Hm Hn Ho. generalize dependent n. omga.
+  build_set set
+    (fun (o c m : set) => forall n, NaturalNumber n -> Prod_w m n o -> m = o \/ n = o)
+    o omga.
+  rename x into T. rename H into HT. apply HT.
+  replace T with omga; try (apply Homga, Hm). symmetry. clear Hm m.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros t Ht; apply HT, Ht).
+  - exists o. split; try assumption. apply HT.
+    split; try (apply Homga, Zero_NaturalNumber, Ho).
+    intros n Hn Hon. left. trivial.
+  - intros m m' Hm' Hm. apply HT in Hm. destruct Hm as [Hm IH].
+    apply HT. apply Homga in Hm.
+    split; try (apply Homga, (Succ_NaturalNumber m m' Hm Hm')).
+    intros n Hn Hm'n. right.
+    prod_w m n Hm Hn. rename x into mn. rename H into Hmn.
+    apply (Empty_Unique); try assumption.
+    destruct (SumZero_implies_BothZero mn n o) as [_ H];
+    try apply H; try assumption; try apply (Prod_NaturalNumber m n mn Hm Hn Hmn).
+    sum_w mn n (Prod_NaturalNumber m n mn Hm Hn Hmn) Hn.
+    rename x into mnn. rename H into Hmnn. replace o with mnn; try assumption.
+    prod_w m' n (Succ_NaturalNumber m m' Hm Hm') Hn.
+    rename x into m'n. rename H into Hm'n0. transitivity m'n.
+    + symmetry. apply (M2_Commutative m n mn m'); try assumption.
+    + apply (Prod_w_Unique m' n m'n o); try assumption.
+      apply (Succ_NaturalNumber m m' Hm Hm').
+Qed.
 
 Definition Even_w (n : set) : Prop :=
   exists p o o' o'', NaturalNumber p /\ Empty o /\ Succ o o' /\ Succ o' o'' /\
