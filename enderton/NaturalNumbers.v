@@ -2929,28 +2929,231 @@ Definition Even_w (n : set) : Prop :=
 
 Definition Odd_w (n : set) : Prop :=
   exists p o o' o'' tp, NaturalNumber p /\ Empty o /\ Succ o o' /\ Succ o' o'' /\
-  Prod o'' p tp /\ Prod tp o' n.
+  Prod_w o'' p tp /\ Succ tp n.
 
 Theorem Exercise4_14 : forall n, NaturalNumber n -> Odd_w n \/ Even_w n.
-Admitted.
+Proof.
+  intros n Hn. omga. destruct Enderton4I as [A1 A2].
+  build_set set (fun (t c n : set) => Odd_w n \/ Even_w n) omga omga.
+  rename x into T. rename H into HT. apply HT.
+  replace T with omga; try (apply Homga, Hn). clear n Hn. symmetry.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros t Ht; apply HT, Ht).
+  - zero. exists x. split; try assumption. rename x into o. rename H into Ho.
+    apply HT. split; try apply Homga, Zero_NaturalNumber, Ho.
+    right. succ o. rename x into o'. rename H into Ho'.
+    succ o'. rename x into o''. rename H into Ho''.
+    exists o, o, o', o''; repeat (split; try assumption);
+    try apply Zero_NaturalNumber, Ho.
+    destruct Enderton4J as [M1 _]. apply M1; try assumption.
+    apply (Succ_NaturalNumber o' o''); try assumption.
+    apply (Succ_NaturalNumber o o'); try assumption.
+    apply Zero_NaturalNumber, Ho.
+  - intros n n' Hn' Hn. apply HT in Hn. destruct Hn as [Hn IH].
+    apply HT. apply Homga in Hn.
+    split; try apply Homga, (Succ_NaturalNumber n n' Hn Hn').
+    destruct IH as [IH | IH].
+    + right. destruct IH as [p [o [o' [o'' [tp [Hp [Ho [Ho' [Ho'' [Htp IH]]]]]]]]]].
+      succ p. rename x into p'. rename H into Hp'.
+      exists p', o, o', o''. repeat (split; try assumption);
+      try apply (Succ_NaturalNumber p p' Hp Hp').
+      assert (T0 : NaturalNumber o'').
+      { apply (Succ_NaturalNumber o' o''); try assumption.
+        apply (Succ_NaturalNumber o o'); try assumption.
+        apply Zero_NaturalNumber, Ho. }
+      prod_w o'' p' T0 (Succ_NaturalNumber p p' Hp Hp').
+      rename x into tp'. rename H into Htp'.
+      replace n' with tp'; try assumption.
+      sum_w o'' tp T0 (Prod_NaturalNumber o'' p tp T0 Hp Htp).
+      rename x into ttp. rename H into Http. transitivity ttp.
+      * destruct Enderton4J as [M1 M2]. apply (M2 o'' p tp p'); try assumption.
+      * sum_w tp o'' (Prod_NaturalNumber o'' p tp T0 Hp Htp) T0.
+        rename H into Htpt. rename x into tpt.
+        replace ttp with tpt.
+        sum_w tp o' (Prod_NaturalNumber o'' p tp T0 Hp Htp)
+          (Succ_NaturalNumber o o' (Zero_NaturalNumber o Ho) Ho').
+        rename H into Htpo'. rename x into tpo'.
+        succ tpo'. rename x into Stpo'. rename H into HStpo'.
+        replace tpt with Stpo'. apply (Succ_Unique tpo'); try assumption.
+        replace tpo' with n; try assumption.
+        apply (Succ_Unique tp); try assumption.
+        succ tp. rename x into Stp. rename H into HStp.
+        replace tpo' with Stp; try assumption.
+        sum_w tp o (Prod_NaturalNumber o'' p tp T0 Hp Htp) (Zero_NaturalNumber o Ho).
+        rename x into tpo. rename H into Htpo. symmetry.
+        apply (A2 tp o o' tpo); try assumption;
+        try apply Zero_NaturalNumber, Ho;
+        try apply (Prod_NaturalNumber o'' p); try assumption.
+        replace tpo with tp; try assumption.
+        apply (Sum_w_Unique tp o tp tpo); try assumption;
+        try apply Zero_NaturalNumber, Ho;
+        try apply (Prod_NaturalNumber o'' p); try assumption.
+        apply A1; try assumption;
+        try apply (Prod_NaturalNumber o'' p); try assumption.
+        symmetry. apply (A2 tp o' o'' tpo'); try assumption;
+        try apply (Succ_NaturalNumber o o'); try assumption;
+        try apply Zero_NaturalNumber, Ho;
+        try apply (Prod_NaturalNumber o'' p); try assumption.
+        apply (Enderton4K2 tp o''); try assumption;
+        try apply (Prod_NaturalNumber o'' p); assumption.
+    + left. destruct IH as [p [o [o' [o'' [Hp [Ho [Ho' [Ho'' IH]]]]]]]].
+      exists p, o, o', o'', n; repeat (split; try assumption).
+Qed.
+
+Lemma Pred_Unique : forall m n m' n', NaturalNumber m -> NaturalNumber n ->
+  Succ m m' -> Succ n n' -> m' = n' -> m = n.
+Proof.
+  intros m n m' n' Hm Hn Hm' Hn' H.
+  union m'. rename x into Um'. rename H0 into HUm'.
+  union n'. rename x into Un'. rename H0 into HUn'.
+  apply (Union_Unique m').
+  - replace m with Um'; try assumption.
+    apply (Enderton4E m m'); try assumption.
+    apply (Enderton4F); assumption.
+  - replace m' with n'; try assumption.
+    replace n with Un'; try assumption.
+    apply (Enderton4E n n'); try assumption.
+    apply Enderton4F; assumption.
+Qed.
 
 Theorem Exercise4_14' : forall n, NaturalNumber n -> ~ (Odd_w n /\ Even_w n).
-Admitted.
+Proof.
+  intros n Hn. omga. destruct Enderton4J as [M1 M2]. destruct Enderton4I as [A1 A2].
+  build_set set (fun (t c n : set) => ~ (Odd_w n /\ Even_w n)) omga omga.
+  rename x into T. rename H into HT. apply HT.
+  replace T with omga; try apply Homga, Hn. symmetry. clear Hn n.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros t Ht; apply HT, Ht).
+  - empty. rename x into o. rename H into Ho. exists o. split; try assumption.
+    apply HT. split; try apply Homga, Zero_NaturalNumber, Ho.
+    intros C. destruct C as [C1 C2].
+    destruct C1 as [p [o0 [o' [o'' [tp [Hp [Ho0 [Ho' [Ho'' [Htp H]]]]]]]]]].
+    replace o0 with o in *; try apply (Empty_Unique); try assumption.
+    clear o0 Ho0. apply (Ho tp). destruct H as [Stp [HStp H]].
+    apply H. right. apply HStp. trivial.
+  - intros n n' Hn' Hn. apply HT in Hn. destruct Hn as [Hn IH].
+    apply HT. apply Homga in Hn.
+    split; try apply Homga, (Succ_NaturalNumber n n' Hn Hn').
+    intros [C1 C2]. apply IH. split.
+    + destruct C2 as [p' [o [o' [o'' [Hp' [Ho [Ho' [Ho'' C2]]]]]]]].
+      assert (T0 : NaturalNumber o'').
+      { try apply (Succ_NaturalNumber o' o''
+          (Succ_NaturalNumber o o' (Zero_NaturalNumber o Ho) Ho') Ho''). }
+      destruct (Enderton4C p' Hp') as [p [Hp Hp'0]].
+      { intros C. apply (Ho n). replace o with n'.
+        - destruct Hn' as [Sn [HSn Hn']]. apply Hn'. right.
+          apply HSn. trivial.
+        - apply (Prod_w_Unique o'' p' n' o); try assumption.
+          replace p' with o; try apply M1; try assumption.
+          apply (Empty_Unique o p'); assumption. }
+      prod_w o'' p T0 Hp. rename x into tp. rename H into Htp.
+      assert (T1 : NaturalNumber tp).
+      { apply (Prod_NaturalNumber o'' p); try assumption. }
+      exists p, o, o', o'', tp. repeat (split; try assumption).
+      succ tp. rename x into Stp. rename H into HStp.
+      replace n with Stp; try assumption.
+      apply (Pred_Unique Stp n n' n'); try assumption; try trivial.
+      { apply (Succ_NaturalNumber tp); try assumption. }
+      succ Stp. rename x into SStp. rename H into HSStp.
+      replace n' with SStp; try assumption.
+      sum_w tp o'' T1 T0. rename x into tpt. rename H into Htpt.
+      transitivity tpt.
+      * sum_w tp o T1 (Zero_NaturalNumber o Ho).
+        rename x into tpo. rename H into Htpo.
+        succ tpo. rename H into HStpo. rename x into Stpo.
+        succ Stpo. rename H into HSStpo. rename x into SStpo.
+        transitivity SStpo.
+        { apply (Succ_Unique Stp); try assumption.
+          replace Stp with Stpo; try assumption.
+          apply (Succ_Unique tp); try assumption.
+          replace tp with tpo; try assumption.
+          apply (Sum_w_Unique tp o tpo tp); try assumption;
+          try apply Zero_NaturalNumber, Ho.
+          apply A1; assumption. }
+        { sum_w tp o' T1 (Succ_NaturalNumber o o' (Zero_NaturalNumber o Ho) Ho').
+          rename x into tpo'. rename H into Htpo'.
+          succ tpo'. rename x into Stpo'. rename H into HStpo'.
+          transitivity Stpo'.
+          - apply (Succ_Unique Stpo); try assumption.
+            replace Stpo with tpo'; try assumption.
+            apply (A2 tp o o' tpo); try assumption.
+            apply Zero_NaturalNumber, Ho.
+          - symmetry. apply (A2 tp o' o'' tpo'); try assumption.
+            apply (Succ_NaturalNumber o o'); try assumption.
+            apply Zero_NaturalNumber, Ho. }
+      * sum_w o'' tp T0 T1. rename x into ttp. rename H into Http.
+        transitivity ttp.
+        { apply (Enderton4K2 tp o''); try assumption. }
+        { symmetry. apply (M2 o'' p tp p'); try assumption. }
+    + destruct C1 as [p [o [o' [o'' [tp [Hp [Ho [Ho' [Ho'' [Htp C1]]]]]]]]]].
+      exists p, o, o', o''. repeat (split; try assumption).
+      replace n with tp; try assumption.
+      apply (Pred_Unique tp n n' n'); try assumption; try trivial.
+      apply (Prod_NaturalNumber o'' p); try assumption.
+      apply (Succ_NaturalNumber o' o''); try assumption.
+      apply (Succ_NaturalNumber o o'); try assumption.
+      apply Zero_NaturalNumber, Ho.
+Qed.
 
 (** Exercise 4-15 : Prove part 1 of 4K. *)
 
 (** Exercise 4-16 : Prove part 5 of 4K. *)
 
-Theorem Exercise4_17 : forall m n p np mnp mn mp mnmp,
-  NaturalNumber m -> NaturalNumber n -> NaturalNumber p -> Sum_w n p np ->
-  Pow_w m np mnp -> Pow_w m n mn -> Pow_w m p mp -> Prod mn mp mnmp ->
-  mnp = mnmp.
+Lemma Pow_NaturalNumber : forall m n mn, NaturalNumber m -> NaturalNumber n ->
+  Pow_w m n mn -> NaturalNumber mn.
 Admitted.
 
+Theorem Exercise4_17 : forall m n p np mnp mn mp mnmp,
+  NaturalNumber m -> NaturalNumber n -> NaturalNumber p -> Sum_w n p np ->
+  Pow_w m np mnp -> Pow_w m n mn -> Pow_w m p mp -> Prod_w mn mp mnmp ->
+  mnp = mnmp.
+Proof.
+  intros m n p np mnp mn mp mnmp Hm Hn Hp. omga. destruct Enderton4J as [M1 M2].
+  destruct Enderton4I as [A1 A2]. destruct Enderton4J' as [E1 E2].
+  generalize dependent mnmp. generalize dependent mp. generalize dependent mn.
+  generalize dependent mnp. generalize dependent np.
+  build_set (prod set set)
+    (fun (t : set * set) (c p : set) => forall np mnp mn mp mnmp,
+      Sum_w (snd t) p np -> Pow_w (fst t) np mnp -> Pow_w (fst t) (snd t) mn ->
+      Pow_w (fst t) p mp -> Prod_w mn mp mnmp -> mnp = mnmp) (m,n) omga.
+  rename x into T. rename H into HT. apply HT.
+  replace T with omga; try apply Homga, Hp. clear p Hp. symmetry.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros t Ht; apply HT, Ht).
+  - empty. rename x into o. rename H into Ho. exists o. split; try assumption.
+    apply HT. split; try apply Homga, Zero_NaturalNumber, Ho.
+    intros np mnp mn mp mnmp Hnp Hmnp Hmn Hmp Hmnmp. simpl in *.
+    succ o. rename x into o'; rename H into Ho'.
+    replace np with n in *. replace mnp with mn in *.
+    replace mp with o' in *. replace mnmp with mn in *. trivial.
+    + sum_w mn o (Pow_NaturalNumber m n mn Hm Hn Hmn) (Zero_NaturalNumber o Ho).
+      rename x into mno. rename H into Hmno. transitivity mno.
+      * apply (Sum_w_Unique mn o mn mno); try assumption;
+        try apply (Pow_NaturalNumber m n mn Hm Hn Hmn);
+        try apply Zero_NaturalNumber, Ho.
+        apply A1; try assumption.
+        apply (Pow_NaturalNumber m n mn Hm Hn Hmn).
+      * prod_w mn o (Pow_NaturalNumber m n mn Hm Hn Hmn) (Zero_NaturalNumber o Ho).
+        rename x into mnto. rename H into Hmnto. replace o with mnto in Hmno.
+        { symmetry. apply (M2 mn o mnto o'); try assumption;
+          try apply Zero_NaturalNumber, Ho.
+          apply (Pow_NaturalNumber m n mn Hm Hn Hmn). }
+        { apply (Prod_w_Unique mn o mnto o); try assumption;
+          try apply Zero_NaturalNumber, Ho;
+          try apply (Pow_NaturalNumber m n mn Hm Hn Hmn).
+          apply M1; try assumption.
+          apply (Pow_NaturalNumber m n mn Hm Hn Hmn). }
+    + apply (Pow_w_Unique m o o' mp); try assumption;
+      try apply Zero_NaturalNumber, Ho. apply E1; try assumption.
+    + apply (Pow_w_Unique m n mn mnp); try assumption.
+    + apply (Sum_w_Unique n o n np); try assumption;
+      try apply Zero_NaturalNumber, Ho.
+      apply A1; try assumption.
+  - 
+
 (** Now we have the basic algebraic operations on omega and corresponding
-    results about their basic properties. We next turn our attention to
-    order on omega, and show that the relation < is linear ordering as in
-    the previous chapter. *)
+    results. We next turn our attention to ordering on omega, and show that the
+    relation < is linear ordering as in the previous chapter. *)
 
 Definition Omega_LT (lt : set) : Prop :=
   forall mn, In mn lt <-> exists m n, OrdPair m n mn /\ NaturalNumber m /\
