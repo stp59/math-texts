@@ -2282,7 +2282,7 @@ Definition Multiplication_Associative_w : Prop :=
   Prod_w n p np -> Prod_w m n mn -> Prod_w m np r -> Prod_w mn p l -> r = l.
 
 Definition Multiplication_Commutative_w : Prop :=
-  forall m n mn nm, NaturalNumber m -> NaturalNumber n -> Prod m n mn ->
+  forall m n mn nm, NaturalNumber m -> NaturalNumber n -> Prod_w m n mn ->
   Prod_w n m nm -> mn = nm.
 
 Theorem Enderton4K1 : Addition_Associative_w.
@@ -2666,8 +2666,193 @@ Proof.
         apply (Prod_NaturalNumber m n); assumption.
 Qed.
 
+Lemma M1_Commutative : forall o m, Empty o -> NaturalNumber m ->
+  Prod_w o m o.
+Proof.
+  intros o m Ho Hm. omga. build_set set
+    (fun (o c m : set) => Prod_w o m o) o omga.
+  rename x into T. rename H into HT. apply HT.
+  replace T with omga; try (apply Homga, Hm). clear m Hm. symmetry.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros a Ha; apply HT, Ha).
+  - exists o. split; try assumption. apply HT.
+    split; try (apply Homga, Zero_NaturalNumber, Ho).
+    destruct Enderton4J as [M1 _]. apply M1; try assumption.
+    apply Zero_NaturalNumber. assumption.
+  - intros m m' Hm' Hm. apply HT in Hm. destruct Hm as [Hm IH].
+    apply HT. apply Homga in Hm.
+    split; try (apply Homga, (Succ_NaturalNumber m m'); assumption).
+    prod_w o m' (Zero_NaturalNumber o Ho) (Succ_NaturalNumber m m' Hm Hm').
+    rename x into om'. rename H into Hom'.
+    replace om' with o in Hom'; try assumption.
+    destruct Enderton4J as [_ M2]. symmetry.
+    apply (M2 o m o m'); try assumption; try apply Zero_NaturalNumber, Ho.
+    destruct Enderton4I as [A1 _].
+    apply A1; try apply Zero_NaturalNumber; assumption.
+Qed.
+
+Lemma M2_Commutative : forall m n mn m' m'n mnn,
+  NaturalNumber m -> NaturalNumber n -> Prod_w m n mn -> Succ m m' ->
+  Prod_w m' n m'n -> Sum_w mn n mnn -> m'n = mnn.
+Proof.
+  intros m n mn m' m'n mnn Hm Hn. omga.
+  generalize dependent mnn. generalize dependent m'n.
+  generalize dependent m'. generalize dependent mn.
+  build_set set
+    (fun (m c n : set) => forall mn m' m'n mnn, Prod_w m n mn -> Succ m m' ->
+      Prod_w m' n m'n -> Sum_w mn n mnn -> m'n = mnn)
+    m omga.
+  rename x into T. rename H into HT. apply HT.
+  replace T with omga; try (apply Homga, Hn). symmetry. clear n Hn.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros a Ha; apply HT, Ha).
+  - zero. rename x into o. rename H into Ho. exists o. split; try assumption.
+    apply HT. split; try (apply Homga, Zero_NaturalNumber, Ho).
+    intros mn m' m'n mnn Hmn Hm' Hm'n Hmnn.
+    destruct Enderton4J as [M1 _].
+    replace mn with o in *. replace mnn with o in *.
+    replace m'n with o in *. trivial.
+    + apply (Prod_w_Unique m' o o m'n); try assumption;
+      try (apply Zero_NaturalNumber, Ho);
+      try (apply (Succ_NaturalNumber m m' Hm Hm')).
+      apply M1; try assumption.
+      apply (Succ_NaturalNumber m); try assumption.
+    + apply (Sum_w_Unique o o o mnn); try apply Zero_NaturalNumber; try assumption.
+      destruct Enderton4I as [A1 _].
+      apply A1; try assumption. apply Zero_NaturalNumber, Ho.
+    + apply (Prod_w_Unique m o o mn); try assumption;
+      try apply Zero_NaturalNumber, Ho.
+      apply M1; try assumption.
+  - intros n n' Hn' Hn. apply HT in Hn. destruct Hn as [Hn IH].
+    apply HT. apply Homga in Hn.
+    split; try (apply Homga, (Succ_NaturalNumber n n' Hn Hn')).
+    intros mn' m' m'n' mn'n' Hmn' Hm' Hm'n' Hmn'n'.
+    prod_w m n Hm Hn. rename x into mn. rename H into Hmn.
+    sum_w m n Hm Hn. rename x into mpn. rename H into Hmpn.
+    succ mpn. rename x into Smpn. rename H into HSmpn.
+    assert (T0 : NaturalNumber mn).
+    { apply (Prod_NaturalNumber m n); try assumption. }
+    assert (T1 : NaturalNumber Smpn).
+    { apply (Succ_NaturalNumber mpn); try assumption.
+      apply (Sum_NaturalNumber m n); try assumption. }
+    sum_w mn Smpn T0 T1. rename x into mnSmpn. rename H into HmnSmpn.
+    transitivity mnSmpn.
+    + sum_w mn n T0 Hn. rename x into mnn. rename H into Hmnn.
+      sum_w mnn m' (Sum_NaturalNumber mn n mnn T0 Hn Hmnn)
+        (Succ_NaturalNumber m m' Hm Hm').
+      rename x into mnnm. rename H into Hmnnm. transitivity mnnm.
+      * sum_w m' mnn (Succ_NaturalNumber m m' Hm Hm')
+          (Sum_NaturalNumber mn n mnn T0 Hn Hmnn).
+        rename x into mmnn. rename H into Hmmnn. transitivity mmnn.
+        { prod_w m' n (Succ_NaturalNumber m m' Hm Hm') Hn.
+          rename x into m'n. rename H into Hm'n.
+          sum_w m' m'n (Succ_NaturalNumber m m' Hm Hm')
+            (Prod_NaturalNumber m' n m'n (Succ_NaturalNumber m m' Hm Hm') Hn Hm'n).
+          rename x into m'm'n. rename H into Hm'm'n. transitivity m'm'n.
+          - destruct Enderton4J as [_ M2]. apply (M2 m' n m'n n'); try assumption.
+            apply (Succ_NaturalNumber m m'); try assumption.
+          - apply (Sum_w_Unique m' m'n m'm'n mmnn); try assumption;
+            try apply (Succ_NaturalNumber m m' Hm Hm').
+            + apply (Prod_NaturalNumber m' n); try assumption.
+              apply (Succ_NaturalNumber m m'); try assumption.
+            + replace m'n with mnn; try assumption.
+              symmetry. apply (IH mn m' m'n mnn); try assumption. }
+        { apply (Enderton4K2 m' mnn mmnn mnnm); try assumption.
+          apply (Succ_NaturalNumber m m'); try assumption.
+          apply (Sum_NaturalNumber mn n); try assumption. }
+      * sum_w n m Hn Hm. rename x into npm. rename H into Hnpm.
+        sum_w mn npm T0 (Sum_NaturalNumber n m npm Hn Hm Hnpm).
+        rename x into mnnpm. rename H into Hmnnpm.
+        succ mnnpm. rename x into Smnnpm. rename H into HSmnnpm.
+        transitivity Smnnpm.
+        { sum_w mnn m (Sum_NaturalNumber mn n mnn T0 Hn Hmnn) Hm.
+          rename x into mnnm'. rename H into Hmnnm'.
+          succ mnnm'. rename x into Smnnm. rename H into HSmnnm.
+          transitivity Smnnm.
+          - destruct Enderton4I as [A1 A2].
+            apply (A2 mnn m m' mnnm'); try assumption.
+            apply (Sum_NaturalNumber mn n); try assumption.
+          - apply (Succ_Unique mnnm' Smnnm Smnnpm); try assumption.
+            replace mnnm' with mnnpm; try assumption.
+            apply (Enderton4K1 mn n m npm mnn); try assumption. }
+        { sum_w mn mpn T0 (Sum_NaturalNumber m n mpn Hm Hn Hmpn).
+          rename x into mnmpn. rename H into Hmnmpn.
+          succ mnmpn. rename x into Smnmpn. rename H into HSmnmpn.
+          transitivity Smnmpn.
+          - apply (Succ_Unique mnnpm); try assumption.
+            replace mnnpm with mnmpn; try assumption.
+            apply (Sum_w_Unique mn mpn); try assumption;
+            try apply (Sum_NaturalNumber m n); try assumption.
+            replace mpn with npm; try assumption.
+            apply (Enderton4K2 n m npm mpn); assumption.
+          - destruct Enderton4I as [A1 A2]. symmetry.
+            apply (A2 mn mpn Smpn mnmpn); try assumption.
+            apply (Sum_NaturalNumber m n); assumption. }
+    + sum_w mn m T0 Hm. rename x into mnm. rename H into Hmnm.
+      sum_w mnm n' (Sum_NaturalNumber mn m mnm T0 Hm Hmnm)
+        (Succ_NaturalNumber n n' Hn Hn').
+      rename x into mnmn'. rename H into Hmnmn'. transitivity mnmn'.
+      * sum_w m n' Hm (Succ_NaturalNumber n n' Hn Hn').
+        rename x into mpn'. rename H into Hmpn'.
+        sum_w mn mpn' T0 (Sum_NaturalNumber m n' mpn' Hm
+          (Succ_NaturalNumber n n' Hn Hn') Hmpn').
+        rename x into mnmpn'. rename H into Hmnmpn'. transitivity mnmpn'.
+        { apply (Sum_w_Unique mn Smpn); try assumption.
+          replace Smpn with mpn'; try assumption.
+          destruct Enderton4I as [A1 A2]. apply (A2 m n n' mpn); try assumption. }
+        { apply (Enderton4K1 mn m n' mpn' mnm); try assumption.
+          apply (Succ_NaturalNumber n n'); assumption. }
+      * apply (Sum_w_Unique mnm n'); try assumption;
+        try apply (Sum_NaturalNumber mn m mnm T0 Hm Hmnm);
+        try apply (Succ_NaturalNumber n n' Hn Hn').
+        replace mnm with mn'; try assumption.
+        destruct Enderton4J as [M1 M2]. apply (M2 m n mn n'); try assumption.
+        sum_w m mn Hm T0. rename x into mmn. rename H into Hmmn.
+        replace mnm with mmn; try assumption.
+        apply (Enderton4K2 m mn); try assumption.
+Qed.
+
 Theorem Enderton4K5 : Multiplication_Commutative_w.
-Admitted.
+Proof.
+  intros m n mn nm Hm Hn. omga. generalize dependent nm. generalize dependent mn.
+  build_set set
+    (fun (m c n : set) => forall mn nm, Prod_w m n mn -> Prod_w n m nm -> mn = nm)
+    m omga.
+  rename x into T. rename H into HT. apply HT.
+  replace T with omga; try (apply Homga, Hn). symmetry. clear n Hn.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros a Ha; apply HT, Ha).
+  - zero. rename x into o. rename H into Ho. exists o. split; try assumption.
+    apply HT. split; try (apply Homga, Zero_NaturalNumber, Ho).
+    intros mn nm Hmn Hnm. replace mn with o in *. replace nm with o in *.
+    trivial.
+    + apply (Prod_w_Unique o m o nm); try assumption;
+      try (apply Zero_NaturalNumber, Ho).
+      apply (M1_Commutative); try assumption.
+    + apply (Prod_w_Unique m o o mn); try assumption;
+      try (apply Zero_NaturalNumber, Ho).
+      destruct Enderton4J as [M1 M2]. apply M1; assumption.
+  - intros n n' Hn' Hn. apply HT in Hn. destruct Hn as [Hn IH].
+    apply HT. apply Homga in Hn.
+    split; try (apply Homga, (Succ_NaturalNumber n n' Hn Hn')).
+    intros mn' n'm Hmn' Hn'm.
+    prod_w n m Hn Hm. rename x into nm. rename H into Hnm.
+    prod_w m n Hm Hn. rename x into mn. rename H into Hmn.
+    sum_w m nm Hm (Prod_NaturalNumber n m nm Hn Hm Hnm).
+    rename x into mnm. rename H into Hmnm. transitivity mnm.
+    + sum_w m mn Hm (Prod_NaturalNumber m n mn Hm Hn Hmn).
+      rename x into mmn. rename H into Hmmn. transitivity mmn.
+      * destruct Enderton4J as [M1 M2]. apply (M2 m n mn n'); try assumption.
+      * apply (Sum_w_Unique m mn); try assumption;
+        try apply (Prod_NaturalNumber m n mn Hm Hn Hmn).
+        replace mn with nm; try assumption. symmetry.
+        apply (IH mn nm Hmn Hnm).
+    + sum_w nm m (Prod_NaturalNumber n m nm Hn Hm Hnm) Hm.
+      rename x into nmm. rename H into Hnmm. transitivity nmm.
+      * apply (Enderton4K2 m nm); try assumption;
+        try apply (Prod_NaturalNumber n m nm Hn Hm Hnm).
+      * symmetry. apply (M2_Commutative n m nm n'); try assumption.
+Qed.
 
 Theorem Exercise4_13 : forall m n o, NaturalNumber m -> NaturalNumber n ->
   Empty o -> Prod_w m n o -> m = o \/ n = o.
