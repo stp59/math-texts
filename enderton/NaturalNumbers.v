@@ -3101,7 +3101,14 @@ Qed.
 
 Lemma Pow_NaturalNumber : forall m n mn, NaturalNumber m -> NaturalNumber n ->
   Pow_w m n mn -> NaturalNumber mn.
-Admitted.
+Proof.
+  intros m n mn Hm Hn Hmn. omga.
+  destruct (Hmn Hm Hn) as [exp [Pmn [Pmnmn [Hexp [HPmn [HPmnmn H]]]]]].
+  destruct (Exponentiation_w_BinaryOperation exp omga) as [wxw [Hwxw Hfexp]];
+  try assumption.
+  destruct Hfexp as [Hfexp [Hdomexp [ranexp [Hranexp Hsub]]]].
+  apply Homga, Hsub, Hranexp. exists Pmn, Pmnmn. split; assumption.
+Qed.
 
 Theorem Exercise4_17 : forall m n p np mnp mn mp mnmp,
   NaturalNumber m -> NaturalNumber n -> NaturalNumber p -> Sum_w n p np ->
@@ -3149,7 +3156,77 @@ Proof.
     + apply (Sum_w_Unique n o n np); try assumption;
       try apply Zero_NaturalNumber, Ho.
       apply A1; try assumption.
-  - 
+  - intros p p' Hp' Hp. apply HT in Hp. destruct Hp as [Hp IH].
+    apply HT. apply Homga in Hp.
+    split; try apply Homga, (Succ_NaturalNumber p p'); try assumption.
+    intros np' mnp' mn mp' mnmp' Hnp' Hmnp' Hmn Hmp' Hmnmp'. simpl in *.
+    pow_w m p Hm Hp. rename x into mp. rename H into Hmp.
+    prod_w mp mn (Pow_NaturalNumber m p mp Hm Hp Hmp)
+      (Pow_NaturalNumber m n mn Hm Hn Hmn).
+    rename x into mpmn. rename H into Hmpmn.
+    prod_w m mpmn Hm (Prod_NaturalNumber mp mn mpmn
+      (Pow_NaturalNumber m p mp Hm Hp Hmp) (Pow_NaturalNumber m n mn Hm Hn Hmn) Hmpmn).
+    rename x into mmpmn. rename H into Hmmpmn. transitivity mmpmn.
+    + sum_w n p Hn Hp. rename x into np. rename H into Hnp.
+      pow_w m np Hm (Sum_NaturalNumber n p np Hn Hp Hnp).
+      rename x into mnp. rename H into Hmnp.
+      prod_w m mnp Hm (Pow_NaturalNumber m np mnp Hm
+        (Sum_NaturalNumber n p np Hn Hp Hnp) Hmnp).
+      rename x into mmnp. rename H into Hmmnp. transitivity mmnp.
+      * succ np. rename x into Snp. rename H into HSnp.
+        pow_w m Snp Hm (Succ_NaturalNumber np Snp
+          (Sum_NaturalNumber n p np Hn Hp Hnp) HSnp).
+        rename x into mSnp. rename H into HmSnp. transitivity mSnp.
+        { apply (Pow_w_Unique m np' mnp' mSnp); try assumption;
+          try apply (Sum_NaturalNumber n p'); try assumption;
+          try apply (Succ_NaturalNumber p p'); try assumption.
+          replace np' with Snp; try assumption. symmetry.
+          apply (A2 n p p' np); try assumption. }
+        { apply (E2 m np mnp Snp); try assumption.
+          apply (Sum_NaturalNumber n p); try assumption. }
+      * prod_w mn mp (Pow_NaturalNumber m n mn Hm Hn Hmn)
+          (Pow_NaturalNumber m p mp Hm Hp Hmp).
+        rename x into mnmp. rename H into Hmnmp.
+        prod_w m mnmp Hm (Prod_NaturalNumber mn mp mnmp
+          (Pow_NaturalNumber m n mn Hm Hn Hmn)
+          (Pow_NaturalNumber m p mp Hm Hp Hmp) Hmnmp).
+        rename x into mmnmp. rename H into Hmmnmp. transitivity mmnmp.
+        { apply (Prod_w_Unique m mnp); try assumption.
+          try apply (Pow_NaturalNumber m np); try assumption;
+          try apply (Sum_NaturalNumber n p); try assumption.
+          replace mnp with mnmp; try assumption. symmetry.
+          apply (IH np mnp mn mp mnmp); try assumption. }
+        { apply (Prod_w_Unique m mnmp); try assumption;
+          try apply (Prod_NaturalNumber mn mp); try assumption;
+          try apply (Pow_NaturalNumber m n mn); try assumption;
+          try apply (Pow_NaturalNumber m p mp); try assumption.
+          replace mnmp with mpmn; try assumption.
+          apply (Enderton4K5 mp mn); try assumption;
+          try apply (Pow_NaturalNumber m p mp); try assumption;
+          try apply (Pow_NaturalNumber m n mn); try assumption. }
+    + prod_w mp' mn (Pow_NaturalNumber m p' mp' Hm (Succ_NaturalNumber p p' Hp Hp')
+        Hmp') (Pow_NaturalNumber m n mn Hm Hn Hmn).
+      rename x into mp'mn. rename H into Hmp'mn. transitivity mp'mn.
+      * prod_w m mp Hm (Pow_NaturalNumber m p mp Hm Hp Hmp).
+        rename x into mmp0. rename H into Hmmp0.
+        prod_w mmp0 mn (Prod_NaturalNumber m mp mmp0 Hm
+          (Pow_NaturalNumber m p mp Hm Hp Hmp) Hmmp0)
+          (Pow_NaturalNumber m n mn Hm Hn Hmn).
+        rename x into mmp0mn. rename H into Hmmp0mn. transitivity mmp0mn.
+        { apply (Enderton4K4 m mp mn mpmn mmp0); try assumption;
+          try apply (Pow_NaturalNumber m p mp); try assumption;
+          try apply (Pow_NaturalNumber m n); try assumption. }
+        { apply (Prod_w_Unique mmp0 mn); try assumption;
+          try apply (Prod_NaturalNumber m mp mmp0); try assumption;
+          try apply (Pow_NaturalNumber m p mp); try assumption;
+          try apply (Pow_NaturalNumber m n mn); try assumption.
+          replace mmp0 with mp'; try assumption.
+          apply (E2 m p mp p'); try assumption. }
+      * apply (Enderton4K5 mp' mn); try assumption;
+        try apply (Pow_NaturalNumber m p' mp'); try assumption;
+        try apply (Succ_NaturalNumber p p'); try assumption;
+        try apply (Pow_NaturalNumber m n); try assumption.
+Qed.
 
 (** Now we have the basic algebraic operations on omega and corresponding
     results. We next turn our attention to ordering on omega, and show that the
