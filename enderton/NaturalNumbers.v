@@ -3757,15 +3757,158 @@ Qed.
 Theorem Enderton4N' : forall m n p mp np, NaturalNumber m -> NaturalNumber n ->
   NaturalNumber p -> ~Empty p -> Prod_w m p mp -> Prod_w n p np ->
   In m n <-> In mp np.
-Admitted.
+Proof.
+  omga. lt_w. destruct Enderton4I as [A1 A2]. destruct Enderton4J as [M1 M2].
+  assert (I : forall m n p mp np, NaturalNumber m -> NaturalNumber n ->
+    NaturalNumber p -> ~ Empty p -> Prod_w m p mp -> Prod_w n p np ->
+    In m n -> In mp np).
+  { intros m n p mp np Hm Hn Hp. generalize dependent np. generalize dependent mp.
+    build_set (prod set set)
+      (fun (t : set * set) (c p : set) => forall mp np, ~Empty p ->
+        Prod_w (fst t) p mp -> Prod_w (snd t) p np -> In (fst t) (snd t) ->
+        In mp np)
+      (m, n) omga.
+    rename x into T. rename H into HT. apply HT.
+    replace T with omga; try apply Homga, Hp. symmetry. clear p Hp.
+    apply Induction_Principle_for_Omega; try assumption; try split;
+    try (intros t Ht; apply HT, Ht).
+    - empty. rename x into o. rename H into Ho. exists o. split; try assumption.
+      apply HT. split; try apply Homga, Zero_NaturalNumber, Ho.
+      intros mp np C. apply C in Ho. destruct Ho.
+    - intros p p' Hp' Hp. apply HT in Hp. destruct Hp as [Hp IH].
+      apply HT. apply Homga in Hp.
+      split; try apply Homga, (Succ_NaturalNumber p p' Hp Hp').
+      assert (P : Empty p \/ ~ Empty p). { apply REM. }
+      intros mp' np' Hne Hmp' Hnp' H. simpl in *. destruct P as [P | P].
+      + replace mp' with m. replace np' with n. assumption.
+        * prod_w n p Hn Hp. rename x into np. rename H0 into Hnp.
+          sum_w n np Hn (Prod_NaturalNumber n p np Hn Hp Hnp).
+          rename x into nnp. rename H0 into Hnnp. transitivity nnp.
+          { sum_w n p Hn Hp. rename x into npp. rename H into Hnpp.
+            transitivity npp.
+            - apply (Sum_w_Unique n p); try assumption. apply A1; assumption.
+            - apply (Sum_w_Unique n p); try assumption.
+              replace p with np; try assumption.
+              apply (Prod_w_Unique n p); try assumption. apply M1; assumption. }
+          { symmetry. apply (M2 n p np p'); try assumption. }
+        * prod_w m p Hm Hp. rename x into mp. rename H0 into Hmp.
+          sum_w m mp Hm (Prod_NaturalNumber m p mp Hm Hp Hmp).
+          rename x into mmp. rename H0 into Hmmp. transitivity mmp.
+          { sum_w m p Hm Hp. rename x into mpp. rename H into Hmpp.
+            transitivity mpp.
+            - apply (Sum_w_Unique m p); try assumption. apply A1; assumption.
+            - apply (Sum_w_Unique m p); try assumption.
+              replace p with mp; try assumption.
+              apply (Prod_w_Unique m p); try assumption. apply M1; assumption. }
+          { symmetry. apply (M2 m p mp p'); try assumption. }
+      + prod_w m p Hm Hp. rename x into mp. rename H0 into Hmp.
+        prod_w n p Hn Hp. rename x into np. rename H0 into Hnp.
+        sum_w m mp Hm (Prod_NaturalNumber m p mp Hm Hp Hmp).
+        rename x into mmp. rename H0 into Hmmp.
+        sum_w n np Hn (Prod_NaturalNumber n p np Hn Hp Hnp).
+        rename x into nnp. rename H0 into Hnnp.
+        sum_w n mp Hn (Prod_NaturalNumber m p mp Hm Hp Hmp).
+        rename x into nmp. rename H0 into Hnmp.
+        replace mp' with mmp. replace np' with nnp.
+        apply (Enderton4F nnp (Sum_NaturalNumber n np nnp Hn
+          (Prod_NaturalNumber n p np Hn Hp Hnp) Hnnp) nmp).
+        * sum_w mp n (Prod_NaturalNumber m p mp Hm Hp Hmp) Hn.
+          rename x into mpn. rename H0 into Hmpn. replace nmp with mpn.
+          sum_w np n (Prod_NaturalNumber n p np Hn Hp Hnp) Hn.
+          rename x into npn. rename H0 into Hnpn. replace nnp with npn.
+          apply (Enderton4N mp np n mpn npn); try assumption;
+          try (apply (Prod_NaturalNumber m p); assumption);
+          try (apply (Prod_NaturalNumber n p); assumption).
+          apply (IH mp np P Hmp Hnp H).
+          { apply (Enderton4K2 np n); try assumption.
+            apply (Prod_NaturalNumber n p); assumption. }
+          { apply (Enderton4K2 mp n); try assumption.
+            apply (Prod_NaturalNumber m p); assumption. }
+        * apply (Enderton4N m n mp); try assumption.
+          apply (Prod_NaturalNumber m p); assumption.
+        * symmetry. apply (M2 n p np p'); try assumption.
+        * symmetry. apply (M2 m p mp p'); assumption. }
+  intros m n p mp np Hm Hn Hp Hne Hmp Hnp.
+  split; try apply (I m n p mp np); try assumption.
+  intros H. ordpair m n. rename x into mn. rename H0 into Hmn.
+  ordpair n m. rename x into nm. rename H0 into Hnm.
+  destruct (Trichotomous_w omga lt Homga Hlt m n mn nm) as [P | [P | P]];
+  try assumption; try (apply Homga; apply Hn); try (apply Homga; apply Hm);
+  destruct P as [P0 [P1 P2]].
+  - apply Hlt in P0. destruct P0 as [m' [n' [Hmn' [_ [_ P0]]]]].
+    assert (P : m = m' /\ n = n').
+    { apply (Enderton3A m n m' n' mn mn Hmn Hmn'); trivial. }
+    replace m' with m in *; replace n' with n in *; try apply P; assumption.
+  - replace np with mp in H. destruct (Enderton4Lb mp); try assumption;
+    try (apply (Prod_NaturalNumber m p); assumption).
+    apply (Prod_w_Unique m p); try assumption. replace m with n; assumption.
+  - assert (Q : In n m).
+    { apply Hlt in P2. destruct P2 as [n' [m' [Hnm' [_ [_ P2]]]]].
+      assert (P : n = n' /\ m = m').
+      { apply (Enderton3A n m n' m' nm nm Hnm Hnm'); trivial. }
+      replace m' with m in *; replace n' with n in *; try apply P; assumption. }
+    destruct (Enderton4Lb mp (Prod_NaturalNumber m p mp Hm Hp Hmp)).
+    apply (Enderton4F mp (Prod_NaturalNumber m p mp Hm Hp Hmp) np); try assumption.
+    apply (I n m p np mp); try assumption.
+Qed.    
 
 Corollary Enderton4P : forall m n p mp np, NaturalNumber m -> NaturalNumber n ->
   NaturalNumber p -> Sum_w m p mp -> Sum_w n p np -> mp = np -> m = n.
-Admitted.
+Proof.
+  intros m n p mp np Hm Hn Hp Hmp Hnp H. omga. lt_w.
+  ordpair m n. rename x into mn. rename H0 into Hmn.
+  ordpair n m. rename x into nm. rename H0 into Hnm.
+  destruct (Trichotomous_w omga lt Homga Hlt m n mn nm) as [P | [P | P]];
+  try assumption; try apply Homga; try assumption; destruct P as [P0 [P1 P2]].
+  - assert (P : In m n).
+    { apply Hlt in P0. destruct P0 as [m' [n' [Hmn' [_ [_ P0]]]]].
+      assert (T : m = m' /\ n = n').
+      { apply (Enderton3A m n m' n' mn mn Hmn Hmn'); trivial. }
+      replace m' with m in *; replace n' with n in *; try apply T; assumption. }
+    assert (Q : In mp np).
+    { apply (Enderton4N m n p mp np); try assumption. }
+    rewrite H in Q. destruct (Enderton4Lb np); try assumption.
+    apply (Sum_NaturalNumber n p); assumption.
+  - assumption.
+  - assert (P : In n m).
+    { apply Hlt in P2. destruct P2 as [n' [m' [Hnm' [_ [_ P2]]]]].
+      assert (T : n = n' /\ m = m').
+      { apply (Enderton3A n m n' m' nm nm Hnm Hnm'); trivial. }
+      replace m' with m in *; replace n' with n in *; try apply T; assumption. }
+    assert (Q : In np mp).
+    { apply (Enderton4N n m p np mp); try assumption. }
+    rewrite H in Q. destruct (Enderton4Lb np); try assumption.
+    apply (Sum_NaturalNumber n p); assumption.
+Qed.
 
 Corollary Enderton4P' : forall m n p mp np, NaturalNumber m -> NaturalNumber n ->
   NaturalNumber p -> Prod_w m p mp -> Prod_w n p np -> mp = np -> ~Empty p -> m = n.
-Admitted.
+Proof.
+  intros m n p mp np Hm Hn Hp Hmp Hnp H Hne. omga. lt_w.
+  ordpair m n. rename x into mn. rename H0 into Hmn.
+  ordpair n m. rename x into nm. rename H0 into Hnm.
+  destruct (Trichotomous_w omga lt Homga Hlt m n mn nm) as [P | [P | P]];
+  try assumption; try apply Homga; try assumption; destruct P as [P0 [P1 P2]].
+  - assert (P : In m n).
+    { apply Hlt in P0. destruct P0 as [m' [n' [Hmn' [_ [_ P0]]]]].
+      assert (T : m = m' /\ n = n').
+      { apply (Enderton3A m n m' n' mn mn Hmn Hmn'); trivial. }
+      replace m' with m in *; replace n' with n in *; try apply T; assumption. }
+    assert (Q : In mp np).
+    { apply (Enderton4N' m n p mp np); try assumption. }
+    rewrite H in Q. destruct (Enderton4Lb np); try assumption.
+    apply (Prod_NaturalNumber n p); assumption.
+  - assumption.
+  - assert (P : In n m).
+    { apply Hlt in P2. destruct P2 as [n' [m' [Hnm' [_ [_ P2]]]]].
+      assert (T : n = n' /\ m = m').
+      { apply (Enderton3A n m n' m' nm nm Hnm Hnm'); trivial. }
+      replace m' with m in *; replace n' with n in *; try apply T; assumption. }
+    assert (Q : In np mp).
+    { apply (Enderton4N' n m p np mp); try assumption. }
+    rewrite H in Q. destruct (Enderton4Lb np); try assumption.
+    apply (Prod_NaturalNumber n p); assumption.
+Qed.
 
 Theorem Well_Ordering_of_Omega : forall A omga, Nats omga -> Subset A omga ->
   ~ Empty A -> exists m, In m A /\ forall n, In n A -> In_ m n.
