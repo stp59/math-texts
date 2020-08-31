@@ -3681,7 +3681,78 @@ Qed.
 
 Theorem Enderton4N : forall m n p mp np, NaturalNumber m -> NaturalNumber n ->
   NaturalNumber p -> Sum_w m p mp -> Sum_w n p np -> In m n <-> In mp np.
-Admitted.
+Proof.
+  destruct Enderton4I as [A1 A2].
+  assert (I : forall m n p mp np, NaturalNumber m -> NaturalNumber n ->
+    NaturalNumber p -> Sum_w m p mp -> Sum_w n p np -> In m n -> In mp np).
+  { intros m n p mp np Hm Hn Hp. omga.
+    generalize dependent np. generalize dependent mp.
+    build_set (prod set set)
+      (fun (t : set * set) (c p : set) => forall mp np, Sum_w (fst t) p mp ->
+        Sum_w (snd t) p np -> In m n -> In mp np) (m, n) omga.
+    rename x into T. rename H into HT. simpl in HT. apply HT.
+    replace T with omga; try apply Homga, Hp. symmetry. clear p Hp.
+    apply Induction_Principle_for_Omega; try assumption; try split;
+    try (intros t Ht; apply HT, Ht).
+    + empty. exists x. split; try assumption. apply HT.
+      split; try apply Homga, Zero_NaturalNumber; try assumption.
+      intros mp np Hmp Hnp P. simpl in *.
+      replace mp with m. replace np with n. assumption.
+      * apply (Sum_w_Unique n x n np); try assumption;
+        try (apply Zero_NaturalNumber, H).
+        apply A1; assumption.
+      * apply (Sum_w_Unique m x m mp); try assumption;
+        try (apply Zero_NaturalNumber, H).
+        apply A1; assumption.
+    + intros p p' Hp' Hp. apply HT in Hp. destruct Hp as [Hp IH].
+      apply HT. apply Homga in Hp.
+      split; try apply Homga, (Succ_NaturalNumber p p' Hp Hp').
+      intros mp' np' Hmp' Hnp' H. simpl in *.
+      sum_w m p Hm Hp. rename x into mp. rename H0 into Hmp.
+      sum_w n p Hn Hp. rename x into np. rename H0 into Hnp. lt_w.
+      ordpair mp np. rename x into mpnp. rename H0 into Hmpnp.
+      succ mp. rename x into Smp. rename H0 into HSmp.
+      succ np. rename x into Snp. rename H0 into HSnp.
+      ordpair Smp Snp. rename x into SmpSnp. rename H0 into HSmpSnp.
+      assert (P : In mpnp lt).
+      { apply Hlt. exists mp, np. repeat (split; try assumption);
+        try apply (IH mp np Hmp Hnp H);
+        try (apply (Sum_NaturalNumber m p); assumption);
+        try (apply (Sum_NaturalNumber n p); assumption). }
+      apply (Enderton4La lt mp np Smp Snp mpnp SmpSnp) in P; try assumption;
+      try (apply (Sum_NaturalNumber m p); assumption);
+      try (apply (Sum_NaturalNumber n p); assumption). 
+      apply Hlt in P. destruct P as [Smp' [Snp' [HSmpSnp' [HSmp' [HSnp' P]]]]].
+      assert (Q : Smp = Smp' /\ Snp = Snp').
+      { apply (Enderton3A Smp Snp Smp' Snp' SmpSnp SmpSnp); try assumption; trivial. }
+      replace Smp' with Smp in *; replace Snp' with Snp in *; try apply Q.
+      replace mp' with Smp. replace np' with Snp. assumption.
+      * symmetry. apply (A2 n p p' np); try assumption.
+      * symmetry. apply (A2 m p p' mp); try assumption. }
+  intros m n p mp np Hm Hn Hp Hmp Hnp.
+  split; try (apply (I m n p mp np); assumption).
+  intros H. ordpair m n. rename x into mn. rename H0 into Hmn.
+  ordpair n m. rename x into nm. rename H0 into Hnm. lt_w. omga.
+  destruct (Trichotomous_w omga lt Homga Hlt m n mn nm) as [P | [P | P]];
+  try assumption; try apply Homga, Hn; try apply Homga, Hm;
+  destruct P as [P0 [P1 P2]].
+  + apply Hlt in P0. destruct P0 as [m' [n' [Hmn' [Hm' [Hn' P0]]]]].
+    assert (Q : m = m' /\ n = n').
+    { apply (Enderton3A m n m' n' mn mn Hmn Hmn'); trivial. }
+    replace m' with m in *; replace n' with n in *; try apply Q; assumption.
+  + destruct (Enderton4Lb np); try (apply (Sum_NaturalNumber n p); assumption).
+    replace mp with np in H; try assumption.
+    apply (Sum_w_Unique n p); try assumption.
+    replace n with m. assumption.
+  + assert (Q : In np mp).
+    { apply (I n m p); try assumption. apply Hlt in P2.
+      destruct P2 as [n' [m' [Hnm' [Hn' [Hm' P2]]]]].
+      assert (R : n = n' /\ m = m').
+      { apply (Enderton3A n m n' m' nm nm Hnm Hnm'); trivial. }
+      replace n' with n in *; replace m' with m in *; try apply R; assumption. }
+    destruct (Enderton4Lb mp); try (apply (Sum_NaturalNumber m p); assumption).
+    apply (Enderton4F mp (Sum_NaturalNumber m p mp Hm Hp Hmp) np mp); assumption.
+Qed.
 
 Theorem Enderton4N' : forall m n p mp np, NaturalNumber m -> NaturalNumber n ->
   NaturalNumber p -> ~Empty p -> Prod_w m p mp -> Prod_w n p np ->
