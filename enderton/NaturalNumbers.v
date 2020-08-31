@@ -1226,8 +1226,6 @@ Proof.
   - apply HC, HC', H.
 Qed.
 
-Print GivenByImage.
-
 Definition GivenByImageClosure (f B F : set) : Prop :=
   forall XY, In XY F <-> exists X Y fX, OrdPair X Y XY /\
   Subset X B /\ Subset Y B /\ Image X f fX /\ BinaryUnion X fX Y.
@@ -3910,20 +3908,130 @@ Proof.
     apply (Prod_NaturalNumber n p); assumption.
 Qed.
 
-Theorem Well_Ordering_of_Omega : forall A omga, Nats omga -> Subset A omga ->
-  ~ Empty A -> exists m, In m A /\ forall n, In n A -> In_ m n.
-Admitted.
+Definition LeastElt (a A : set) : Prop :=
+  In a A /\ forall n, In n A -> In_ a n.
+
+Theorem Well_Ordering_of_w: forall A omga, Nats omga -> Subset A omga ->
+  ~ Empty A -> exists m, LeastElt m A.
+Proof.
+  intros A omga Homga HA. apply ContrapositiveLaw.
+  intros C C'. apply C'. lt_w.
+  build_set set (fun (A c m : set) => forall n, In n m -> ~ In n A) A omga.
+  rename x into B. rename H into HB. intros a Ha.
+  apply HA in Ha as Ha'. replace omga with B in Ha'. apply HB in Ha'.
+  apply C. exists a. split; try assumption.
+  intros n. apply ContrapositiveLaw. intros H C0.
+  destruct Ha' as [_ Ha']. apply (Ha' n); try assumption.
+  ordpair n a. rename x into na. rename H0 into Hna.
+  ordpair a n. rename x into an. rename H0 into Han.
+  destruct (Trichotomous_w omga lt Homga Hlt n a na an) as [P | [P | P]];
+  try assumption; try apply HA; try assumption;
+  destruct P as [P0 [P1 P2]].
+  - apply Hlt in P0. destruct P0 as [n' [a' [Hna' [Hn' [Ha0 P0]]]]].
+    assert (T : n = n' /\ a = a').
+    { apply (Enderton3A n a n' a' na na Hna Hna'); trivial. }
+    replace n' with n in *; replace a' with a in *; try apply T; assumption.
+  - destruct H. right. symmetry. assumption.
+  - destruct H. left. apply Hlt in P2.
+    destruct P2 as [a' [n' [Han' [Ha0 [Hn' P2]]]]].
+    assert (T : a = a' /\ n = n').
+    { apply (Enderton3A a n a' n' an an Han Han'); trivial. }
+    replace n' with n in *; replace a' with a in *; try apply T; assumption.
+  - apply Induction_Principle_for_Omega; try assumption; try split;
+    try (intros t Ht; apply HB, Ht).
+    + empty. exists x. split; try assumption. apply HB.
+      split; try apply Homga, Zero_NaturalNumber, H.
+      intros n Hn. destruct (H n). assumption.
+    + intros n n' Hn' Hn. apply HB in Hn. destruct Hn as [Hn IH].
+      apply HB. apply Homga in Hn.
+      split; try apply Homga, (Succ_NaturalNumber n n' Hn Hn').
+      intros m Hm. destruct Hn' as [Sn [HSn Hn']].
+      apply Hn' in Hm. destruct Hm as [Hm | Hm].
+      * apply IH. assumption.
+      * intros D. apply C. exists m. split; try assumption.
+        intros p Hp. replace m with n in *;
+        try (apply HSn in Hm; symmetry; assumption).
+        ordpair n p. rename x into np. rename H into Hnp.
+        ordpair p n. rename x into pn. rename H into Hpn.
+        destruct (Trichotomous_w omga lt Homga Hlt n p np pn) as [P | [P | P]];
+        try assumption; try apply HA; try assumption;
+        destruct P as [P0 [P1 P2]].
+        { left. apply Hlt in P0. destruct P0 as [n0 [p' [Hnp' [Hn0 [Hp' P0]]]]].
+        assert (T : n = n0 /\ p = p').
+        { apply (Enderton3A n p n0 p' np np Hnp Hnp'); trivial. }
+          replace n0 with n in *; replace p' with p in *; try apply T; assumption. }
+        { right. assumption. }
+        { destruct (IH p); try assumption. apply Hlt in P2.
+          destruct P2 as [p' [n0 [Hpn' [Hn0 [Hp' P2]]]]].
+          assert (T : p = p' /\ n = n0).
+          { apply (Enderton3A p n p' n0 pn pn Hpn Hpn'); trivial. }
+        replace n0 with n in *; replace p' with p in *; try apply T; assumption. }
+Qed.
 
 Corollary Enderton4Q : forall omga, Nats omga ->
   ~ exists f, FuncFromInto f omga omga /\ forall n n' fn fn', NaturalNumber n ->
   Succ n n' -> FunVal f n fn -> FunVal f n' fn' -> In fn' fn.
-Admitted.
+Proof.
+  intros omga Homga C. destruct C as [f [[Hf [Hdomf [ranf [Hranf Hsub]]]] H]].
+  destruct (Well_Ordering_of_w ranf omga); try assumption.
+  - intros C. zero. rename x into o. rename H0 into Ho.
+    assert (T : exists domf, Domain f domf /\ In o domf).
+    { exists omga. split; try assumption. apply Homga, Zero_NaturalNumber, Ho. }
+    funval Hf T f o. rename x into fo. rename H0 into Hfo.
+    apply (C fo). apply Hranf. exists o. apply Hfo; assumption.
+  - rename x into fn. rename H0 into Hfn.
+    destruct Hfn as [I J]. apply Hranf in I.
+    destruct I as [n [nfn [Hnfn I]]].
+    succ n. rename x into n'. rename H0 into Hn'.
+    assert (T : exists domf, Domain f domf /\ In n' domf).
+    { exists omga. split; try assumption.
+      apply Homga, (Succ_NaturalNumber n); try assumption.
+      apply Homga. apply Hdomf. exists fn, nfn. split; assumption. }
+    funval Hf T f n'. rename x into fn'. rename H0 into Hfn'.
+    destruct (J fn'); try (apply Hranf; exists n'; apply Hfn'; assumption).
+    + destruct (Enderton4Lb fn); try apply Homga, Hsub.
+      { apply Hranf. exists n, nfn. split; assumption. }
+      assert (P : NaturalNumber fn).
+      { apply Homga. apply Hsub. apply Hranf. exists n, nfn. split; assumption. }
+      apply (Enderton4F fn P fn'); try assumption.
+      apply (H n n' fn fn'); try assumption.
+      * apply Homga. apply Hdomf. exists fn, nfn. split; assumption.
+      * intros _ _. exists nfn. split; assumption.
+    + apply (Enderton4Lb fn); try apply Homga, Hsub.
+      { apply Hranf. exists n, nfn. split; assumption. }
+      apply (H n n' fn fn); try assumption.
+      * apply Homga. apply Hdomf. exists fn, nfn. split; assumption.
+      * intros _ _. exists nfn. split; assumption.
+      * replace fn with fn'. assumption.
+Qed.
 
-Theorem Strong_Induction_Principle_for_Omega : forall omga A, Nats omga ->
+Theorem Strong_Induction_Principle_for_w : forall omga A, Nats omga ->
   Subset A omga ->
   (forall n, In n omga -> (forall x, In x n -> In x A) -> In n A) ->
   A = omga.
-Admitted.
+Proof.
+  intros omga A Homga HA H. lt_w. assert (P : A = omga \/ A <> omga).
+  { apply REM. }
+  destruct P as [P | P]; try assumption.
+  minus omga A. rename x into wmA. rename H0 into HwmA.
+  destruct (Well_Ordering_of_w wmA omga) as [m Hm]; try assumption.
+  - intros x I. apply HwmA in I. apply I.
+  - intros C. apply P. apply SubsetSymmetric_iff_Equal. split; try assumption.
+    intros a Ha. assert (Q : In a A \/ ~ In a A). { apply REM. }
+    destruct Q as [Q | Q]; try assumption.
+    destruct (C a). apply HwmA. split; assumption.
+  - destruct Hm as [I J]. apply HwmA in I as [I1 I2].
+    destruct I2. apply H; try assumption.
+    intros n Hn. assert (Q : In n A \/ ~ In n A). { apply REM. }
+    destruct Q as [Q | Q]; try assumption.
+    destruct (J n) as [L | L].
+    + apply HwmA. split; try assumption.
+      apply (Enderton4G omga Homga m n I1 Hn).
+    + destruct (Enderton4Lb m); try apply Homga, I1. apply Homga in I1.
+      apply (Enderton4F m I1 n); assumption.
+    + destruct (Enderton4Lb m); try apply Homga, I1.
+      rewrite <- L in Hn. assumption.
+Qed.
 
 (** Exercise 4-18 : Simplify: <_{-1}[{7,8}]. (The image of {7, 8} under the
     inverse less-than relation. *)
