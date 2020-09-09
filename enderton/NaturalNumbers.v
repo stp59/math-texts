@@ -4208,12 +4208,177 @@ Qed.
 Theorem Exercise4_23 : forall m n, NaturalNumber m -> NaturalNumber n ->
   Lt_w m n -> exists p p' mp', NaturalNumber p /\ Succ p p' /\ Sum_w m p' mp' /\
   mp' = n.
-Admitted.
+Proof.
+  intros m n Hm Hn. omga.
+  build_set set (fun (m c n : set) => Lt_w m n -> exists p p' mp',
+    NaturalNumber p /\ Succ p p' /\ Sum_w m p' mp' /\ mp' = n) m omga.
+  rename x into A. rename H into HA. apply HA.
+  replace A with omga; try apply Homga; try assumption; try symmetry; clear n Hn.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros a Ha; apply HA, Ha).
+  - empty. rename H into Ho. rename x into o. exists o. split; try assumption.
+    apply HA. split; try apply Homga, Zero_NaturalNumber, Ho.
+    intros Hmo. destruct (Ho m). destruct Hmo as [lt [mo [Hlt [Hmn H]]]].
+    apply Hlt in H. destruct H as [m' [o' [Hmo' [Hm' [Ho' H]]]]].
+    assert (T : m = m' /\ o = o').
+    { apply (Enderton3A m o m' o' mo mo Hmn Hmo'). trivial. }
+    replace m' with m in *; replace o' with o in *; try assumption; try apply T.
+  - intros n n' Hn' Hn. apply HA in Hn. destruct Hn as [Hn IH].
+    apply Homga in Hn. apply HA.
+    split; try apply Homga, (Succ_NaturalNumber n n' Hn Hn').
+    intros H. destruct H as [lt [mn' [Hlt [Hmn' H]]]].
+    Check lt_w_succ_iff_le_w. ordpair m n. rename x into mn. rename H0 into Hmn. le_w.
+    apply (lt_w_succ_iff_le_w lt le m n n' mn' mn) in H; try assumption.
+    apply Hle in H. destruct H as [m0 [n0 [Hmn0 [Hm0 [Hn0 H]]]]].
+    assert (T : m = m0 /\ n = n0).
+    { apply (Enderton3A m n m0 n0 mn mn Hmn Hmn0). trivial. }
+    replace m0 with m in *; replace n0 with n in *; try apply T.
+    clear T m0 n0. destruct H as [H | H].
+    + assert (T : Lt_w m n).
+      { exists lt, mn. repeat (split; try assumption). apply Hlt. exists m, n.
+        repeat (split; try assumption). }
+      apply IH in T. destruct T as [p [p' [mp' [Hp [Hp' [Hmp' T]]]]]].
+      succ mp'. rename x into Smp'. rename H0 into HSmp'.
+      succ p'. rename x into Sp'. rename H0 into HSp'.
+      exists p', Sp', Smp'. repeat (split; try assumption).
+      * apply (Succ_NaturalNumber p p' Hp Hp').
+      * sum_w m Sp' Hm (Succ_NaturalNumber p' Sp'
+          (Succ_NaturalNumber p p' Hp Hp') HSp').
+        rename x into mSp'. rename H0 into HmSp'.
+        replace Smp' with mSp'; try assumption.
+        destruct Enderton4I as [A1 A2]. apply (A2 m p' Sp' mp'); try assumption.
+        apply (Succ_NaturalNumber p p' Hp Hp').
+      * apply (Succ_Unique mp'); try assumption. replace mp' with n. assumption.
+    + zero. rename x into o. rename H0 into Ho.
+      succ o. rename x into o'. rename H0 into Ho'.
+      sum_w m o' Hm (Succ_NaturalNumber o o' (Zero_NaturalNumber o Ho) Ho').
+      rename x into mo'. rename H0 into Hmo'.
+      exists o, o', mo'. repeat (split; try assumption).
+      * apply Zero_NaturalNumber. assumption.
+      * sum_w m o Hm (Zero_NaturalNumber o Ho). rename x into mo. rename H0 into Hmo.
+        destruct Enderton4I as [A1 A2]. apply (A2 m o o' mo); try assumption;
+        try apply Zero_NaturalNumber, Ho. replace mo with n; try assumption.
+        replace mo with m; try (symmetry; assumption).
+        apply (Sum_w_Unique m o); try assumption; try apply (Zero_NaturalNumber o Ho).
+        apply A1; assumption.
+Qed.
 
 Theorem Exercise4_24 : forall m n p q mn pq, NaturalNumber m ->
   NaturalNumber n -> NaturalNumber p -> NaturalNumber q -> Sum_w m n mn ->
-  Sum_w p q pq -> In m p <-> In q n.
-Admitted.
+  Sum_w p q pq -> mn = pq -> In m p <-> In q n.
+Proof.
+  intros m n p q mn pq Hm. generalize dependent pq. generalize dependent mn.
+  generalize dependent q. generalize dependent p. generalize dependent n. omga.
+  build_set set (fun (t c m : set) => forall n p q mn pq, NaturalNumber n ->
+    NaturalNumber p -> NaturalNumber q -> Sum_w m n mn -> Sum_w p q pq ->
+    mn = pq -> In m p <-> In q n) omga omga.
+  rename x into A. rename H into HA. apply HA.
+  replace A with omga; try apply Homga,Hm. clear m Hm. symmetry.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros t Ht; apply HA, Ht).
+  - zero. rename x into o. rename H into Ho. exists o. split; try assumption.
+    apply HA. split; try apply Homga, Zero_NaturalNumber, Ho.
+    intros n p q on pq Hn Hp Hq Hon Hpq H. split; intros I.
+    + replace n with pq. 
+      * sum_w o q (Zero_NaturalNumber o Ho) Hq. rename x into oq.
+        rename H0 into Hoq. replace q with oq.
+        apply (Enderton4N o p q oq pq (Zero_NaturalNumber o Ho) Hp Hq Hoq Hpq) in I.
+        assumption. apply (Sum_w_Unique o q); try assumption;
+        try apply Zero_NaturalNumber, Ho. apply A1_Commutative; assumption.
+      * transitivity on; try (symmetry; assumption).
+        apply (Sum_w_Unique o n); try assumption; try apply Zero_NaturalNumber, Ho.
+        apply A1_Commutative; assumption.
+    + lt_w. ordpair o p. rename x into op. rename H0 into Hop.
+      ordpair p o. rename x into po. rename H0 into Hpo.
+      destruct (Trichotomous_w omga lt Homga Hlt o p op po) as [P | [P | P]];
+      try assumption; try (apply Homga; try apply Hp; apply Zero_NaturalNumber, Ho);
+      try destruct P as [P0 [P1 P2]].
+      * apply Hlt in P0. destruct P0 as [o' [p' [Hop' [_ [_ P0]]]]].
+        assert (T : o = o' /\ p = p').
+        { apply (Enderton3A o p o' p' op op Hop Hop'); trivial. }
+        replace o' with o in *; replace p' with p in *; try apply T; assumption.
+      * destruct (Enderton4Lb q Hq). replace n with q in I; try assumption.
+        symmetry. transitivity on. apply (Sum_w_Unique o n); try assumption.
+        apply (Zero_NaturalNumber o Ho). apply A1_Commutative; assumption.
+        transitivity pq; try assumption. apply (Sum_w_Unique p q); try assumption.
+        apply A1_Commutative; try assumption. rewrite <- P1. assumption.
+      * destruct (Ho p). apply Hlt in P2.
+        destruct P2 as [p' [o' [Hpo' [_ [_ P2]]]]].
+        assert (T : p = p' /\ o = o').
+        { apply (Enderton3A p o p' o' po po Hpo Hpo'). trivial. }
+        replace p' with p in *; replace o' with o in *; try apply T; assumption.
+  - intros m m' Hm' Hm. apply HA in Hm. destruct Hm as [Hm IH].
+    apply Homga in Hm. apply HA.
+    split; try apply Homga, (Succ_NaturalNumber m m' Hm Hm').
+    intros n p q m'n pq Hn Hp Hq Hm'n Hpq H. split; intros I.
+    + sum_w m n Hm Hn. rename x into mn. rename H0 into Hmn.
+      rename p into p'. rename Hp into Hp'. rename Hpq into Hp'q. rename pq into p'q.
+      destruct (Enderton4C p' Hp') as [p [Hp Hp'0]];
+      try (intros C; destruct (C m'); try assumption).
+      sum_w p q Hp Hq. rename x into pq. rename H0 into Hpq.
+      apply (IH n p q mn pq Hn Hp Hq Hmn Hpq).
+      * succ mn. rename x into Smn. rename H0 into HSmn.
+        union Smn. rename x into USmn. rename H0 into HUSmn.
+        succ pq. rename x into Spq. rename H0 into HSpq.
+        union Spq. rename x into USpq. rename H0 into HUSpq.
+        apply (Union_Unique Smn).
+        { replace mn with USmn; try assumption.
+          apply (Enderton4E mn Smn); try assumption.
+          apply (Enderton4F). apply (Sum_NaturalNumber m n); assumption. }
+        { replace pq with USpq. replace Smn with Spq; try assumption.
+          - replace Spq with p'q. replace Smn with m'n; try (symmetry; assumption).
+            apply (A2_Commutative m n m' mn); assumption.
+            apply (A2_Commutative p q p' pq); assumption.
+          - apply (Enderton4E pq Spq); try assumption.
+            apply (Enderton4F). apply (Sum_NaturalNumber p q); assumption. }
+      * lt_w. ordpair m p. rename x into mp. rename H0 into Hmp.
+        ordpair m' p'. rename x into m'p'. rename H0 into Hm'p'.
+        assert (T : In m'p' lt).
+        { apply Hlt. exists m', p'. repeat (split; try assumption).
+          apply (Succ_NaturalNumber m m' Hm Hm'). }
+        apply (Enderton4La lt m p m' p' mp m'p') in T; try assumption.
+        apply Hlt in T. destruct T as [m0 [p0 [Hmp0 [_ [_ T]]]]].
+        assert (T0 : m = m0 /\ p = p0).
+        { apply (Enderton3A m p m0 p0 mp mp Hmp Hmp0); trivial. }
+        replace m0 with m in *; replace p0 with p in *; try apply T0; assumption.
+    + succ n. rename x into n'. rename H0 into Hn'.
+      assert (P : In q n').
+      { apply (Enderton4F n' (Succ_NaturalNumber n n' Hn Hn') n q); try assumption.
+        destruct Hn' as [Sn [HSn Hn']]. apply Hn'. right. apply HSn. trivial. }
+      sum_w m n' Hm (Succ_NaturalNumber n n' Hn Hn'). rename x into mn'.
+      rename H0 into Hmn'. assert (Q : mn' = pq).
+      { sum_w m n Hm Hn. rename x into mn. rename H0 into Hmn.
+        succ mn. rename x into Smn. rename H0 into HSmn.
+        destruct (Enderton4I) as [A1 A2].
+        transitivity Smn. try (apply (A2 m n n' mn); assumption).
+        transitivity m'n; try assumption. symmetry.
+        apply (A2_Commutative m n m' mn); assumption. }
+      apply (IH n' p q mn' pq (Succ_NaturalNumber n n' Hn Hn') Hp Hq Hmn' Hpq Q) in P.
+      ordpair m p. rename x into mp. rename H0 into Hmp.
+      succ p. rename x into p'. rename H0 into Hp'.
+      ordpair m' p'. rename x into m'p'. rename H0 into Hm'p'. lt_w. le_w.
+      assert (R : In mp lt).
+      { apply Hlt. exists m, p. repeat (split; try assumption). }
+      apply (Enderton4La lt m p m' p' mp m'p') in R; try assumption.
+      ordpair m' p. rename x into m'p. rename H0 into Hm'p.
+      apply (lt_w_succ_iff_le_w lt le m' p p' m'p' m'p) in R; try assumption;
+      try (apply (Succ_NaturalNumber m); assumption).
+      apply Hle in R. destruct R as [m'0 [p0 [Hm'p0 [Hm'0 [_ R]]]]].
+      assert (T : m' = m'0 /\ p = p0).
+      { apply (Enderton3A m' p m'0 p0 m'p m'p Hm'p Hm'p0). trivial. }
+      replace m'0 with m' in *; replace p0 with p in *; try apply T.
+      destruct R as [R | R]; try assumption.
+      destruct (Enderton4Lb n); try assumption.
+      replace q with n in I; try assumption. Check Enderton4P.
+      apply (Enderton4P n q p m'n pq); try assumption.
+      * replace p with m'. sum_w n m' Hn (Succ_NaturalNumber m m' Hm Hm').
+        rename x into nm'. rename H0 into Hnm'.
+        replace m'n with nm'; try assumption.
+        apply (Enderton4K2 n m'); try assumption.
+      * sum_w q p Hq Hp. rename x into qp. rename H0 into Hqp.
+        replace pq with qp; try assumption.
+        apply (Enderton4K2 q p); try assumption.
+Qed.
 
 Theorem Exercise4_25 : forall m n p q mq np mp nq mqnp mpnq,
   NaturalNumber m -> NaturalNumber n -> NaturalNumber p -> NaturalNumber q ->
@@ -4223,8 +4388,144 @@ Admitted.
 
 Theorem Exercise4_26 : forall n n' omga f ranf, NaturalNumber n -> Succ n n' ->
   Nats omga -> FuncFromInto f n' omga -> Range f ranf -> exists x, In x ranf /\
-  forall x', In x' ranf -> In x' x.
-Admitted.
+  forall x', In x' ranf -> In_ x' x.
+Proof.
+  intros n n' omga f ranf Hn Hn' Homga. generalize dependent ranf.
+  generalize dependent f. generalize dependent n'.
+  build_set set (fun (t omga n : set) => forall n', Succ n n' ->
+    forall f ranf, FuncFromInto f n' omga -> Range f ranf ->
+    exists x, In x ranf /\ (forall x' : set, In x' ranf -> In_ x' x)) omga omga.
+  rename x into A. rename H into HA. apply HA.
+  replace A with omga; try apply Homga, Hn. symmetry. clear n Hn.
+  apply Induction_Principle_for_Omega; try assumption; try split;
+  try (intros t Ht; apply HA, Ht).
+  - zero. rename x into o. rename H into Ho. exists o. split; try assumption.
+    apply HA. split; try apply Homga, Zero_NaturalNumber, Ho.
+    intros o' Ho' f ranf [Hf [Hdomf [ranf' [Hranf' Hsub]]]] Hranf.
+    replace ranf' with ranf; try apply (Range_Unique f); try assumption.
+    assert (T : exists domf, Domain f domf /\ In o domf).
+    { exists o'. split; try assumption. destruct Ho' as [So [HSo Ho']].
+      apply Ho'. right. apply HSo. trivial. }
+    funval Hf T f o. rename x into fo. rename H into Hfo. exists fo. split.
+    + apply Hranf. exists o. apply Hfo; assumption.
+    + intros fo' Hfo'. right. apply (FunVal_Unique f o); try assumption.
+      intros _ _. apply Hranf in Hfo'. destruct Hfo' as [o0 [ofo' [Hofo' H]]].
+      exists ofo'. split; try assumption. replace o with o0; try assumption.
+      assert (P : In o o').
+      { apply Hdomf. exists fo. apply Hfo; assumption. }
+      assert (Q : In o0 o').
+      { apply Hdomf. exists fo', ofo'. split; try assumption. }
+      destruct Ho' as [So [HSo Ho']]. apply Ho' in P. apply Ho' in Q.
+      destruct P as [P | P]; destruct Q as [Q | Q].
+      * destruct (Ho o). assumption.
+      * destruct (Ho o). assumption.
+      * destruct (Ho o0). assumption.
+      * apply HSo in Q. assumption.
+  - intros n n' Hn' Hn. apply HA in Hn. destruct Hn as [Hn IH].
+    apply HA. apply Homga in Hn.
+    split; try apply Homga, (Succ_NaturalNumber n n' Hn Hn').
+    intros n'' Hn'' f ranf [Hf [Hdomf [ranf' [Hranf' Hsub]]]] Hranf.
+    replace ranf' with ranf in *; try apply (Range_Unique f); try assumption.
+    clear ranf' Hranf'. restrict f n'. rename x into fln'. rename H into Hfln'.
+    range fln'. rename x into ranfln'. rename H into Hranfln'.
+    destruct (IH n' Hn' fln' ranfln'); try assumption.
+    { split; try split.
+      - intros xy H. apply Hfln' in H. destruct H as [x [y [Hxy _]]].
+        exists x, y. assumption.
+      - intros x y z xy xz Hxy Hxz H I. apply Hfln' in H. apply Hfln' in I.
+        destruct H as [x' [y' [Hxy' [H _]]]].
+        assert (T : x = x' /\ y = y').
+        { apply (Enderton3A x y x' y' xy xy Hxy Hxy'); trivial. }
+        replace x' with x in *; replace y' with y in *; try apply T.
+        clear x' y' T Hxy'. destruct I as [x' [z' [Hxz' [I _]]]].
+        assert (T : x = x' /\ z = z').
+        { apply (Enderton3A x z x' z' xz xz Hxz Hxz'); trivial. }
+        replace x' with x in *; replace z' with z in *; try apply T.
+        destruct Hf as [_ Hf]. apply (Hf x y z xy xz Hxy Hxz H I).
+      - intros x. split; intros H.
+        + assert (I : In x n'').
+          { destruct Hn'' as [Sn' [HSn' Hn'']]. apply Hn''. left. assumption. }
+          apply Hdomf in I. destruct I as [y [xy [Hxy I]]].
+          exists y, xy. split; try assumption. apply Hfln'.
+          exists x, y. split; try assumption. split; assumption.
+        + destruct H as [y [xy [Hxy H]]]. apply Hfln' in H.
+          destruct H as [x' [y' [Hxy' [H I]]]].
+          replace x with x'; try assumption.
+          apply (Enderton3A x' y' x y xy xy Hxy' Hxy); trivial.
+      - exists ranfln'. split; try assumption. intros y H.
+        apply Hranfln' in H. destruct H as [x [xy [Hxy H]]].
+        apply Hfln' in H. destruct H as [x' [y' [Hxy' [H I]]]].
+        apply Hsub. apply Hranf. exists x, xy. split; assumption. }
+    destruct H as [H Hmax]. rename x into m.
+    assert (T : exists domf, Domain f domf /\ In n' domf).
+    { exists n''. split; try assumption. destruct Hn'' as [Sn' [HSn' Hn'']].
+      apply Hn''. right. apply HSn'. trivial. }
+    funval Hf T f n'. rename x into fn'. rename H0 into Hfn'.
+    ordpair m fn'. rename x into mfn'. rename H0 into Hmfn'.
+    ordpair fn' m. rename x into fn'm. rename H0 into Hfn'm. lt_w.
+    destruct Hn'' as [Sn' [HSn' Hn'']].
+    destruct (Trichotomous_w omga lt Homga Hlt m fn' mfn' fn'm) as [P | [P | P]];
+    try assumption; try destruct P as [P [Q R]].
+    { apply Hsub. apply Hranfln' in H. destruct H as [x [xy [Hxy H]]].
+      apply Hranf. exists x, xy. split; try assumption. apply Hfln' in H.
+      destruct H as [x' [y' [Hxy' [H _]]]]. assumption. }
+    { apply Hsub. apply Hranf. exists n'. apply Hfn'; assumption. }
+    + exists fn'. split.
+      { apply Hranf. exists n'. apply Hfn'; assumption. }
+      intros fp Hfp. apply Hranf in Hfp. destruct Hfp as [p [pfp [Hpfp Hfp]]].
+      assert (T0 : In p n'').
+      { apply Hdomf. exists fp, pfp. split; assumption. }
+      apply Hn'' in T0. destruct T0 as [T0 | T0].
+      * left. destruct (Hmax fp) as [T1 | T1].
+        { apply Hranfln'. exists p, pfp. split; try assumption.
+          apply Hfln'. exists p, fp. repeat (split; try assumption). }
+        { assert (S : NaturalNumber fn').
+          { apply Homga. apply Hsub. apply Hranf. exists n'. apply Hfn'; assumption. }
+          apply (Enderton4F fn' S m fp); try assumption.
+          apply Hlt in P. destruct P as [m' [fn'' [Hmfn'' [P0 [P1 P]]]]].
+          assert (U : m = m' /\ fn' = fn'').
+          { apply (Enderton3A m fn' m' fn'' mfn' mfn' Hmfn' Hmfn''). trivial. }
+          replace m' with m in *; replace fn'' with fn' in *; try apply U; assumption. }
+        { apply Hlt in P. replace fp with m.
+          destruct P as [m' [fn'' [Hmfn'' [P0 [P1 P]]]]].
+          assert (S : m = m' /\ fn' = fn'').
+          { apply (Enderton3A m fn' m' fn'' mfn' mfn' Hmfn' Hmfn''). trivial. }
+          replace m' with m in *; replace fn'' with fn' in *; try apply S; assumption. }
+      * right. apply (FunVal_Unique f p fp fn'); try assumption.
+        { exists n''. split; try assumption. apply Hdomf. exists fp, pfp.
+          split; assumption. }
+        { intros _ _. exists pfp. split; assumption. }
+        { replace p with n'; try assumption. apply HSn' in T0. symmetry. apply T0. }
+    + exists fn'. split.
+      { apply Hranf. exists n'. apply Hfn'; assumption. }
+      intros fp Hfp. apply Hranf in Hfp. destruct Hfp as [p [pfp [Hpfp Hfp]]].
+      assert (T0 : In p n'').
+      { apply Hdomf. exists fp, pfp. split; assumption. }
+      apply Hn'' in T0. destruct T0 as [T0 | T0].
+      * replace fn' with m. apply Hmax. apply Hranfln'. exists p, pfp.
+        split; try assumption. apply Hfln'.
+        exists p, fp. repeat (split; try assumption).
+      * right. apply HSn' in T0. apply (FunVal_Unique f n'); try assumption.
+        intros _ _. exists pfp. replace n' with p. split; assumption.
+    + exists m. split.
+      { apply Hranf. apply Hranfln' in H. destruct H as [x [xy [Hxy H]]].
+        exists x, xy. split; try assumption. apply Hfln' in H.
+        destruct H as [_ [_  [_ [H _]]]]. assumption. }
+      intros fp Hfp. apply Hranf in Hfp. destruct Hfp as [p [pfp [Hpfp Hfp]]].
+      assert (T0 : In p n'').
+      { apply Hdomf. exists fp, pfp. split; assumption. }
+      apply Hn'' in T0. destruct T0 as [T0 | T0].
+      * apply Hmax. apply Hranfln'. exists p, pfp. split; try assumption.
+        apply Hfln'. exists p, fp. repeat (split; try assumption).
+      * left. apply Hlt in R. destruct R as [fn'' [m' [Hfn'm' [R0 [R1 R]]]]].
+        assert (T1 : fn' = fn'' /\ m = m').
+        { apply (Enderton3A fn' m fn'' m' fn'm fn'm Hfn'm Hfn'm'); trivial. }
+        replace fn'' with fn' in *; replace m' with m in *; try apply T1.
+        replace fp with fn'; try assumption.
+        apply (FunVal_Unique f n'); try assumption.
+        apply HSn' in T0. replace n' with p. intros _ _.
+        exists pfp. split; assumption.
+Qed.
 
 Theorem Exercise4_27 : forall A G f1 f2 omga, Func G -> Nats omga ->
   FuncFromInto f1 omga A -> FuncFromInto f2 omga A ->
@@ -4235,11 +4536,11 @@ Theorem Exercise4_27 : forall A G f1 f2 omga, Func G -> Nats omga ->
   f2n = Gf2ln) -> f1 = f2.
 Admitted.
 
-(** Exercise 4-28 : Rewrite the proof of Theorem 4G using, place of induction,
+(** Exercise 4-28 : Rewrite the proof of Theorem 4G using, in place of induction,
     the well-ordering of omega. TODO *)
 
 (** Exercise 4-29 : Write an expression for the set named 4 using only the
-    empty set symbole, left and right curly braces, and commas. *)
+    empty set symbol, left and right curly braces, and commas. *)
 
 (** Exercise 4-30 : What is U4? What is N4? *)
 
