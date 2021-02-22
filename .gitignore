@@ -2,3 +2,10 @@
 *.glob
 .coqdeps.d
 *.aux
+*.aux#
+*.v#
+*.d
+*.v.swp
+*.vok
+*.vos
+*.v~
